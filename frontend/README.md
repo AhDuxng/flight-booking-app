@@ -7,10 +7,12 @@ Frontend là giao diện người dùng cho hệ thống đặt vé máy bay. Ph
 1. React để xây dựng giao diện.
 2. Vite để phát triển và build ứng dụng.
 3. Tailwind CSS để xây dựng style và bố cục giao diện.
-4. React Router để quản lý điều hướng.
-5. Axios để gọi API backend.
-6. lucide-react để sử dụng biểu tượng trong giao diện.
-7. Bắt buộc sử dụng icon trong thư viện React Icons.
+4. shadcn/ui để xây dựng hệ thống component giao diện.
+5. React Router để quản lý điều hướng.
+6. Axios để gọi API backend.
+7. lucide-react để sử dụng biểu tượng trong giao diện.
+8. Sonner để hiển thị thông báo thành công, lỗi và trạng thái xử lý.
+9. Bắt buộc sử dụng icon trong thư viện React Icons.
 
 ## Cấu trúc chính
 
