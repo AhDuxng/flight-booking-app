@@ -21,7 +21,7 @@ Xây dựng một nền tảng đặt vé máy bay có trải nghiệm rõ ràng
 
 ## Công nghệ sử dụng
 
-Frontend sử dụng React, Vite, React Router, Axios và lucide-react. Phần giao diện được tổ chức theo các nhóm component, page, feature, hook, service và store để tách biệt trách nhiệm giữa hiển thị, điều hướng, xử lý nghiệp vụ và giao tiếp API.
+Frontend sử dụng React, Vite, Tailwind CSS, React Router, Axios và lucide-react. Phần giao diện được tổ chức theo các nhóm component, page, feature, hook, service và store để tách biệt trách nhiệm giữa hiển thị, điều hướng, xử lý nghiệp vụ và giao tiếp API.
 
 Backend sử dụng Node.js, Express, Supabase, JWT, bcryptjs, Zod, Nodemailer và các middleware bảo mật như Helmet, CORS, rate limit, compression và cookie parser. Cấu trúc backend được chia theo module nghiệp vụ, mỗi module có routes, controller, service, schema và queries riêng.
 
