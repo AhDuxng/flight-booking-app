@@ -8,232 +8,227 @@
 @theme inline {
     --font-heading: var(--font-sans);
     --font-sans: 'Geist Variable', sans-serif;
-    --color-sidebar-ring: var(--sidebar-ring);
-    --color-sidebar-border: var(--sidebar-border);
-    --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-    --color-sidebar-accent: var(--sidebar-accent);
-    --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-    --color-sidebar-primary: var(--sidebar-primary);
-    --color-sidebar-foreground: var(--sidebar-foreground);
-    --color-sidebar: var(--sidebar);
-    --color-chart-5: var(--chart-5);
-    --color-chart-4: var(--chart-4);
-    --color-chart-3: var(--chart-3);
-    --color-chart-2: var(--chart-2);
-    --color-chart-1: var(--chart-1);
-    --color-ring: var(--ring);
-    --color-input: var(--input);
-    --color-border: var(--border);
-    --color-destructive: var(--destructive);
-    --color-accent-foreground: var(--accent-foreground);
-    --color-accent: var(--accent);
-    --color-muted-foreground: var(--muted-foreground);
-    --color-muted: var(--muted);
-    --color-secondary-foreground: var(--secondary-foreground);
-    --color-secondary: var(--secondary);
-    --color-primary-foreground: var(--primary-foreground);
-    --color-primary: var(--primary);
-    --color-popover-foreground: var(--popover-foreground);
-    --color-popover: var(--popover);
-    --color-card-foreground: var(--card-foreground);
-    --color-card: var(--card);
-    --color-foreground: var(--foreground);
-    --color-background: var(--background);
-    --radius-sm: calc(var(--radius) * 0.6);
-    --radius-md: calc(var(--radius) * 0.8);
-    --radius-lg: var(--radius);
-    --radius-xl: calc(var(--radius) * 1.4);
-    --radius-2xl: calc(var(--radius) * 1.8);
-    --radius-3xl: calc(var(--radius) * 2.2);
-    --radius-4xl: calc(var(--radius) * 2.6);
+    
+    /* Slate series remapped to light colors */
+    --color-slate-950: #f4f6fa; /* Main background light gray-blue */
+    --color-slate-900: #ffffff; /* Card/Container white background */
+    --color-slate-850: #e2e8f0; /* Light borders */
+    --color-slate-800: #cbd5e1; /* Borders */
+    --color-slate-750: #cbd5e1;
+    --color-slate-700: #94a3b8;
+    --color-slate-655: #475569;
+    --color-slate-600: #64748b;
+    --color-slate-500: #475569;
+    --color-slate-450: #64748b;
+    --color-slate-400: #475569; /* Secondary body text */
+    --color-slate-350: #475569;
+    --color-slate-300: #1e293b; /* Dark labels */
+    --color-slate-200: #0f172a; /* Core body labels */
+    --color-slate-100: #0f172a; /* Heading labels */
+    --color-slate-50: #0f172a;
+
+    /* Indigo series remapped to Phenikaa Brand Colors */
+    --color-indigo-950: #e2e8f0;
+    --color-indigo-900: #102a6b; /* Phenikaa Brand Blue */
+    --color-indigo-850: #0e245c;
+    --color-indigo-800: #0d2154;
+    --color-indigo-750: #0c1e4c;
+    --color-indigo-700: #0a1b44;
+    --color-indigo-660: #0a1b44;
+    --color-indigo-650: #102a6b;
+    --color-indigo-600: #102a6b; /* Phenikaa Brand Blue */
+    --color-indigo-550: #1a3b8b;
+    --color-indigo-500: #1a3b8b; /* Hover Blue */
+    --color-indigo-450: #f15a24; /* Phenikaa Brand Orange */
+    --color-indigo-400: #f15a24; /* Phenikaa Brand Orange for highlighted text & icons */
+    --color-indigo-300: #f97316;
+    --color-indigo-200: #fed7aa;
+    --color-indigo-100: #ffedd5;
+    --color-indigo-50: #fff7ed;
+
+    /* Violet series remapped to Orange for highlights */
+    --color-violet-600: #f15a24;
+    --color-violet-500: #f97316;
+    
+    /* Backgrounds & borders for Shadcn/Tailwind default layout */
+    --color-border: #cbd5e1;
+    --color-input: #cbd5e1;
+    --color-ring: #102a6b;
+    --color-background: #f4f6fa;
+    --color-foreground: #0f172a;
+    --color-primary: #102a6b;
+    --color-primary-foreground: #ffffff;
+    --color-secondary: #f15a24;
+    --color-secondary-foreground: #ffffff;
+    --color-muted: #f1f5f9;
+    --color-muted-foreground: #64748b;
+    --color-accent: #f1f5f9;
+    --color-accent-foreground: #0f172a;
+    --color-card: #ffffff;
+    --color-card-foreground: #0f172a;
 }
 
 :root {
-    --background: oklch(1 0 0);
-    --foreground: oklch(0.145 0 0);
-    --card: oklch(1 0 0);
-    --card-foreground: oklch(0.145 0 0);
-    --popover: oklch(1 0 0);
-    --popover-foreground: oklch(0.145 0 0);
-    --primary: oklch(0.205 0 0);
-    --primary-foreground: oklch(0.985 0 0);
-    --secondary: oklch(0.97 0 0);
-    --secondary-foreground: oklch(0.205 0 0);
-    --muted: oklch(0.97 0 0);
-    --muted-foreground: oklch(0.556 0 0);
-    --accent: oklch(0.97 0 0);
-    --accent-foreground: oklch(0.205 0 0);
-    --destructive: oklch(0.577 0.245 27.325);
-    --border: oklch(0.922 0 0);
-    --input: oklch(0.922 0 0);
-    --ring: oklch(0.708 0 0);
-    --chart-1: oklch(0.87 0 0);
-    --chart-2: oklch(0.556 0 0);
-    --chart-3: oklch(0.439 0 0);
-    --chart-4: oklch(0.371 0 0);
-    --chart-5: oklch(0.269 0 0);
+    --background: #f4f6fa;
+    --foreground: #0f172a;
+    --card: #ffffff;
+    --card-foreground: #0f172a;
+    --popover: #ffffff;
+    --popover-foreground: #0f172a;
+    --primary: #102a6b;
+    --primary-foreground: #ffffff;
+    --secondary: #f15a24;
+    --secondary-foreground: #ffffff;
+    --muted: #f1f5f9;
+    --muted-foreground: #64748b;
+    --accent: #f1f5f9;
+    --accent-foreground: #0f172a;
+    --destructive: #ef4444;
+    --border: #e2e8f0;
+    --input: #e2e8f0;
+    --ring: #102a6b;
     --radius: 0.625rem;
-    --sidebar: oklch(0.985 0 0);
-    --sidebar-foreground: oklch(0.145 0 0);
-    --sidebar-primary: oklch(0.205 0 0);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.97 0 0);
-    --sidebar-accent-foreground: oklch(0.205 0 0);
-    --sidebar-border: oklch(0.922 0 0);
-    --sidebar-ring: oklch(0.708 0 0);
 }
 
 .dark {
-    --background: oklch(0.145 0 0);
-    --foreground: oklch(0.985 0 0);
-    --card: oklch(0.205 0 0);
-    --card-foreground: oklch(0.985 0 0);
-    --popover: oklch(0.205 0 0);
-    --popover-foreground: oklch(0.985 0 0);
-    --primary: oklch(0.922 0 0);
-    --primary-foreground: oklch(0.205 0 0);
-    --secondary: oklch(0.269 0 0);
-    --secondary-foreground: oklch(0.985 0 0);
-    --muted: oklch(0.269 0 0);
-    --muted-foreground: oklch(0.708 0 0);
-    --accent: oklch(0.269 0 0);
-    --accent-foreground: oklch(0.985 0 0);
-    --destructive: oklch(0.704 0.191 22.216);
-    --border: oklch(1 0 0 / 10%);
-    --input: oklch(1 0 0 / 15%);
-    --ring: oklch(0.556 0 0);
-    --chart-1: oklch(0.87 0 0);
-    --chart-2: oklch(0.556 0 0);
-    --chart-3: oklch(0.439 0 0);
-    --chart-4: oklch(0.371 0 0);
-    --chart-5: oklch(0.269 0 0);
-    --sidebar: oklch(0.205 0 0);
-    --sidebar-foreground: oklch(0.985 0 0);
-    --sidebar-primary: oklch(0.488 0.243 264.376);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.269 0 0);
-    --sidebar-accent-foreground: oklch(0.985 0 0);
-    --sidebar-border: oklch(1 0 0 / 10%);
-    --sidebar-ring: oklch(0.556 0 0);
+    /* Set dark mode variables to match light theme variables to prevent dark theme triggering */
+    --background: #f4f6fa;
+    --foreground: #0f172a;
+    --card: #ffffff;
+    --card-foreground: #0f172a;
+    --popover: #ffffff;
+    --popover-foreground: #0f172a;
+    --primary: #102a6b;
+    --primary-foreground: #ffffff;
+    --secondary: #f15a24;
+    --secondary-foreground: #ffffff;
+    --muted: #f1f5f9;
+    --muted-foreground: #64748b;
+    --accent: #f1f5f9;
+    --accent-foreground: #0f172a;
+    --destructive: #ef4444;
+    --border: #e2e8f0;
+    --input: #e2e8f0;
+    --ring: #102a6b;
 }
 
 @layer base {
   * {
     @apply border-border outline-ring/50;
-    }
+  }
   body {
-    @apply bg-background text-foreground;
-    }
+    background-color: #f4f6fa !important;
+    color: #1e293b !important;
+    font-family: 'Geist Variable', sans-serif;
+  }
   html {
     @apply font-sans;
-    }
-}
-@theme inline {
-  --color-on-primary: #ffffff;
-  --color-secondary-fixed: #ffddba;
-  --color-on-secondary: #ffffff;
-  --color-inverse-on-surface: #eef1f3;
-  --color-on-tertiary: #ffffff;
-  --color-secondary-fixed-dim: #ffb866;
-  --color-surface: #f7fafc;
-  --color-on-surface: #181c1e;
-  --color-tertiary-fixed-dim: #f2bc82;
-  --color-on-surface-variant: #43474e;
-  --color-outline: #74777f;
-  --color-on-tertiary-fixed: #2b1700;
-  --color-surface-container-highest: #e0e3e5;
-  --color-tertiary-fixed: #ffddba;
-  --color-on-primary-fixed: #001b3c;
-  --color-surface-container-low: #f1f4f6;
-  --color-inverse-surface: #2d3133;
-  --color-on-secondary-fixed-variant: #673d00;
-  --color-tertiary-container: #4f2e00;
-  --color-primary: #002045;
-  --color-error-container: #ffdad6;
-  --color-surface-variant: #e0e3e5;
-  --color-on-error: #ffffff;
-  --color-deep-navy: #0F172A;
-  --color-on-primary-container: #86a0cd;
-  --color-on-error-container: #93000a;
-  --color-on-secondary-fixed: #2b1700;
-  --color-surface-container-high: #e5e9eb;
-  --color-on-secondary-container: #744600;
-  --color-status-error: #EF4444;
-  --color-surface-container: #ebeef0;
-  --color-sky-blue: #EBF8FF;
-  --color-surface-bright: #f7fafc;
-  --color-surface-container-lowest: #ffffff;
-  --color-primary-container: #1a365d;
-  --color-surface-tint: #455f88;
-  --color-on-tertiary-fixed-variant: #633f0f;
-  --color-on-primary-fixed-variant: #2d476f;
-  --color-inverse-primary: #adc7f7;
-  --color-surface-dim: #d7dadc;
-  --color-secondary-container: #ffb55c;
-  --color-background: #f7fafc;
-  --color-outline-variant: #c4c6cf;
-  --color-on-tertiary-container: #c6955e;
-  --color-status-warning: #FBBF24;
-  --color-status-success: #10B981;
-  --color-status-info: #3B82F6;
-  --color-primary-fixed-dim: #adc7f7;
-  --color-slate-gray: #4A5568;
-  --color-on-background: #181c1e;
-  --color-tertiary: #321b00;
-  --color-primary-fixed: #d6e3ff;
-  --color-secondary: #875200;
-  --color-error: #ba1a1a;
-  --radius-default: 0.25rem;
-  --radius-lg: 0.5rem;
-  --radius-xl: 0.75rem;
-  --radius-full: 9999px;
-  --spacing-section-gap: 64px;
-  --spacing-stack-md: 16px;
-  --spacing-base: 4px;
-  --spacing-gutter-md: 16px;
-  --spacing-stack-lg: 32px;
-  --spacing-stack-sm: 8px;
-  --spacing-container-padding: 24px;
-  --font-headline-md: "Inter", sans-serif;
-  --font-body-md: "Inter", sans-serif;
-  --font-label-md: "Inter", sans-serif;
-  --font-title-lg: "Inter", sans-serif;
-  --font-headline-lg: "Inter", sans-serif;
-  --font-data-mono: "JetBrains Mono", sans-serif;
-  --font-display-lg: "Inter", sans-serif;
-  --font-body-sm: "Inter", sans-serif;
-  --font-body-lg: "Inter", sans-serif;
-  --font-display-lg-mobile: "Inter", sans-serif;
-  --text-headline-md: 24px;
-  --text-headline-md--line-height: 32px;
-  --text-headline-md--font-weight: 600;
-  --text-body-md: 16px;
-  --text-body-md--line-height: 24px;
-  --text-body-md--font-weight: 400;
-  --text-label-md: 14px;
-  --text-label-md--line-height: 20px;
-  --text-label-md--font-weight: 500;
-  --text-label-md--letter-spacing: 0.05em;
-  --text-title-lg: 20px;
-  --text-title-lg--line-height: 28px;
-  --text-title-lg--font-weight: 600;
-  --text-headline-lg: 30px;
-  --text-headline-lg--line-height: 36px;
-  --text-headline-lg--font-weight: 600;
-  --text-data-mono: 14px;
-  --text-data-mono--line-height: 20px;
-  --text-data-mono--font-weight: 500;
-  --text-display-lg: 48px;
-  --text-display-lg--line-height: 1.1;
-  --text-display-lg--font-weight: 700;
-  --text-display-lg--letter-spacing: -0.02em;
-  --text-body-sm: 14px;
-  --text-body-sm--line-height: 20px;
-  --text-body-sm--font-weight: 400;
-  --text-body-lg: 18px;
-  --text-body-lg--line-height: 28px;
-  --text-body-lg--font-weight: 400;
-  --text-display-lg-mobile: 32px;
-  --text-display-lg-mobile--line-height: 1.2;
-  --text-display-lg-mobile--font-weight: 700;
+  }
+  
+  /* Brand color for headings */
+  h1, h2, h3, h4, h5, h6 {
+    color: #102a6b !important;
+    font-weight: 700;
+  }
+
+  /* Make sure headings inside buttons, alerts or badges are white when they should be */
+  button h1, button h2, button h3, button h4, button h5, button h6,
+  .bg-indigo-600 h1, .bg-indigo-600 h2, .bg-indigo-600 h3,
+  .bg-indigo-650 h1, .bg-indigo-650 h2, .bg-indigo-650 h3,
+  .bg-indigo-700 h1, .bg-indigo-700 h2, .bg-indigo-700 h3,
+  .bg-red-500 h1, .bg-red-650 h2,
+  .bg-emerald-600 h1, .bg-emerald-600 h2 {
+    color: #ffffff !important;
+  }
+
+  /* Force white text class to be dark slate on light cards, except inside colored elements */
+  .text-white:not(
+    .bg-indigo-500, .bg-indigo-500 *,
+    .bg-indigo-600, .bg-indigo-600 *, 
+    .bg-indigo-650, .bg-indigo-650 *, 
+    .bg-indigo-700, .bg-indigo-700 *, 
+    .bg-emerald-600, .bg-emerald-600 *, 
+    .bg-emerald-700, .bg-emerald-700 *,
+    .bg-red-500, .bg-red-500 *,
+    .bg-red-600, .bg-red-600 *, 
+    .bg-orange-500, .bg-orange-500 *, 
+    .bg-orange-600, .bg-orange-600 *, 
+    .bg-indigo-900, .bg-indigo-900 *,
+    .bg-indigo-950, .bg-indigo-950 *, 
+    .badge, .badge *,
+    span.bg-emerald-600,
+    span.bg-indigo-650
+  ) {
+    color: #1e293b !important;
+  }
+
+  /* Input overrides for high contrast and modern light aesthetic */
+  input, select, textarea {
+    background-color: #ffffff !important;
+    color: #0f172a !important;
+    border: 1px solid #cbd5e1 !important;
+  }
+  input::placeholder, textarea::placeholder {
+    color: #94a3b8 !important;
+  }
+  input:focus, select:focus, textarea:focus {
+    border-color: #102a6b !important;
+    outline: none !important;
+    box-shadow: 0 0 0 2px rgba(16, 42, 107, 0.1) !important;
+  }
+  
+  /* Disable dark scrollbars and styling */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #f4f6fa;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+  }
+
+  /* Redesign hover effects globally */
+  
+  /* 1. All interactive texts, links, outline buttons, and icon buttons hover as Phenikaa Brand Orange (#f15a24) */
+  a:hover,
+  .hover\:text-white:hover,
+  .hover\:text-indigo-300:hover,
+  .hover\:text-indigo-400:hover,
+  .hover\:text-slate-200:hover,
+  .hover\:text-slate-300:hover,
+  .hover\:text-slate-350:hover,
+  .hover\:text-slate-400:hover {
+    color: #f15a24 !important;
+  }
+
+  /* Also force border hover for white outline buttons (e.g. "Thay đổi tìm kiếm") to turn Phenikaa Brand Orange */
+  .hover\:border-white:hover {
+    border-color: #f15a24 !important;
+  }
+  
+  /* 2. Deep blue buttons hover background changes to Phenikaa Brand Orange, text and icons MUST remain white */
+  .hover\:bg-indigo-600:hover, 
+  .hover\:bg-indigo-500:hover,
+  .bg-indigo-600:hover,
+  .bg-indigo-650:hover,
+  .bg-indigo-700:hover {
+    background-color: #f15a24 !important;
+    border-color: #f15a24 !important;
+    color: #ffffff !important;
+  }
+
+  /* Force white text/icons inside hovered deep blue buttons */
+  .hover\:bg-indigo-600:hover *, 
+  .hover\:bg-indigo-500:hover *,
+  .bg-indigo-600:hover *,
+  .bg-indigo-650:hover *,
+  .bg-indigo-700:hover * {
+    color: #ffffff !important;
+  }
 }

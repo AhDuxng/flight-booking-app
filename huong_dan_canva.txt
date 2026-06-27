@@ -1,0 +1,106 @@
+HƯỚNG DẪN ĐƯA SLIDE THUYẾT TRÌNH LÊN CANVA
+=============================================
+
+Dự án đã chuẩn bị sẵn 2 cách tốt nhất để bạn đưa slide thuyết trình này lên Canva một cách nhanh chóng và đẹp nhất.
+
+CÁCH 1: TỰ ĐỘNG SINH FILE POWERPOINT (.pptx) VÀ IMPORT LÊN CANVA (Khuyên dùng)
+-------------------------------------------------------------------------
+Tôi đã viết một mã nguồn Python tự động giúp thiết kế slide PowerPoint chuẩn 16:9 với đầy đủ màu sắc xanh đậm/cam Phenikaa và các sơ đồ hình khối bằng mã nguồn (hình hộp, cơ sở dữ liệu, quy trình đặt vé).
+
+Các bước thực hiện:
+1. Mở Terminal (Command Prompt hoặc PowerShell) tại thư mục dự án của bạn.
+2. Chạy lệnh sau để chạy script:
+   python generate_pptx.py
+   (Script sẽ tự động cài đặt thư viện 'python-pptx' nếu máy bạn chưa có và sinh ra file 'slide_thuyet_trinh.pptx').
+3. Truy cập vào Canva (https://www.canva.com/).
+4. Ở trang chủ Canva, nhấn vào nút "Tải lên" (Upload) ở góc trên bên phải hoặc kéo-thả file 'slide_thuyet_trinh.pptx' vào Canva.
+5. Canva sẽ tự động chuyển đổi slide PowerPoint thành một dự án thiết kế Canva hoàn chỉnh. Bạn có thể tự do thay đổi font chữ, hiệu ứng hoặc đổi mẫu thiết kế (template) chỉ bằng 1 cú click chuột!
+
+
+CÁCH 2: DÙNG TÍNH NĂNG "DOCS TO DECKS" (Tài liệu thành Slide) CỦA CANVA
+--------------------------------------------------------------------
+Canva hỗ trợ tính năng chuyển đổi trực tiếp văn bản dạng Markdown/Danh sách thành slide thuyết trình tự động.
+
+Các bước thực hiện:
+1. Truy cập Canva, chọn tạo mới một "Canva Docs" (Tài liệu Canva).
+2. Sao chép và dán nội dung văn bản phân cấp dưới đây vào tài liệu:
+
+--- NỘI DUNG SAO CHÉP ---
+
+# HỆ THỐNG ĐẶT VÉ MÁY BAY TRỰC TUYẾN
+## Báo cáo Kiến trúc & Giải pháp Công nghệ
+Nhóm 6: Phạm Anh Dũng - Trịnh Đức Anh - Phạm Thiên Ân
+Trường Đại học Phenikaa
+
+# Giới thiệu & Đặt vấn đề
+- Nhu cầu tra cứu, đặt giữ chỗ, thanh toán vé máy bay trực tuyến yêu cầu tính khả dụng cực cao và phản hồi tức thời.
+- Thách thức: Trùng lặp ghế (Race Condition) khi đặt cùng lúc.
+- Thách thức: Giữ ghế ảo đầu cơ gây lãng phí tài nguyên ghế.
+- Thách thức: Thay đổi giá vé liên tục cần bảo lưu đúng hóa đơn gốc.
+
+# Giải pháp tổng thể
+- Kiến trúc Decoupled: Tách độc lập Frontend (React) và Backend API (Express) để dễ bảo trì, nâng cấp.
+- Trải nghiệm tối ưu: Quy trình đặt vé tinh gọn qua 6 bước trực quan hóa sơ đồ chọn ghế.
+- Bảo vệ tầng dữ liệu: Giải quyết tranh chấp chỗ ngồi, mã giảm giá và bảo mật RLS trực tiếp tại Database.
+
+# Kiến trúc hệ thống API-First
+- React Client (Frontend): Gửi API Requests qua Axios kèm JWT Token, hiển thị giao diện mượt mà.
+- Node.js Express (Backend API): Chạy middleware bảo mật (Helmet, Rate Limiter) và trung chuyển request.
+- PostgreSQL (Supabase DB): Xử lý giao dịch đồng thời và áp dụng chính sách RLS.
+
+# Công nghệ sử dụng
+- Frontend: React 18, Vite, Tailwind CSS v4, shadcn/ui
+- Backend: Node.js, Express, Zod validation, Nodemailer
+- Database: Supabase (PostgreSQL), pg_cron
+- Thanh toán: VNPay Sandbox, MoMo, Stripe Sandbox
+- Bảo mật: JWT, bcryptjs, Helmet, Express-Rate-Limit
+
+# Thiết kế Cơ sở Dữ liệu (19 Bảng)
+- Toàn vẹn dữ liệu (ACID): Đảm bảo các giao dịch đặt chỗ và thanh toán diễn ra nhất quán.
+- Khóa chính ngẫu nhiên UUID: Chống lộ thứ tự ID và các tấn công dò quét dữ liệu.
+- Giá tiền chính xác: Dùng kiểu NUMERIC(12,2) triệt tiêu lỗi làm tròn dấu phẩy động.
+- Chỉ mục tối ưu: Index trên departure_time, origin, destination để đẩy nhanh tốc độ tìm kiếm.
+
+# Giải pháp 1: Chống Race Condition đặt ghế
+- Thách thức: Hai người cùng đặt một ghế trống tại cùng một thời điểm.
+- Giải pháp: Sử dụng hàm hold_seat(p_seat_id, p_booking_id) ở tầng database PostgreSQL.
+- Cơ chế khóa dòng: Sử dụng SELECT FOR UPDATE khóa dòng dữ liệu của ghế đó ngay lập tức khi bắt đầu giao dịch, từ chối giao dịch thứ hai.
+
+# Giải pháp 2: Tự động giải phóng ghế ảo
+- Giữ chỗ tạm thời: Ghế chuyển sang trạng thái held (giữ) trong 10 phút để người dùng thanh toán.
+- Quét ngầm: Postgres function release_expired_held_seats() kiểm tra thời gian cập nhật.
+- Tự động hóa qua pg_cron: Quét định kỳ mỗi 5 phút để hoàn trạng thái các ghế giữ quá hạn về lại available.
+
+# Giải pháp 3: Bảo mật RLS & Realtime
+- Row Level Security (RLS): Khách hàng chỉ được xem/sửa thông tin đặt chỗ của bản thân (user_id = auth.uid()).
+- Quyền Admin: Xác minh tự động ở tầng database bằng cách đọc metadata (role = 'admin') trong token JWT.
+- Đồng bộ Realtime: Lắng nghe sự kiện qua Supabase Realtime trên bảng bookings và notifications giúp cập nhật trạng thái tức thời.
+
+# Quy trình đặt vé của Khách hàng
+- Bước 1: Tìm chuyến bay khứ hồi / một chiều.
+- Bước 2: Điền thông tin hành khách (Họ tên, Passport, Ngày sinh).
+- Bước 3: Lựa chọn vị trí ghế trống trực quan trên sơ đồ tàu bay.
+- Bước 4: Chọn dịch vụ phụ trợ đi kèm (Hành lý ký gửi, Suất ăn).
+- Bước 5: Áp dụng mã giảm giá (giảm theo % hoặc số tiền cố định).
+- Bước 6: Thanh toán và nhận vé điện tử PDF.
+
+# Tính năng của Admin Dashboard
+- Quản lý danh mục: Cập nhật thông tin Sân bay, Tàu bay, Hãng bay, Chuyến bay.
+- Điều phối bay: Đổi trạng thái chuyến bay thành delayed hoặc cancelled.
+- An toàn tài chính: Cơ chế Price Snapshot lưu giá vé tại thời điểm mua, đối soát chuẩn xác kể cả khi đổi biểu giá.
+- Nhật ký hệ thống: admin_logs ghi vết toàn bộ hành động của admin.
+
+# Hiện trạng & Kế hoạch
+- Hiện trạng: Hoàn thiện 100% CSDL, RLS và Seed data mẫu. Thiết lập xong Boilerplate cho Frontend và Backend.
+- Giai đoạn 1: Lập trình RESTful API cho các module backend.
+- Giai đoạn 2: Lập trình giao diện chọn ghế và đặt vé React.
+- Giai đoạn 3: Tích hợp cổng thanh toán và load test.
+
+# CẢM ƠN THẦY CÔ VÀ CÁC BẠN ĐÃ LẮNG NGHE!
+## Q & A
+Nhóm 6 - Trường Đại học Phenikaa
+
+--- HẾT NỘI DUNG SAO CHÉP ---
+
+3. Sau khi dán xong, nhấn vào nút "Chuyển đổi" (Convert) ở góc trên bên phải của tài liệu Canva Docs.
+4. Chọn một giao diện mẫu phù hợp và nhấn "Tạo bài thuyết trình của tôi". Canva sẽ tự động phân tích tiêu đề và nội dung để dựng thành các trang slide cực đẹp!

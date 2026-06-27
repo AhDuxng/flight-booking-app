@@ -1,18 +1,32 @@
-import { supabase } from "../config/supabase.js";
+import jwt from 'jsonwebtoken';
+import env from '../config/env.js';
 
-export const authenticate = async (req, res, next) => {
-    const token = req.headers.authorization?.split(" ")[1];
+export const authMiddleware = (req, res, next) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ message: 'Authorization token missing or malformed' });
+  }
 
-    if (!token) {
-        return res.status(401).json({ error: `Missing authorization token`});
-    }
+  const token = authHeader.split(' ')[1];
 
-    const { data, error } = await supabase.auth.getUser(token);
-
-    if (error || !data.user) {
-        return res.status(401).json({ error: `Invalid authorization token`});
-    }
-
-    req.user = data.user;
+  try {
+    const decoded = jwt.verify(token, env.JWT_SECRET);
+    
+    // In Supabase, the user ID is 'sub'. 
+    // Role is expected in user_metadata based on schema RLS: (auth.jwt() -> 'user_metadata' ->> 'role')
+    const role = decoded.user_metadata?.role || decoded.app_metadata?.role || decoded.role || 'user';
+    
+    req.user = {
+      id: decoded.sub,
+      email: decoded.email,
+      role: role,
+      decoded
+    };
+    
     next();
+  } catch (error) {
+    return res.status(401).json({ message: 'Invalid or expired authorization token', error: error.message });
+  }
 };
+
+export default authMiddleware;

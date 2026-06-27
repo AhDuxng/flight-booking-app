@@ -1,0 +1,335 @@
+\documentclass{beamer}
+
+% Cấu hình ngôn ngữ tiếng Việt và font chữ chuẩn
+\usepackage[utf8]{inputenc}
+\usepackage[vietnamese]{babel}
+\usepackage{multicol}
+\usepackage{booktabs}
+\usepackage{amsmath}
+
+% Thư viện vẽ sơ đồ logic chuyên nghiệp TikZ
+\usepackage{tikz}
+\usetikzlibrary{shapes.geometric, arrows.meta, positioning, shadows}
+
+% Cấu hình Beamer Theme Madrid
+\usetheme{Madrid}
+\usecolortheme{default}
+
+% Định nghĩa hệ màu sắc chuẩn của Trường Đại học Phenikaa (Wow Aesthetics)
+\definecolor{pblue}{RGB}{24, 43, 97}       % Xanh dương đậm Phenikaa (Primary)
+\definecolor{porange}{RGB}{243, 112, 33}   % Cam Phenikaa (Secondary/Accent)
+\definecolor{accent}{RGB}{220, 38, 38}     % Đỏ cảnh báo (Alert)
+\definecolor{pgray}{RGB}{248, 250, 252}    % Xám nhạt nền bảng
+
+% Áp dụng bảng màu Phenikaa vào Beamer
+\setbeamercolor{palette primary}{bg=pblue, fg=white}
+\setbeamercolor{palette secondary}{bg=pblue!90, fg=white}
+\setbeamercolor{palette tertiary}{bg=pblue!80, fg=white}
+\setbeamercolor{palette quaternary}{bg=pblue, fg=white}
+
+\setbeamercolor{titlelike}{parent=palette primary}
+\setbeamercolor{structure}{fg=porange} % Màu cam dùng cho các bullets, ký hiệu cấu trúc
+
+% Định nghĩa giao diện Block (Hộp thoại) bo tròn có đổ bóng
+\setbeamertemplate{blocks}[rounded][shadow=true]
+\setbeamercolor{block title}{bg=pblue, fg=white}
+\setbeamercolor{block body}{bg=pblue!8, fg=pblue}
+\setbeamercolor{block title example}{bg=porange, fg=white}
+\setbeamercolor{block body example}{bg=porange!8, fg=pblue}
+\setbeamercolor{block title alerted}{bg=accent, fg=white}
+\setbeamercolor{block body alerted}{bg=accent!8, fg=pblue}
+
+% Tùy biến thanh footer hiển thị số trang sạch đẹp
+\setbeamertemplate{footline}[frame number]
+
+% Định nghĩa các style vẽ sơ đồ trong TikZ
+\tikzset{
+    box/.style={rectangle, rounded corners, minimum width=2cm, minimum height=0.8cm, text centered, draw=pblue, fill=pblue!10, line width=1pt, font=\scriptsize, drop shadow},
+    orangebox/.style={rectangle, rounded corners, minimum width=2.5cm, minimum height=0.8cm, text centered, draw=porange, fill=porange!10, line width=1pt, font=\scriptsize, drop shadow},
+    database/.style={cylinder, cylinder points=20, cylinder to aspect=0.3, draw=porange, fill=porange!10, minimum width=1.2cm, minimum height=1.4cm, shape border rotate=90, text centered, line width=1pt, font=\scriptsize, drop shadow},
+    decision/.style={diamond, aspect=2, draw=accent, fill=accent!10, line width=1pt, text centered, font=\scriptsize, drop shadow, inner sep=0pt},
+    circle_step/.style={circle, minimum size=1cm, draw=pblue, fill=pblue!10, line width=1pt, text centered, font=\scriptsize, drop shadow},
+    arrow/.style={-Latex, thick, draw=pblue},
+    arrow_orange/.style={-Latex, thick, draw=porange},
+    arrow_dashed/.style={-Latex, dashed, thick, draw=accent}
+}
+
+% Cấu hình thông tin báo cáo
+\title[Flight Booking App]{HỆ THỐNG ĐẶT VÉ MÁY BAY TRỰC TUYẾN}
+\subtitle{Báo cáo Kiến trúc \& Giải pháp Công nghệ}
+\author[Nhóm 6 - Phenikaa]{Nhóm 6 \\ Phạm Anh Dũng \quad Trịnh Đức Anh \quad Phạm Thiên Ân}
+\institute[Phenikaa]{Trường Đại học Phenikaa}
+\date{\today}
+
+\begin{document}
+
+% Slide 1: Trang tiêu đề với nền xanh đậm Phenikaa
+{
+  \setbeamercolor{background canvas}{bg=pblue}
+  \setbeamercolor{title}{fg=white}
+  \setbeamercolor{subtitle}{fg=porange}
+  \setbeamercolor{author}{fg=white!90}
+  \setbeamercolor{institute}{fg=white!70}
+  \setbeamercolor{date}{fg=white!70}
+  \begin{frame}
+    \titlepage
+  \end{frame}
+}
+
+% Slide 2: Mục lục
+\begin{frame}{Nội dung báo cáo}
+  \begin{multicols}{2}
+    \tableofcontents
+  \end{multicols}
+\end{frame}
+
+\section{Giới thiệu & Đặt vấn đề}
+
+% Slide 3: Bối cảnh & Thách thức
+\begin{frame}{Bối cảnh \& Thách thức của bài toán vé máy bay}
+  \begin{itemize}
+    \item \textbf{Sự tăng trưởng mạnh mẽ:} Nhu cầu tra cứu, đặt giữ chỗ, thanh toán vé máy bay trực tuyến luôn yêu cầu tính khả dụng cực cao và phản hồi tức thời.
+    \item \textbf{Các điểm nghẽn nghiệp vụ nghiêm trọng:}
+      \begin{itemize}
+        \item \alert{Race Condition đặt ghế:} Nhiều khách hàng đặt cùng một số ghế tại cùng một thời điểm.
+        \item \alert{Giữ ghế ảo đầu cơ:} Việc giữ chỗ quá lâu mà không thanh toán làm tê liệt hệ thống quản lý ghế của hãng bay.
+        \item \alert{Tính biến động giá:} Sự thay đổi giá vé hoặc dịch vụ bổ sung sau khi đã đặt hàng cần được bảo lưu đúng hóa đơn gốc.
+      \end{itemize}
+  \end{itemize}
+\end{frame}
+
+% Slide 4: Giải pháp tổng thể
+\begin{frame}{Mục tiêu \& Giải pháp tổng thể}
+  \begin{block}{1. Kiến trúc Decoupled rời rạc}
+    Tách biệt hoàn toàn Frontend (React client) và Backend (Node.js API) nhằm tối ưu hiệu năng phát triển và triển khai độc lập.
+  \end{block}
+  \begin{block}{2. Tối ưu trải nghiệm đặt chỗ}
+    Quy trình đặt vé tinh gọn qua 6 bước (Tìm chuyến $\rightarrow$ Nhập thông tin $\rightarrow$ Chọn ghế $\rightarrow$ Dịch vụ phụ trợ $\rightarrow$ Khuyến mãi $\rightarrow$ Thanh toán).
+  \end{block}
+  \begin{block}{3. Cơ chế bảo vệ từ cơ sở dữ liệu}
+    Xử lý giao dịch đồng thời và bảo mật phân quyền ở tầng Database chứ không chỉ ở tầng Application.
+  \end{block}
+\end{frame}
+
+\section{Kiến trúc & Công nghệ Sử dụng}
+
+% Slide 5: Sơ đồ Kiến trúc hệ thống (TikZ Diagram)
+\begin{frame}{Kiến trúc hệ thống API-First}
+  \begin{center}
+    \begin{tikzpicture}[node distance=1.5cm and 2cm, auto]
+      % Vẽ các nút
+      \node (client) [box] {React Client \\ (Frontend)};
+      \node (api) [box, right=of client] {Node.js Express \\ (Backend API)};
+      \node (auth) [box, below=1.2cm of api] {Supabase Auth \\ (JWT Validation)};
+      \node (db) [database, right=of api] {PostgreSQL \\ (Supabase DB)};
+      
+      % Vẽ các mũi tên logic
+      \draw [arrow] (client) to[bend left=15] node[above, font=\tiny] {API Requests (Axios)} (api);
+      \draw [arrow] (api) to[bend left=15] node[below, font=\tiny] {JSON Response} (client);
+      \draw [arrow_orange] (api) to[bend left=15] node[right, font=\tiny] {Verify Token} (auth);
+      \draw [arrow_orange] (auth) to[bend left=15] node[left, font=\tiny] {Claims/Metadata} (api);
+      \draw [arrow_orange] (api) to[bend left=15] node[above, font=\tiny] {Queries} (db);
+      \draw [arrow_orange] (db) to[bend left=15] node[below, font=\tiny] {Data} (api);
+    \end{tikzpicture}
+  \end{center}
+  \begin{block}{Nguyên lý hoạt động}
+    \begin{itemize}
+      \item Client gửi request kèm token JWT trong headers.
+      \item API Server xác thực với Auth, xử lý nghiệp vụ, rồi truy vấn dữ liệu từ DB.
+    \end{itemize}
+  \end{block}
+\end{frame}
+
+% Slide 6: Bảng công nghệ sử dụng
+\begin{frame}{Công nghệ cốt lõi trong hệ thống (Tech Stack)}
+  \begin{table}
+    \centering
+    \small
+    \begin{tabular}{lp{7.5cm}}
+      \toprule
+      \textbf{Lớp} & \textbf{Công nghệ \& Thư viện sử dụng} \\
+      \midrule
+      \textbf{Frontend} & React 18, Vite, Tailwind CSS v4, shadcn/ui, Lucide Icons \\
+      \textbf{Backend} & Node.js, Express, Zod (validation), Nodemailer (gửi vé) \\
+      \textbf{Database} & Supabase (PostgreSQL), pg\_cron (lập lịch ngầm) \\
+      \textbf{Thanh toán} & VNPay, MoMo, Stripe Sandbox \\
+      \textbf{Bảo mật} & JWT, bcryptjs, Helmet, Express-Rate-Limit \\
+      \bottomrule
+    \end{tabular}
+    \caption{Công nghệ sử dụng trong dự án}
+  \end{table}
+\end{frame}
+
+\section{Thiết kế Cơ sở Dữ liệu}
+
+% Slide 7: Nguyên tắc thiết kế dữ liệu
+\begin{frame}{Thiết kế Cơ sở dữ liệu: Nguyên tắc chuẩn hóa}
+  \begin{itemize}
+    \item \textbf{Cơ sở dữ liệu:} Sử dụng \textbf{PostgreSQL} trên nền tảng Supabase đảm bảo tính toàn vẹn dữ liệu (ACID).
+    \item \textbf{Khóa chính:} Tất cả các bảng sử dụng kiểu dữ liệu khóa ngẫu nhiên \textbf{UUID} (\texttt{gen\_random\_uuid()}) giúp chống lộ thứ tự ID và các tấn công dò quét dữ liệu.
+    \item \textbf{Độ chính xác tiền tệ:} Sử dụng kiểu \texttt{NUMERIC(12,2)} cho toàn bộ thông tin giá vé, hành lý, suất ăn nhằm triệt tiêu lỗi làm tròn của kiểu dữ liệu thực số dấu phẩy động.
+    \item \textbf{Chỉ mục tối ưu (Indexes):} Tạo các index cho các cột tìm kiếm thường xuyên như sân bay (\texttt{origin}, \texttt{destination}), thời gian khởi hành (\texttt{departure\_time}) và trạng thái vé.
+  \end{itemize}
+\end{frame}
+
+% Slide 8: Cấu trúc 19 Bảng Dữ Liệu
+\begin{frame}{Cấu trúc 19 bảng dữ liệu quan hệ}
+  \begin{multicols}{2}
+    \textbf{1. Phân hệ vận hành:}
+    \begin{itemize}
+      \item \texttt{airlines} (Hãng bay)
+      \item \texttt{airports} (Sân bay)
+      \item \texttt{aircrafts} (Tàu bay)
+      \item \texttt{flights} (Chuyến bay)
+    \end{itemize}
+    \textbf{2. Phân hệ đặt chỗ:}
+    \begin{itemize}
+      \item \texttt{users} (Hồ sơ khách)
+      \item \texttt{bookings} (Đặt chỗ)
+      \item \texttt{passengers} (Hành khách)
+      \item \texttt{seats} (Danh sách ghế)
+      \item \texttt{booking\_seats} (Ghế đặt)
+    \end{itemize}
+    
+    \columnbreak
+    
+    \textbf{3. Dịch vụ \& Khuyến mãi:}
+    \begin{itemize}
+      \item \texttt{baggage\_options} (Hành lý)
+      \item \texttt{booking\_baggage}
+      \item \texttt{meal\_options} (Suất ăn)
+      \item \texttt{booking\_meals}
+      \item \texttt{discounts} (Mã giảm giá)
+      \item \texttt{booking\_discounts}
+    \end{itemize}
+    \textbf{4. Hệ thống:}
+    \begin{itemize}
+      \item \texttt{payments} (Giao dịch)
+      \item \texttt{notifications} (Thông báo)
+      \item \texttt{reviews} (Đánh giá)
+      \item \texttt{admin\_logs} (Nhật ký)
+    \end{itemize}
+  \end{multicols}
+\end{frame}
+
+\section{Các giải pháp kỹ thuật nâng cao}
+
+% Slide 9: Chống race condition đặt ghế (Sơ đồ TikZ)
+\begin{frame}{Giải pháp 1: Chống Race Condition đặt ghế ngồi}
+  \begin{center}
+    \begin{tikzpicture}[node distance=1cm and 1cm, auto]
+      \node (u1) [box] {User 1: Đặt Ghế A};
+      \node (u2) [box, below=1cm of u1] {User 2: Đặt Ghế A};
+      \node (db) [decision, right=1.5cm of u1] {SELECT FOR UPDATE};
+      \node (success) [orangebox, right=1.5cm of db] {User 1: Thành công \\ (Ghế chuyển sang 'held')};
+      \node (blocked) [box, below=0.6cm of success] {User 2: Đợi / Blocked \\ (Lỗi 'Seat not available')};
+      
+      \draw [arrow] (u1) -- (db);
+      \draw [arrow] (u2) -| (db);
+      \draw [arrow_orange] (db) -- node[above, font=\tiny] {Thành công} (success);
+      \draw [arrow_dashed] (db) |- node[below, font=\tiny] {Thất bại} (blocked);
+    \end{tikzpicture}
+  \end{center}
+  \begin{block}{Giải pháp Database-level}
+    \begin{itemize}
+      \item Sử dụng hàm \texttt{hold\_seat(p\_seat\_id, p\_booking\_id)} ở tầng PostgreSQL.
+      \item Mệnh đề \textbf{\texttt{SELECT FOR UPDATE}} khóa dòng dữ liệu của ghế đó ngay lập tức khi bắt đầu giao dịch, loại bỏ hoàn toàn khả năng trùng ghế.
+    \end{itemize}
+  \end{block}
+\end{frame}
+
+% Slide 10: Tự động giải phóng ghế held
+\begin{frame}{Giải pháp 2: Tự động giải phóng ghế ảo}
+  \begin{block}{Giải quyết vấn đề giữ chỗ ảo}
+    Khi khách hàng click chọn ghế, ghế sẽ chuyển từ trạng thái \texttt{available} sang \texttt{held} (đang giữ chỗ) trong 10 phút để người dùng thực hiện thanh toán. Nếu quá 10 phút mà không hoàn thành, ghế phải tự động mở lại.
+  \end{block}
+  \begin{exampleblock}{Triển khai tự động bằng pg\_cron}
+    \begin{itemize}
+      \item Xây dựng Postgres function \texttt{release\_expired\_held\_seats()}.
+      \item Lập lịch chạy tự động bằng công cụ ngầm \textbf{\texttt{pg\_cron}} chạy định kỳ mỗi 5 phút một lần để hoàn trạng thái các ghế giữ quá hạn về lại \texttt{available}.
+    \end{itemize}
+  \end{exampleblock}
+\end{frame}
+
+% Slide 11: Bảo mật RLS & Realtime
+\begin{frame}{Giải pháp 3: Bảo mật RLS \& Đồng bộ Realtime}
+  \begin{block}{Phân quyền cấp dòng (Row Level Security - RLS)}
+    \begin{itemize}
+      \item Bật tính năng RLS trên toàn bộ 19 bảng. Khách hàng thông thường chỉ được xem/sửa thông tin đặt chỗ của bản thân thông qua kiểm tra đối sánh khóa người dùng: \texttt{user\_id = auth.uid()}.
+      \item Quyền Admin được xác định bằng cách kiểm tra thuộc tính \texttt{role} lưu trong metadata của chuỗi JWT token.
+    \end{itemize}
+  \end{block}
+  \begin{exampleblock}{Đồng bộ hóa Realtime}
+    Kích hoạt cơ chế lắng nghe sự kiện của Supabase Realtime trên bảng \texttt{bookings} và \texttt{notifications} để cập nhật trạng thái đơn vé và bắn thông báo trực tiếp lên giao diện người dùng mà không cần tải lại trang.
+  \end{exampleblock}
+\end{frame}
+
+\section{Tính năng Client & Admin}
+
+% Slide 12: Luồng đặt vé của Khách hàng (TikZ Flowchart)
+\begin{frame}{Hệ thống tính năng phía Khách hàng (User Client)}
+  \begin{center}
+    \begin{tikzpicture}[node distance=0.8cm, auto]
+      \node (s1) [circle_step] {1. Tìm};
+      \node (s2) [circle_step, right=0.3cm of s1] {2. Điền};
+      \node (s3) [circle_step, right=0.3cm of s2] {3. Ghế};
+      \node (s4) [circle_step, right=0.3cm of s3] {4. Phụ trợ};
+      \node (s5) [circle_step, right=0.3cm of s4] {5. Áp mã};
+      \node (s6) [circle_step, right=0.3cm of s5] {6. Trả};
+      
+      \draw [arrow] (s1) -- (s2);
+      \draw [arrow] (s2) -- (s3);
+      \draw [arrow] (s3) -- (s4);
+      \draw [arrow] (s4) -- (s5);
+      \draw [arrow] (s5) -- (s6);
+    \end{tikzpicture}
+  \end{center}
+  \begin{itemize}
+    \item \textbf{Tiện ích đầy đủ:} Hỗ trợ tìm chuyến khứ hồi, sơ đồ chọn vị trí ghế theo hạng vé (Economy, Business, First), các dịch vụ đi kèm như chọn suất ăn và chọn các mức hành lý ký gửi nâng cao.
+  \end{itemize}
+\end{frame}
+
+% Slide 13: Tính năng của Admin
+\begin{frame}{Hệ thống tính năng quản trị (Admin Dashboard)}
+  \begin{itemize}
+    \item \textbf{Quản lý danh mục:} Cập nhật, thêm mới thông tin Sân bay, Tàu bay, Hãng hàng không, Chuyến bay.
+    \item \textbf{Kiểm soát trạng thái chuyến bay:} Cho phép điều chỉnh giờ bay, cập nhật trạng thái hoãn (\texttt{delayed}) hoặc hủy chuyến (\texttt{cancelled}).
+    \item \textbf{Bảo toàn doanh thu bằng Price Snapshot:} Lưu lại giá vé, giá hành lý và giá suất ăn tại thời điểm khách hàng mua vé vào bảng trung gian. Khi danh mục tăng giá, doanh thu của các đơn hàng cũ vẫn được đối soát chuẩn xác.
+    \item \textbf{Giám sát hệ thống:} Ghi nhật ký thao tác dữ liệu nhạy cảm (\texttt{admin\_logs}) để truy vết kiểm tra lỗi.
+  \end{itemize}
+\end{frame}
+
+\section{Hiện trạng & Kế hoạch phát triển}
+
+% Slide 14: Hiện trạng & Kế hoạch
+\begin{frame}{Hiện trạng dự án \& Định hướng phát triển}
+  \begin{block}{Các hạng mục đã hoàn thành}
+    \begin{itemize}
+      \item Hoàn thành 100\% thiết kế cơ sở dữ liệu quan hệ chặt chẽ, an toàn RLS.
+      \item Xây dựng xong seed data đầy đủ các hãng bay nội địa, sân bay và dữ liệu chuyến bay mẫu.
+      \item Thiết lập cấu trúc khung dự án (Boilerplate) cho cả Frontend và Backend.
+    \end{itemize}
+  \end{block}
+  \begin{block}{Kế hoạch trong giai đoạn tiếp theo}
+    \begin{itemize}
+      \item \textbf{Giai đoạn 1:} Phát triển logic xử lý RESTful API của các module Backend.
+      \item \textbf{Giai đoạn 2:} Thiết kế giao diện đặt vé, chọn ghế trực quan trên Frontend.
+      \item \textbf{Giai đoạn 3:} Tích hợp thanh toán Sandbox VNPAY/MoMo và tiến hành Load Test hệ thống.
+    \end{itemize}
+  \end{block}
+\end{frame}
+
+% Slide 15: Kết thúc với màu nền Phenikaa Blue chủ đạo
+{
+  \setbeamercolor{background canvas}{bg=pblue}
+  \begin{frame}
+    \centering
+    \color{white}
+    \Huge \textbf{CẢM ƠN THẦY CÔ VÀ CÁC BẠN\\ĐÃ LẮNG NGHE!}
+    
+    \vspace{1.5cm}
+    \Large \color{porange} Q \& A
+  \end{frame}
+}
+
+\end{document}
