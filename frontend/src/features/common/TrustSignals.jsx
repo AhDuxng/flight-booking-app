@@ -1,21 +1,22 @@
+import { BadgePercent, Headphones, ShieldCheck } from "lucide-react";
 import TrustSignalCard from "./TrustSignalCard";
 
 const TRUST_SIGNALS = [
   {
     id: "ts-1",
-    icon: "savings",
+    icon: BadgePercent,
     title: "Giá tốt nhất",
     description: "Luôn đảm bảo mức giá cạnh tranh cùng nhiều ưu đãi độc quyền cho thành viên.",
   },
   {
     id: "ts-2",
-    icon: "support_agent",
+    icon: Headphones,
     title: "Hỗ trợ 24/7",
     description: "Đội ngũ chuyên viên chăm sóc khách hàng luôn sẵn sàng giải đáp mọi thắc mắc của bạn.",
   },
   {
     id: "ts-3",
-    icon: "verified_user",
+    icon: ShieldCheck,
     title: "Thanh toán an toàn",
     description: "Hệ thống bảo mật tối tân, hỗ trợ đa dạng phương thức thanh toán tại Việt Nam.",
   },

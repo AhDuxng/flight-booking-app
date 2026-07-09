@@ -1,4 +1,7 @@
 import { Link, NavLink } from "react-router-dom";
+import { Bell } from "lucide-react";
+import avatar from "@/assets/images/avatar.jpg";
+import logo from "@/assets/images/logo.png";
 import { cn } from "@/lib/utils";
 
 const navItems = [
@@ -20,7 +23,9 @@ export default function TopNavBar() {
             <img
               alt="VietFly Logo"
               className="h-10 w-10 md:h-12 md:w-12 object-contain"
-              src="/src/assets/images/logo.png"
+              height="48"
+              src={logo}
+              width="48"
             />
             <span>VietFly</span>
           </Link>
@@ -45,10 +50,12 @@ export default function TopNavBar() {
           ))}
         </div>
         <div className="flex items-center gap-4">
-          <button className="p-2 rounded-full hover:bg-surface-variant transition-colors text-primary dark:text-inverse-primary">
-            <span className="material-symbols-outlined" data-icon="notifications">
-              notifications
-            </span>
+          <button
+            aria-label="Thông báo"
+            className="flex h-10 w-10 items-center justify-center rounded-lg text-primary transition-colors hover:bg-surface-variant dark:text-inverse-primary"
+            type="button"
+          >
+            <Bell className="h-5 w-5" />
           </button>
           <Link
             className="w-8 h-8 rounded-full bg-primary-container flex items-center justify-center overflow-hidden border border-outline-variant"
@@ -57,7 +64,9 @@ export default function TopNavBar() {
             <img
               alt="User profile avatar"
               className="w-full h-full object-cover"
-              src="/src/assets/images/avatar.jpg"
+              height="32"
+              src={avatar}
+              width="32"
             />
           </Link>
         </div>
