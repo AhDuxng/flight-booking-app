@@ -1,4 +1,8 @@
+import { ArrowRight } from "lucide-react";
 import RouteCard from "./RouteCard";
+import danangImage from "@/assets/images/home/danang.jpg";
+import nhatrangImage from "@/assets/images/home/nhatrang.jpg";
+import phuquocImage from "@/assets/images/home/phuquoc.jpg";
 
 const POPULAR_ROUTES = [
   {
@@ -6,21 +10,21 @@ const POPULAR_ROUTES = [
     origin: "TP. HCM",
     destination: "Đà Nẵng",
     price: "890.000",
-    image: "/src/assets/images/home/danang.jpg",
+    image: danangImage,
   },
   {
     id: "route-2",
     origin: "Hà Nội",
     destination: "Phú Quốc",
     price: "1.250.000",
-    image: "/src/assets/images/home/phuquoc.jpg",
+    image: phuquocImage,
   },
   {
     id: "route-3",
     origin: "TP. HCM",
     destination: "Nha Trang",
     price: "750.000",
-    image: "/src/assets/images/home/nhatrang.jpg",
+    image: nhatrangImage,
   },
 ];
 
@@ -37,7 +41,7 @@ export default function PopularRoutes() {
           </p>
         </div>
         <button className="hidden md:flex text-primary font-label-md text-label-md items-center gap-1 cursor-pointer">
-          Xem tất cả <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
+          Xem tất cả <ArrowRight className="h-[18px] w-[18px]" />
         </button>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-stack-lg">

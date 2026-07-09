@@ -1,3 +1,13 @@
+import { Moon, Sunrise, Sun, Sunset } from "lucide-react";
+import { cn } from "@/lib/utils";
+
+const timeOptions = [
+  { id: "early-morning", label: "Sáng sớm", time: "00:00 - 06:00", icon: Sunrise },
+  { id: "morning", label: "Sáng", time: "06:00 - 12:00", icon: Sun },
+  { id: "afternoon", label: "Chiều", time: "12:00 - 18:00", icon: Sunset },
+  { id: "evening", label: "Tối", time: "18:00 - 24:00", icon: Moon },
+];
+
 export default function FlightFilter({ filters, onFilterChange }) {
   const handleAirlineChange = (airline) => {
     const newAirlines = filters.airlines.includes(airline)
@@ -16,13 +26,6 @@ export default function FlightFilter({ filters, onFilterChange }) {
       : [...filters.times, timeId];
     onFilterChange({ ...filters, times: newTimes });
   };
-
-  const TIMES = [
-    { id: "early-morning", label: "Sáng sớm", time: "00:00 - 06:00", icon: "wb_twilight" },
-    { id: "morning", label: "Sáng", time: "06:00 - 12:00", icon: "light_mode" },
-    { id: "afternoon", label: "Chiều", time: "12:00 - 18:00", icon: "sunny" },
-    { id: "evening", label: "Tối", time: "18:00 - 24:00", icon: "dark_mode" },
-  ];
 
   return (
     <aside className="lg:col-span-3 flex flex-col gap-stack-lg">
@@ -76,21 +79,21 @@ export default function FlightFilter({ filters, onFilterChange }) {
             Giờ khởi hành
           </h3>
           <div className="grid grid-cols-2 gap-stack-sm mt-stack-sm">
-            {TIMES.map((timeOption) => {
+            {timeOptions.map((timeOption) => {
               const isActive = filters.times.includes(timeOption.id);
+              const Icon = timeOption.icon;
+
               return (
                 <button
                   key={timeOption.id}
                   onClick={() => handleTimeChange(timeOption.id)}
-                  className={`border rounded p-stack-sm text-center transition-colors ${
-                    isActive
-                      ? "border-primary bg-primary-fixed"
-                      : "border-outline-variant hover:border-primary hover:bg-primary-fixed"
-                  }`}
+                  className={cn(
+                    "rounded border p-stack-sm text-center transition-colors",
+                    isActive ? "border-primary bg-primary-fixed" : "border-outline-variant hover:border-primary hover:bg-primary-fixed",
+                  )}
+                  type="button"
                 >
-                  <span className={`block material-symbols-outlined ${isActive ? "text-primary" : "text-outline"}`}>
-                    {timeOption.icon}
-                  </span>
+                  <Icon className={cn("mx-auto h-5 w-5", isActive ? "text-primary" : "text-outline")} />
                   <span className="block font-body-sm text-body-sm mt-1">
                     {timeOption.label}
                   </span>

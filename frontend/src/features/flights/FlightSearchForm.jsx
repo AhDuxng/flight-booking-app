@@ -1,8 +1,13 @@
-import { Button } from "@/components/ui/button";
-import LocationDropdown from "./LocationDropdown";
-import DateDropdown from "./DateDropdown";
-import { useFlightSearch } from "./useFlightSearch";
 import { useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { ArrowLeftRight, Armchair, PlaneLanding, PlaneTakeoff, Search, UsersRound } from "lucide-react";
+import Button from "@/components/common/Button";
+import SegmentedControl from "@/components/common/SegmentedControl";
+import Select from "@/components/common/Select";
+import DateDropdown from "./DateDropdown";
+import LocationDropdown from "./LocationDropdown";
+import { useFlightSearch } from "./useFlightSearch";
+import { CABIN_OPTIONS, FLIGHT_SCOPES, FLIGHT_TYPES, PASSENGER_OPTIONS } from "./flightConstants";
 
 export default function FlightSearchForm() {
   const navigate = useNavigate();
@@ -15,53 +20,23 @@ export default function FlightSearchForm() {
   } = useFlightSearch();
 
   return (
-    <div className="bg-surface-container-lowest rounded-xl shadow-lg border border-outline-variant p-stack-lg max-w-5xl mx-auto transform translate-y-8 md:translate-y-16">
-      <div className="flex flex-col sm:flex-row justify-between border-b border-outline-variant mb-stack-md gap-2 sm:gap-0">
-        <div className="flex">
-          <button 
-            className={`px-6 py-3 text-label-md font-label-md transition-colors ${flightScope === "domestic" ? "text-primary border-b-2 border-primary font-bold" : "text-on-surface-variant hover:text-primary"}`}
-            onClick={() => handleScopeChange("domestic")}
-            type="button"
-          >
-            Trong nước
-          </button>
-          <button 
-            className={`px-6 py-3 text-label-md font-label-md transition-colors ${flightScope === "international" ? "text-primary border-b-2 border-primary font-bold" : "text-on-surface-variant hover:text-primary"}`}
-            onClick={() => handleScopeChange("international")}
-            type="button"
-          >
-            Ngoài nước
-          </button>
-        </div>
-        <div className="flex">
-          <button 
-            className={`px-6 py-3 text-label-md font-label-md transition-colors ${flightType === "round-trip" ? "text-primary border-b-2 border-primary font-bold" : "text-on-surface-variant hover:text-primary"}`}
-            onClick={() => handleTypeChange("round-trip")}
-            type="button"
-          >
-            Khứ hồi
-          </button>
-          <button 
-            className={`px-6 py-3 text-label-md font-label-md transition-colors ${flightType === "one-way" ? "text-primary border-b-2 border-primary font-bold" : "text-on-surface-variant hover:text-primary"}`}
-            onClick={() => handleTypeChange("one-way")}
-            type="button"
-          >
-            Một chiều
-          </button>
-        </div>
+    <div className="mx-auto max-w-5xl translate-y-8 rounded-lg border border-outline-variant bg-surface-container-lowest p-stack-lg shadow-lg md:translate-y-16">
+      <div className="mb-stack-md flex flex-col justify-between gap-3 border-b border-outline-variant pb-stack-md sm:flex-row">
+        <SegmentedControl options={FLIGHT_SCOPES} value={flightScope} onChange={handleScopeChange} />
+        <SegmentedControl options={FLIGHT_TYPES} value={flightType} onChange={handleTypeChange} />
       </div>
       
       <form 
         className="grid grid-cols-1 md:grid-cols-12 gap-gutter-md"
-        onSubmit={(e) => {
-          e.preventDefault();
+        onSubmit={(event) => {
+          event.preventDefault();
           navigate("/flights");
         }}
       >
         <div className="md:col-span-3">
           <LocationDropdown 
             label="Từ" 
-            icon="flight_takeoff" 
+            icon={PlaneTakeoff}
             locations={locations}
             defaultValue={{ code: "SGN", name: "TP. Hồ Chí Minh (Tân Sơn Nhất)" }} 
           />
@@ -69,19 +44,18 @@ export default function FlightSearchForm() {
         
         <div className="hidden md:flex md:col-span-1 items-center justify-center mt-6">
           <button
-            className="w-8 h-8 rounded-full bg-surface-variant flex items-center justify-center text-primary hover:bg-surface-container-high transition-colors"
+            aria-label="Đổi điểm đi và điểm đến"
+            className="flex h-9 w-9 items-center justify-center rounded-lg bg-surface-variant text-primary transition-colors hover:bg-surface-container-high"
             type="button"
           >
-            <span className="material-symbols-outlined text-[20px]">
-              swap_horiz
-            </span>
+            <ArrowLeftRight className="h-5 w-5" />
           </button>
         </div>
         
         <div className="md:col-span-3">
           <LocationDropdown 
             label="Đến" 
-            icon="flight_land" 
+            icon={PlaneLanding}
             locations={locations}
             defaultValue={{ code: "HAN", name: "Hà Nội (Nội Bài)" }} 
           />
@@ -97,52 +71,35 @@ export default function FlightSearchForm() {
         </div>
         
         <div className="md:col-span-8 grid grid-cols-2 gap-gutter-md mt-stack-sm md:mt-0">
-          <div>
-            <label className="block text-label-md font-label-md text-on-surface-variant mb-base">
-              Hành khách
-            </label>
-            <div className="relative">
-              <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline z-10 pointer-events-none">
-                group
-              </span>
-              <select className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm pl-10 pr-8 text-body-md font-body-md text-on-surface focus:ring-primary/20 focus:border-primary appearance-none cursor-pointer">
-                <option>1 Người lớn, 0 Trẻ em</option>
-                <option>2 Người lớn, 0 Trẻ em</option>
-                <option>2 Người lớn, 1 Trẻ em</option>
-              </select>
-              <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline pointer-events-none">
-                arrow_drop_down
-              </span>
-            </div>
-          </div>
-          <div>
-            <label className="block text-label-md font-label-md text-on-surface-variant mb-base">
-              Hạng ghế
-            </label>
-            <div className="relative">
-              <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline z-10 pointer-events-none">
-                airline_seat_recline_normal
-              </span>
-              <select className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm pl-10 pr-8 text-body-md font-body-md text-on-surface focus:ring-primary/20 focus:border-primary appearance-none cursor-pointer">
-                <option>Phổ thông</option>
-                <option>Thương gia</option>
-              </select>
-              <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline pointer-events-none">
-                arrow_drop_down
-              </span>
-            </div>
-          </div>
+          <IconSelect icon={UsersRound} label="Hành khách" options={PASSENGER_OPTIONS} />
+          <IconSelect icon={Armchair} label="Hạng ghế" options={CABIN_OPTIONS} />
         </div>
         <div className="md:col-span-4 mt-stack-sm md:mt-0 flex items-end">
           <Button
             type="submit"
-            className="w-full bg-secondary-container hover:bg-secondary-fixed-dim text-on-surface font-bold text-title-lg font-title-lg py-3 px-6 h-auto shadow-sm hover:shadow-md transition-all flex items-center justify-center gap-2 mt-auto"
+            className="mt-auto w-full"
+            icon={Search}
+            size="lg"
+            variant="warning"
           >
-            <span className="material-symbols-outlined font-bold">search</span>
-            Tìm Chuyến Bay
+            Tìm chuyến bay
           </Button>
         </div>
       </form>
+    </div>
+  );
+}
+
+function IconSelect({ icon: Icon, label, options }) {
+  const [value, setValue] = useState(options[0].value);
+
+  return (
+    <div>
+      <label className="mb-base block text-label-md font-label-md text-on-surface-variant">{label}</label>
+      <div className="relative">
+        <Icon className="pointer-events-none absolute left-3 top-1/2 z-10 h-5 w-5 -translate-y-1/2 text-outline" />
+        <Select className="h-11 w-full pl-10 sm:min-w-0" label={label} options={options} value={value} onChange={setValue} />
+      </div>
     </div>
   );
 }

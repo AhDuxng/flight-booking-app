@@ -1,3 +1,6 @@
+import { Plane } from "lucide-react";
+import Button from "@/components/common/Button";
+
 export default function FlightCard({ flight, onSelect }) {
   const formattedPrice = new Intl.NumberFormat("vi-VN").format(flight.price);
 
@@ -26,9 +29,7 @@ export default function FlightCard({ flight, onSelect }) {
             </div>
             <div className="w-full relative flex items-center justify-center">
               <div className="w-full h-px bg-outline-variant absolute"></div>
-              <span className="material-symbols-outlined text-outline relative bg-surface-container-lowest px-1 transform rotate-90 text-sm">
-                flight
-              </span>
+              <Plane className="relative h-4 w-4 rotate-90 bg-surface-container-lowest px-1 text-outline" />
             </div>
             <div className="font-body-sm text-body-sm text-primary mt-1">
               {flight.type}
@@ -56,12 +57,14 @@ export default function FlightCard({ flight, onSelect }) {
         ) : (
           <div className="mb-stack-md h-6"></div>
         )}
-        <button
+        <Button
           onClick={() => onSelect && onSelect(flight)}
-          className="w-full bg-[#f97316] hover:bg-[#ea580c] text-deep-navy font-label-md text-label-md font-bold py-3 px-6 rounded transition-colors shadow-sm"
+          className="w-full"
+          type="button"
+          variant="warning"
         >
           Chọn chuyến bay
-        </button>
+        </Button>
       </div>
     </div>
   );

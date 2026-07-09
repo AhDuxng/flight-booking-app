@@ -1,8 +1,8 @@
 import { useState, useRef } from "react";
-import { Input } from "@/components/ui/input";
+import Input from "@/components/common/Input";
 import { useClickOutside } from "@/hooks/useClickOutside";
 
-export default function LocationDropdown({ label, icon, locations, defaultValue }) {
+export default function LocationDropdown({ label, icon: Icon, locations, defaultValue }) {
   const [isOpen, setIsOpen] = useState(false);
   const [selected, setSelected] = useState(defaultValue);
   const [searchQuery, setSearchQuery] = useState(
@@ -30,30 +30,24 @@ export default function LocationDropdown({ label, icon, locations, defaultValue 
 
   return (
     <div className="relative" ref={dropdownRef}>
-      <label className="block text-label-md font-label-md text-on-surface-variant mb-base">
-        {label}
-      </label>
-      <div className="relative">
-        <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline z-10 pointer-events-none">
-          {icon}
-        </span>
-        <Input
-          className="w-full pl-10 pr-3 py-2 text-body-md font-body-md text-on-surface focus-visible:ring-primary/20 focus-visible:border-primary transition-all"
-          placeholder="Tìm hoặc chọn địa điểm"
-          value={searchQuery}
-          onChange={(e) => {
-            setSearchQuery(e.target.value);
-            setIsOpen(true);
-          }}
-          onFocus={() => {
-            setSearchQuery("");
-            setIsOpen(true);
-          }}
-        />
-      </div>
+      <Input
+        className="h-11"
+        icon={Icon}
+        label={label}
+        placeholder="Tìm hoặc chọn địa điểm"
+        value={searchQuery}
+        onChange={(event) => {
+          setSearchQuery(event.target.value);
+          setIsOpen(true);
+        }}
+        onFocus={() => {
+          setSearchQuery("");
+          setIsOpen(true);
+        }}
+      />
       
       {isOpen && (
-        <div className="absolute top-full left-0 w-full mt-1 bg-surface-container-lowest border border-outline-variant rounded-md shadow-lg z-50 max-h-60 overflow-y-auto">
+        <div className="absolute left-0 top-full z-50 mt-1 max-h-60 w-full overflow-y-auto rounded-lg border border-outline-variant bg-surface-container-lowest shadow-lg">
           {filteredLocations.length > 0 ? (
             filteredLocations.map((loc) => (
               <div
