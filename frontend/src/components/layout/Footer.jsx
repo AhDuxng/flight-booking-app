@@ -1,9 +1,37 @@
 import { Link } from "react-router-dom";
+import logo from "@/assets/images/logo.png";
+
+const footerGroups = [
+  {
+    title: "Khám phá",
+    links: [
+      { label: "Tìm chuyến bay", to: "/" },
+      { label: "Khuyến mãi", to: "/promotions" },
+      { label: "Đặt chỗ của tôi", to: "/my-bookings" },
+    ],
+  },
+  {
+    title: "Hỗ trợ",
+    links: [
+      { label: "Trung tâm hỗ trợ", to: "/support" },
+      { label: "Câu hỏi thường gặp", to: "/support#faq" },
+      { label: "Trợ lý VietFly AI", to: "/chatbot" },
+    ],
+  },
+  {
+    title: "Tài khoản",
+    links: [
+      { label: "Đăng nhập", to: "/login" },
+      { label: "Đăng ký", to: "/register" },
+      { label: "Hồ sơ của tôi", to: "/profile" },
+    ],
+  },
+];
 
 export default function Footer() {
   return (
-    <footer className="w-full mt-section-gap bg-primary dark:bg-surface-container-lowest border-t border-outline-variant">
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-stack-lg px-container-padding py-stack-lg max-w-7xl mx-auto">
+    <footer className="mt-section-gap w-full border-t border-outline-variant bg-primary dark:bg-surface-container-lowest">
+      <div className="mx-auto grid max-w-7xl grid-cols-1 gap-stack-lg px-container-padding py-stack-lg sm:grid-cols-2 lg:grid-cols-4">
         <div className="flex flex-col gap-4">
           <Link
             to="/"
@@ -12,50 +40,30 @@ export default function Footer() {
             <img
               alt="VietFly Logo"
               className="h-10 w-10 md:h-12 md:w-12 object-contain"
-              src="/src/assets/images/logo.png"
+              height="48"
+              src={logo}
+              width="48"
             />
             <span>VietFly</span>
           </Link>
           <p className="text-body-sm font-body-sm text-on-primary-container dark:text-on-surface-variant">
-            © 2024 VietFly Aviation. All rights reserved.
+            © {new Date().getFullYear()} VietFly Aviation. Đồng hành trên mọi hành trình.
           </p>
         </div>
-        <div className="flex flex-col gap-3">
-          <Link
-            to="/about-us"
-            className="text-label-md font-label-md text-on-primary-container dark:text-on-surface-variant hover:text-secondary-fixed-dim dark:hover:text-secondary transition-colors"
-          >
-            About us
-          </Link>
-          <Link
-            to="/destinations"
-            className="text-label-md font-label-md text-on-primary-container dark:text-on-surface-variant hover:text-secondary-fixed-dim dark:hover:text-secondary transition-colors"
-          >
-            Destinations
-          </Link>
-        </div>
-        <div className="flex flex-col gap-3">
-          <Link
-            to="/faq"
-            className="text-label-md font-label-md text-on-primary-container dark:text-on-surface-variant hover:text-secondary-fixed-dim dark:hover:text-secondary transition-colors"
-          >
-            FAQ
-          </Link>
-          <Link
-            to="/contact-us"
-            className="text-label-md font-label-md text-on-primary-container dark:text-on-surface-variant hover:text-secondary-fixed-dim dark:hover:text-secondary transition-colors"
-          >
-            Contact Us
-          </Link>
-        </div>
-        <div className="flex flex-col gap-3">
-          <Link
-            to="/privacy-policy"
-            className="text-label-md font-label-md text-on-primary-container dark:text-on-surface-variant hover:text-secondary-fixed-dim dark:hover:text-secondary transition-colors"
-          >
-            Privacy Policy
-          </Link>
-        </div>
+        {footerGroups.map((group) => (
+          <div className="flex flex-col gap-3" key={group.title}>
+            <h2 className="text-label-md font-semibold text-on-primary dark:text-primary">{group.title}</h2>
+            {group.links.map((link) => (
+              <Link
+                className="text-label-md text-on-primary-container transition-colors hover:text-secondary-fixed-dim dark:text-on-surface-variant dark:hover:text-secondary"
+                key={link.to}
+                to={link.to}
+              >
+                {link.label}
+              </Link>
+            ))}
+          </div>
+        ))}
       </div>
     </footer>
   );

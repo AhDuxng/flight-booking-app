@@ -11,6 +11,7 @@ const LoginPage = lazy(() => import("@/pages/public/LoginPage"));
 const RegisterPage = lazy(() => import("@/pages/public/RegisterPage"));
 const SupportPage = lazy(() => import("@/pages/public/SupportPage"));
 const PromotionsPage = lazy(() => import("@/pages/public/PromotionsPage"));
+const ChatbotPage = lazy(() => import("@/pages/public/ChatbotPage"));
 const BookingPage = lazy(() => import("@/pages/user/BookingPage"));
 const SeatSelectionPage = lazy(() => import("@/pages/user/SeatSelectionPage"));
 const PaymentPage = lazy(() => import("@/pages/user/PaymentPage"));
@@ -58,10 +59,12 @@ const router = createBrowserRouter([
   },
   { path: "/login", element: withSuspense(LoginPage) },
   { path: "/register", element: withSuspense(RegisterPage) },
+  { path: "/chatbot", element: withSuspense(ChatbotPage) },
   { path: "/payment", element: withSuspense(PaymentPage) },
   { path: "/payment/:bookingId", element: withSuspense(PaymentPage) },
   { path: "/payment/result", element: withSuspense(PaymentResultPage) },
   { path: "/payment-result", element: <Navigate replace to="/payment/result" /> },
+  { path: "/my-bookings/:bookingId", element: withSuspense(BookingDetailPage) },
   {
     path: "/admin",
     element: <AdminLayout />,

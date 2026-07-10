@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import {
   ChevronDown,
   CreditCard,
@@ -152,7 +153,7 @@ export default function SupportCenterFeature() {
         </div>
       </section>
 
-      <section className="bg-surface-container-low px-container-padding py-section-gap">
+      <section className="scroll-mt-24 bg-surface-container-low px-container-padding py-section-gap" id="faq">
         <div className="mx-auto max-w-3xl">
           <div className="mb-stack-lg text-center">
             <h2 className="mb-base text-headline-lg font-headline-lg text-primary">Câu hỏi thường gặp</h2>
@@ -219,20 +220,20 @@ export default function SupportCenterFeature() {
               </div>
             </div>
             <div className="flex w-full flex-col gap-stack-sm sm:flex-row md:w-auto">
-              <button
+              <Link
                 className="inline-flex h-12 items-center justify-center gap-2 rounded-lg bg-secondary-container px-6 text-label-md font-label-md text-on-secondary-container shadow-sm transition-colors hover:bg-secondary-fixed"
-                type="button"
+                to="/chatbot"
               >
                 <MessageCircle className="h-4 w-4" />
                 Chat ngay
-              </button>
-              <button
+              </Link>
+              <a
                 className="inline-flex h-12 items-center justify-center gap-2 rounded-lg border border-primary-fixed/40 px-6 text-label-md font-label-md text-on-primary transition-colors hover:bg-white/10"
-                type="button"
+                href="mailto:support@vietfly.com?subject=Yêu cầu hỗ trợ VietFly"
               >
                 <FilePenLine className="h-4 w-4" />
                 Gửi yêu cầu
-              </button>
+              </a>
             </div>
           </div>
         </div>
