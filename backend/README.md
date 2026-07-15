@@ -85,10 +85,10 @@ Chạy schema và seed trước, sau đó chạy migration để có luồng boo
 ```bash
 psql $DATABASE_URL -f database/schema.sql
 psql $DATABASE_URL -f database/seed.sql
-psql $DATABASE_URL -f ../supabase/migrations/20260714120000_secure_booking_and_payment.sql
-psql $DATABASE_URL -f ../supabase/migrations/20260715140000_add_international_flights.sql
-psql $DATABASE_URL -f ../supabase/migrations/20260715230000_harden_inventory_search_and_saga.sql
-psql $DATABASE_URL -f ../supabase/migrations/20260716000000_add_private_avatar_storage.sql
+psql $DATABASE_URL -f database/migrations/20260714120000_secure_booking_and_payment.sql
+psql $DATABASE_URL -f database/migrations/20260715140000_add_international_flights.sql
+psql $DATABASE_URL -f database/migrations/20260715230000_harden_inventory_search_and_saga.sql
+psql $DATABASE_URL -f database/migrations/20260716000000_add_private_avatar_storage.sql
 ```
 
 Migration phải được chạy trước khi gọi các endpoint tạo chuyến bay, giữ ghế, đặt chỗ, thanh toán hoặc dashboard quản trị.
