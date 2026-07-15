@@ -1,5 +1,5 @@
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useState } from "react";
 import { ArrowLeftRight, Armchair, PlaneLanding, PlaneTakeoff, Search, UsersRound } from "lucide-react";
 import Button from "@/components/common/Button";
 import SegmentedControl from "@/components/common/SegmentedControl";
@@ -15,9 +15,48 @@ export default function FlightSearchForm() {
     flightScope,
     flightType,
     locations,
+    isLoadingLocations,
     handleScopeChange,
     handleTypeChange,
   } = useFlightSearch();
+  const [origin, setOrigin] = useState(null);
+  const [destination, setDestination] = useState(null);
+  const [departureDate, setDepartureDate] = useState("");
+  const [returnDate, setReturnDate] = useState("");
+
+  useEffect(() => {
+    if (locations.length === 0) {
+      return;
+    }
+
+    const defaultOrigin = locations.find((item) => item.code === "SGN") ?? locations[0];
+    const defaultDestinationCode = flightScope === "international" ? "SIN" : "HAN";
+    const defaultDestination = locations.find((item) => item.code === defaultDestinationCode) ?? locations[1] ?? locations[0];
+    setOrigin(defaultOrigin);
+    setDestination(defaultDestination);
+  }, [flightScope, locations]);
+
+  const handleSubmit = (event) => {
+    event.preventDefault();
+    const params = new URLSearchParams();
+
+    if (origin?.id) {
+      params.set("originAirportId", origin.id);
+    }
+    if (destination?.id) {
+      params.set("destinationAirportId", destination.id);
+    }
+    if (departureDate) {
+      params.set("departureDate", departureDate);
+    }
+
+    navigate(`/flights${params.size ? `?${params.toString()}` : ""}`);
+  };
+
+  const swapLocations = () => {
+    setOrigin(destination);
+    setDestination(origin);
+  };
 
   return (
     <div className="mx-auto max-w-5xl translate-y-8 rounded-lg border border-outline-variant bg-surface-container-lowest p-stack-lg shadow-lg md:translate-y-16">
@@ -25,64 +64,39 @@ export default function FlightSearchForm() {
         <SegmentedControl options={FLIGHT_SCOPES} value={flightScope} onChange={handleScopeChange} />
         <SegmentedControl options={FLIGHT_TYPES} value={flightType} onChange={handleTypeChange} />
       </div>
-      
-      <form 
-        className="grid grid-cols-1 md:grid-cols-12 gap-gutter-md"
-        onSubmit={(event) => {
-          event.preventDefault();
-          navigate("/flights");
-        }}
-      >
+
+      <form className="grid grid-cols-1 gap-gutter-md md:grid-cols-12" onSubmit={handleSubmit}>
         <div className="md:col-span-3">
-          <LocationDropdown 
-            label="Từ" 
-            icon={PlaneTakeoff}
-            locations={locations}
-            defaultValue={{ code: "SGN", name: "TP. Hồ Chí Minh (Tân Sơn Nhất)" }} 
-          />
+          <LocationDropdown label="Từ" icon={PlaneTakeoff} locations={locations} value={origin} onChange={setOrigin} />
         </div>
-        
-        <div className="hidden md:flex md:col-span-1 items-center justify-center mt-6">
+
+        <div className="mt-6 hidden items-center justify-center md:col-span-1 md:flex">
           <button
             aria-label="Đổi điểm đi và điểm đến"
             className="flex h-9 w-9 items-center justify-center rounded-lg bg-surface-variant text-primary transition-colors hover:bg-surface-container-high"
             type="button"
+            onClick={swapLocations}
           >
             <ArrowLeftRight className="h-5 w-5" />
           </button>
         </div>
-        
+
         <div className="md:col-span-3">
-          <LocationDropdown 
-            label="Đến" 
-            icon={PlaneLanding}
-            locations={locations}
-            defaultValue={{ code: "HAN", name: "Hà Nội (Nội Bài)" }} 
-          />
+          <LocationDropdown label="Đến" icon={PlaneLanding} locations={locations} value={destination} onChange={setDestination} />
         </div>
-        
-        <div className="md:col-span-5 grid grid-cols-2 gap-gutter-md">
-          <DateDropdown label="Ngày đi" defaultValue="2024-11-15" />
-          <DateDropdown 
-            label="Ngày về" 
-            defaultValue="2024-11-20" 
-            disabled={flightType === "one-way"}
-          />
+
+        <div className="grid grid-cols-2 gap-gutter-md md:col-span-5">
+          <DateDropdown label="Ngày đi" value={departureDate} onChange={setDepartureDate} />
+          <DateDropdown label="Ngày về" value={returnDate} onChange={setReturnDate} disabled={flightType === "one-way"} />
         </div>
-        
-        <div className="md:col-span-8 grid grid-cols-2 gap-gutter-md mt-stack-sm md:mt-0">
+
+        <div className="mt-stack-sm grid grid-cols-2 gap-gutter-md md:col-span-8 md:mt-0">
           <IconSelect icon={UsersRound} label="Hành khách" options={PASSENGER_OPTIONS} />
           <IconSelect icon={Armchair} label="Hạng ghế" options={CABIN_OPTIONS} />
         </div>
-        <div className="md:col-span-4 mt-stack-sm md:mt-0 flex items-end">
-          <Button
-            type="submit"
-            className="mt-auto w-full"
-            icon={Search}
-            size="lg"
-            variant="warning"
-          >
-            Tìm chuyến bay
+        <div className="mt-stack-sm flex items-end md:col-span-4 md:mt-0">
+          <Button type="submit" className="mt-auto w-full" disabled={isLoadingLocations} icon={Search} size="lg" variant="warning">
+            {isLoadingLocations ? "Đang tải sân bay" : "Tìm chuyến bay"}
           </Button>
         </div>
       </form>

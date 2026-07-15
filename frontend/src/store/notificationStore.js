@@ -2,7 +2,7 @@ import { useSyncExternalStore } from "react";
 
 const initialState = {
   isOpen: false,
-  unreadCount: 2,
+  unreadCount: 0,
 };
 
 let state = initialState;

@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
-import { Bell, Bot, CheckCheck, LogIn, LogOut, Menu, X } from "lucide-react";
-import avatar from "@/assets/images/avatar.jpg";
+import { Bell, Bot, CheckCheck, LogIn, LogOut, Menu, User, X } from "lucide-react";
 import logo from "@/assets/images/logo.png";
 import { useAuth } from "@/hooks/useAuth";
+import { authService } from "@/features/auth/authService";
+import { notificationService } from "@/features/notifications/notificationService";
 import { cn } from "@/lib/utils";
+import { authStore } from "@/store/authStore";
 import { notificationStore, useNotificationStore } from "@/store/notificationStore";
 
 const navItems = [
@@ -18,16 +20,70 @@ const navItems = [
 export default function TopNavBar() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { clearAuth, isAuthenticated, user } = useAuth();
+  const { clearAuth, isAuthenticated, updateUser, user } = useAuth();
   const { isOpen: isNotificationsOpen, unreadCount } = useNotificationStore();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [notifications, setNotifications] = useState([]);
 
   useEffect(() => {
     setIsMobileMenuOpen(false);
     notificationStore.close();
   }, [location.pathname]);
 
-  const handleLogout = () => {
+  useEffect(() => {
+    const loadNotifications = async () => {
+      if (!isAuthenticated) {
+        setNotifications([]);
+        notificationStore.setUnreadCount(0);
+        return;
+      }
+
+      try {
+        const response = await notificationService.getAll({ limit: 10 });
+        const items = response.data ?? [];
+        setNotifications(items);
+        notificationStore.setUnreadCount(items.filter((item) => !item.is_read).length);
+      } catch {
+        setNotifications([]);
+        notificationStore.setUnreadCount(0);
+      }
+    };
+
+    loadNotifications();
+  }, [isAuthenticated]);
+
+  useEffect(() => {
+    const syncProfileAvatar = async () => {
+      if (!isAuthenticated) {
+        return;
+      }
+
+      try {
+        const response = await authService.getMe();
+        const currentUser = authStore.getState().user;
+        updateUser({
+          ...currentUser,
+          avatarUrl: response.data.avatar_url ?? null,
+          fullName: response.data.full_name ?? currentUser?.fullName,
+        });
+      } catch {
+        return;
+      }
+    };
+
+    syncProfileAvatar();
+  }, [isAuthenticated, updateUser]);
+
+  const handleLogout = async () => {
+    try {
+      await authService.logout();
+    } catch {
+      clearAuth();
+      setIsMobileMenuOpen(false);
+      navigate("/");
+      return;
+    }
+
     clearAuth();
     setIsMobileMenuOpen(false);
     navigate("/");
@@ -87,13 +143,16 @@ export default function TopNavBar() {
           </button>
 
           {isAuthenticated ? (
-            <Link
+            <>
+              <Link
               aria-label={`Hồ sơ của ${user?.fullName || "bạn"}`}
               className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full border border-outline-variant bg-primary-container"
               to="/profile"
             >
-              <img alt="Ảnh đại diện người dùng" className="h-full w-full object-cover" height="36" src={avatar} width="36" />
-            </Link>
+                {user?.avatarUrl ? <img alt="Ảnh đại diện người dùng" className="h-full w-full object-cover" height="36" src={user.avatarUrl} width="36" /> : <User className="h-4 w-4 text-primary" />}
+              </Link>
+              <button aria-label="Đăng xuất" className="hidden h-10 items-center justify-center rounded-lg px-2 text-status-error transition-colors hover:bg-error-container/30 sm:flex" onClick={handleLogout} title="Đăng xuất" type="button"><LogOut className="h-4 w-4" /></button>
+            </>
           ) : (
             <Link
               className="hidden h-10 items-center gap-2 rounded-lg bg-primary px-4 text-label-md font-semibold text-on-primary transition-colors hover:bg-primary-container sm:flex"
@@ -114,7 +173,15 @@ export default function TopNavBar() {
             {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
 
-          {isNotificationsOpen ? <NotificationPanel onClose={notificationStore.close} /> : null}
+          {isNotificationsOpen ? <NotificationPanel notifications={notifications} onClose={notificationStore.close} onMarkAllRead={async () => {
+            try {
+              await notificationService.markAllRead();
+              setNotifications((items) => items.map((item) => ({ ...item, is_read: true })));
+              notificationStore.markAllRead();
+            } catch {
+              return;
+            }
+          }} /> : null}
         </div>
       </div>
 
@@ -161,7 +228,7 @@ export default function TopNavBar() {
   );
 }
 
-function NotificationPanel({ onClose }) {
+function NotificationPanel({ notifications, onClose, onMarkAllRead }) {
   return (
     <div className="absolute right-10 top-12 w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-lg border border-outline-variant bg-surface-container-lowest shadow-xl sm:right-0">
       <div className="flex items-center justify-between border-b border-outline-variant px-4 py-3">
@@ -171,7 +238,7 @@ function NotificationPanel({ onClose }) {
         </div>
         <button
           className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline"
-          onClick={notificationStore.markAllRead}
+          onClick={onMarkAllRead}
           type="button"
         >
           <CheckCheck className="h-4 w-4" />
@@ -179,8 +246,7 @@ function NotificationPanel({ onClose }) {
         </button>
       </div>
       <div className="divide-y divide-outline-variant">
-        <NotificationItem text="Chuyến VF204 đã mở làm thủ tục trực tuyến." time="5 phút trước" />
-        <NotificationItem text="Ưu đãi hè: giảm đến 20% các chặng biển." time="2 giờ trước" />
+        {notifications.length > 0 ? notifications.map((notification) => <NotificationItem key={notification.id} text={notification.body} time={new Intl.DateTimeFormat("vi-VN", { dateStyle: "short", timeStyle: "short" }).format(new Date(notification.created_at))} unread={!notification.is_read} />) : <div className="px-4 py-6 text-center text-body-sm text-on-surface-variant">Chưa có thông báo.</div>}
       </div>
       <Link className="block px-4 py-3 text-center text-body-sm font-semibold text-primary hover:bg-surface-container" onClick={onClose} to="/my-bookings">
         Xem đặt chỗ của tôi
@@ -189,10 +255,10 @@ function NotificationPanel({ onClose }) {
   );
 }
 
-function NotificationItem({ text, time }) {
+function NotificationItem({ text, time, unread }) {
   return (
     <div className="flex gap-3 px-4 py-3">
-      <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-status-info" />
+      <span className={cn("mt-1.5 h-2 w-2 shrink-0 rounded-full", unread ? "bg-status-info" : "bg-outline-variant")} />
       <div className="min-w-0">
         <p className="text-body-sm text-on-surface">{text}</p>
         <p className="mt-1 text-xs text-on-surface-variant">{time}</p>

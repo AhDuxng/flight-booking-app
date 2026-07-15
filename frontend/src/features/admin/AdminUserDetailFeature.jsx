@@ -1,58 +1,46 @@
-import { Mail, ShieldCheck, UserRound } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Mail, Phone, ShieldCheck, UserRound } from "lucide-react";
 import { useParams } from "react-router-dom";
-import StatusBadge from "@/components/common/StatusBadge";
+import ErrorMessage from "@/components/common/ErrorMessage";
+import Loading from "@/components/common/Loading";
+import { formatCurrency } from "@/features/flights/flightView";
+import { getErrorMessage } from "@/lib/apiError";
 import AdminPageHeader from "./AdminPageHeader";
-import { adminBookings, adminUsers } from "./adminMockData";
+import { adminService } from "./adminService";
 
 export default function AdminUserDetailFeature() {
   const { userId } = useParams();
-  const user = adminUsers.find((item) => item.id === userId) ?? adminUsers[0];
-  const userBookings = adminBookings.filter((booking) => booking.customer === user.name);
+  const [user, setUser] = useState(null);
+  const [bookings, setBookings] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  return (
-    <div className="flex min-w-0 flex-col gap-stack-md">
-      <AdminPageHeader description="Xem thông tin tài khoản, vai trò và các đặt chỗ liên quan." title={user.name} />
+  useEffect(() => {
+    const loadUser = async () => {
+      setIsLoading(true);
+      try {
+        const [usersResponse, bookingsResponse] = await Promise.all([adminService.getUsers({ limit: 100 }), adminService.getBookings({ limit: 100 })]);
+        const currentUser = (usersResponse.data ?? []).find((item) => item.id === userId);
+        setUser(currentUser ?? null);
+        setBookings((bookingsResponse.data ?? []).filter((item) => item.user_id === userId));
+        setError("");
+      } catch (requestError) {
+        setError(getErrorMessage(requestError, "Không thể tải thông tin người dùng."));
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-      <section className="grid grid-cols-1 gap-stack-md lg:grid-cols-3">
-        <article className="rounded-lg border border-surface-container-high bg-surface-container-lowest p-stack-md shadow-sm lg:col-span-1">
-          <div className="mb-stack-md flex h-14 w-14 items-center justify-center rounded-lg bg-primary-fixed text-primary">
-            <UserRound className="h-7 w-7" />
-          </div>
-          <h2 className="text-title-lg font-title-lg text-primary">{user.name}</h2>
-          <p className="mt-2 flex items-center gap-2 text-body-md font-body-md text-on-surface-variant">
-            <Mail className="h-4 w-4" />
-            {user.email}
-          </p>
-          <div className="mt-stack-md flex flex-wrap gap-2">
-            <StatusBadge status={user.status}>Đang hoạt động</StatusBadge>
-            <span className="inline-flex items-center gap-1 rounded-full border border-primary-fixed bg-primary-fixed px-2.5 py-0.5 text-label-md font-label-md text-primary">
-              <ShieldCheck className="h-3.5 w-3.5" />
-              {user.role}
-            </span>
-          </div>
-        </article>
+    loadUser();
+  }, [userId]);
 
-        <article className="rounded-lg border border-surface-container-high bg-surface-container-lowest p-stack-md shadow-sm lg:col-span-2">
-          <h2 className="mb-stack-md text-title-lg font-title-lg text-primary">Đơn đặt vé liên quan</h2>
-          <div className="grid gap-stack-sm">
-            {userBookings.length > 0 ? (
-              userBookings.map((booking) => (
-                <div className="flex items-center justify-between gap-4 rounded-lg bg-surface-container-low p-3" key={booking.id}>
-                  <div>
-                    <p className="text-label-md font-label-md text-primary">{booking.id}</p>
-                    <p className="text-body-sm font-body-sm text-on-surface-variant">{booking.route}</p>
-                  </div>
-                  <StatusBadge status={booking.status}>{booking.statusLabel}</StatusBadge>
-                </div>
-              ))
-            ) : (
-              <p className="rounded-lg bg-surface-container-low p-3 text-body-md font-body-md text-on-surface-variant">
-                Người dùng này chưa có đơn đặt vé trong dữ liệu mẫu.
-              </p>
-            )}
-          </div>
-        </article>
-      </section>
-    </div>
-  );
+  if (isLoading) {
+    return <Loading label="Đang tải người dùng" />;
+  }
+
+  if (error || !user) {
+    return <ErrorMessage message={error || "Không tìm thấy người dùng."} />;
+  }
+
+  return <div className="flex min-w-0 flex-col gap-stack-md"><AdminPageHeader description="Xem hồ sơ người dùng và các đặt chỗ liên quan." title={user.full_name || "Người dùng chưa đặt tên"} /><section className="grid grid-cols-1 gap-stack-md lg:grid-cols-3"><article className="rounded-lg border border-surface-container-high bg-surface-container-lowest p-stack-md shadow-sm"><div className="mb-stack-md flex h-14 w-14 items-center justify-center rounded-lg bg-primary-fixed text-primary"><UserRound className="h-7 w-7" /></div><h2 className="text-title-lg text-primary">{user.full_name || "Chưa cập nhật"}</h2><p className="mt-2 flex items-center gap-2 text-body-md text-on-surface-variant"><Phone className="h-4 w-4" />{user.phone || "Chưa có số điện thoại"}</p><p className="mt-2 flex items-center gap-2 text-body-md text-on-surface-variant"><Mail className="h-4 w-4" />{user.nationality || "Chưa có quốc tịch"}</p><span className="mt-stack-md inline-flex items-center gap-1 rounded-full border border-primary-fixed bg-primary-fixed px-2.5 py-0.5 text-label-md text-primary"><ShieldCheck className="h-3.5 w-3.5" />Tài khoản khách hàng</span></article><article className="rounded-lg border border-surface-container-high bg-surface-container-lowest p-stack-md shadow-sm lg:col-span-2"><h2 className="mb-stack-md text-title-lg text-primary">Đơn đặt vé liên quan</h2><div className="grid gap-stack-sm">{bookings.length ? bookings.map((booking) => <div className="flex items-center justify-between gap-4 rounded-lg bg-surface-container-low p-3" key={booking.id}><div><p className="font-data-mono text-label-md text-primary">{booking.id}</p><p className="text-body-sm text-on-surface-variant">{booking.flight?.flight_number ?? "-"} · {booking.status}</p></div><span className="font-data-mono text-body-sm text-on-surface">{formatCurrency(booking.total_price)}</span></div>) : <p className="rounded-lg bg-surface-container-low p-3 text-body-md text-on-surface-variant">Người dùng này chưa có đơn đặt vé.</p>}</div></article></section></div>;
 }

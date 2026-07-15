@@ -8,7 +8,7 @@ const timeOptions = [
   { id: "evening", label: "Tối", time: "18:00 - 24:00", icon: Moon },
 ];
 
-export default function FlightFilter({ filters, onFilterChange }) {
+export default function FlightFilter({ airlines, filters, onFilterChange }) {
   const handleAirlineChange = (airline) => {
     const newAirlines = filters.airlines.includes(airline)
       ? filters.airlines.filter((a) => a !== airline)
@@ -39,7 +39,7 @@ export default function FlightFilter({ filters, onFilterChange }) {
             Hãng hàng không
           </h3>
           <div className="flex flex-col gap-stack-sm mt-stack-sm">
-            {["Vietnam Airlines", "Vietjet Air", "Bamboo Airways"].map((airline) => (
+            {airlines.map((airline) => (
               <label key={airline} className="flex items-center gap-base cursor-pointer">
                 <input
                   type="checkbox"

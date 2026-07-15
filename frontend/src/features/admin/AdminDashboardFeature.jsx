@@ -1,73 +1,58 @@
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { CalendarCheck, Plane, Users } from "lucide-react";
+import { CalendarCheck, Plane } from "lucide-react";
 import Button from "@/components/common/Button";
+import ErrorMessage from "@/components/common/ErrorMessage";
+import Loading from "@/components/common/Loading";
+import { formatCurrency, formatDateTime } from "@/features/flights/flightView";
+import { getErrorMessage } from "@/lib/apiError";
 import AdminDataTable from "./AdminDataTable";
 import AdminPageHeader from "./AdminPageHeader";
 import AdminStatCard from "./AdminStatCard";
-import { adminResources } from "./adminResourceConfig";
-import { adminBookings, adminFlights, adminStats } from "./adminMockData";
+import { adminService } from "./adminService";
+
+const bookingColumns = [{ key: "id", label: "Mã đặt chỗ" }, { key: "customer", label: "Khách hàng" }, { key: "flight", label: "Chuyến bay" }, { key: "total", label: "Tổng tiền" }, { key: "status", label: "Trạng thái" }];
+const flightColumns = [{ key: "id", label: "Mã chuyến" }, { key: "route", label: "Chặng" }, { key: "departure", label: "Khởi hành" }, { key: "seats", label: "Ghế còn" }, { key: "status", label: "Trạng thái" }];
 
 export default function AdminDashboardFeature() {
-  return (
-    <div className="flex min-w-0 flex-col gap-stack-md">
-      <AdminPageHeader
-        action={
-          <Button as={Link} icon={Plane} to="/admin/flights/create">
-            Tạo chuyến bay
-          </Button>
-        }
-        description="Tổng quan vận hành bán vé, lịch bay và các giao dịch cần theo dõi trong ngày."
-        title="Bảng điều khiển"
-      />
+  const [dashboard, setDashboard] = useState(null);
+  const [bookings, setBookings] = useState([]);
+  const [flights, setFlights] = useState([]);
+  const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
 
-      <div className="grid grid-cols-1 gap-gutter-md sm:grid-cols-2 xl:grid-cols-4">
-        {adminStats.map((stat) => (
-          <AdminStatCard key={stat.label} {...stat} />
-        ))}
-      </div>
+  const loadDashboard = async () => {
+    setIsLoading(true);
+    try {
+      const [dashboardResponse, bookingsResponse, flightsResponse] = await Promise.all([adminService.getDashboard(), adminService.getBookings({ limit: 3 }), adminService.getFlights({ limit: 3 })]);
+      setDashboard(dashboardResponse.data);
+      setBookings((bookingsResponse.data ?? []).map((item) => ({ id: item.id, customer: item.user?.full_name ?? item.contact_email, flight: item.flight?.flight_number ?? "-", total: formatCurrency(item.total_price), status: item.status })));
+      setFlights((flightsResponse.data ?? []).map((item) => ({ id: item.flight_number, route: `${item.origin_airport?.code ?? "-"} - ${item.destination_airport?.code ?? "-"}`, departure: formatDateTime(item.departure_time), seats: item.available_seats, status: item.status })));
+      setError("");
+    } catch (requestError) {
+      setError(getErrorMessage(requestError, "Không thể tải bảng điều khiển."));
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-      <div className="grid grid-cols-1 gap-stack-md xl:grid-cols-2">
-        <section className="flex min-w-0 flex-col gap-stack-sm">
-          <SectionTitle icon={CalendarCheck} title="Đặt chỗ gần đây" to="/admin/bookings" />
-          <AdminDataTable columns={adminResources.bookings.columns.slice(0, 5)} rows={adminBookings.slice(0, 3)} />
-        </section>
-        <section className="flex min-w-0 flex-col gap-stack-sm">
-          <SectionTitle icon={Plane} title="Chuyến bay sắp khởi hành" to="/admin/flights" />
-          <AdminDataTable columns={adminResources.flights.columns.slice(0, 5)} rows={adminFlights.slice(0, 3)} />
-        </section>
-      </div>
+  useEffect(() => {
+    loadDashboard();
+  }, []);
 
-      <section className="rounded-lg border border-primary-container bg-primary p-stack-md text-on-primary shadow-sm">
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div>
-            <div className="mb-2 flex items-center gap-2 text-secondary-fixed">
-              <Users className="h-5 w-5" />
-              <span className="text-label-md font-label-md">Chăm sóc khách hàng</span>
-            </div>
-            <h2 className="text-title-lg font-title-lg">3 yêu cầu hỗ trợ đang chờ phản hồi</h2>
-            <p className="mt-1 text-body-sm font-body-sm text-primary-fixed">
-              Ưu tiên xử lý các đơn đổi chuyến và hoàn tiền trước giờ bay.
-            </p>
-          </div>
-          <Button as={Link} to="/admin/reviews" variant="secondary">
-            Xem hàng chờ
-          </Button>
-        </div>
-      </section>
-    </div>
-  );
+  if (isLoading) {
+    return <Loading label="Đang tải bảng điều khiển" />;
+  }
+
+  if (error || !dashboard) {
+    return <ErrorMessage message={error} onRetry={loadDashboard} />;
+  }
+
+  const stats = [{ label: "Doanh thu xác nhận", value: formatCurrency(dashboard.revenue), trend: "Dữ liệu thực" }, { label: "Tổng đơn đặt vé", value: dashboard.bookings, trend: "Dữ liệu thực" }, { label: "Chuyến bay hoạt động", value: dashboard.scheduledFlights, trend: `${dashboard.flights} tổng chuyến` }, { label: "Đơn chờ thanh toán", value: dashboard.pendingBookings, trend: `${dashboard.confirmedBookings} đã xác nhận` }];
+
+  return <div className="flex min-w-0 flex-col gap-stack-md"><AdminPageHeader action={<Button as={Link} icon={Plane} to="/admin/flights/create">Tạo chuyến bay</Button>} description="Tổng quan vận hành bán vé, lịch bay và các giao dịch cần theo dõi." title="Bảng điều khiển" /><div className="grid grid-cols-1 gap-gutter-md sm:grid-cols-2 xl:grid-cols-4">{stats.map((stat) => <AdminStatCard key={stat.label} {...stat} />)}</div><div className="grid grid-cols-1 gap-stack-md xl:grid-cols-2"><DashboardSection icon={CalendarCheck} rows={bookings} columns={bookingColumns} title="Đặt chỗ gần đây" to="/admin/bookings" /><DashboardSection icon={Plane} rows={flights} columns={flightColumns} title="Chuyến bay gần đây" to="/admin/flights" /></div></div>;
 }
 
-function SectionTitle({ icon: Icon, title, to }) {
-  return (
-    <div className="flex items-center justify-between gap-3">
-      <div className="flex min-w-0 items-center gap-2 text-primary">
-        <Icon className="h-5 w-5 flex-none" />
-        <h2 className="truncate text-title-lg font-title-lg">{title}</h2>
-      </div>
-      <Link className="flex-none text-label-md font-label-md text-primary hover:underline" to={to}>
-        Xem tất cả
-      </Link>
-    </div>
-  );
+function DashboardSection({ icon: Icon, title, to, rows, columns }) {
+  return <section className="flex min-w-0 flex-col gap-stack-sm"><div className="flex items-center justify-between"><div className="flex items-center gap-2 text-primary"><Icon className="h-5 w-5" /><h2 className="text-title-lg">{title}</h2></div><Link className="text-label-md text-primary hover:underline" to={to}>Xem tất cả</Link></div>{rows.length ? <AdminDataTable columns={columns} rows={rows} /> : <div className="rounded-lg border border-outline-variant bg-surface-container-lowest p-stack-md text-body-sm text-on-surface-variant">Chưa có dữ liệu.</div>}</section>;
 }

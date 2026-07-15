@@ -14,3 +14,7 @@ export const supabase = createClient(
   env.supabaseServiceRoleKey,
   clientOptions,
 );
+
+export const supabaseRead = env.supabaseReadUrl && env.supabaseReadServiceRoleKey
+  ? createClient(env.supabaseReadUrl, env.supabaseReadServiceRoleKey, clientOptions)
+  : supabase;

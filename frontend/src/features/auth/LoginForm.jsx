@@ -4,6 +4,9 @@ import { Mail } from "lucide-react";
 import Button from "@/components/common/Button";
 import Input from "@/components/common/Input";
 import { authStore } from "@/store/authStore";
+import { getErrorMessage } from "@/lib/apiError";
+import { authService } from "./authService";
+import { toast } from "sonner";
 import AuthLayout from "./AuthLayout";
 import PasswordField from "./PasswordField";
 import SocialAuthButtons from "./SocialAuthButtons";
@@ -12,24 +15,33 @@ export default function LoginForm() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [showPassword, setShowPassword] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
 
     const formData = new FormData(event.currentTarget);
-    const email = formData.get("email");
-    const role = String(email).startsWith("admin") ? "admin" : "user";
+    setIsSubmitting(true);
 
-    authStore.setAuth(
-      {
-        email,
-        fullName: role === "admin" ? "Quản trị VietFly" : "Nguyễn Văn A",
-        role,
-      },
-      "demo-token",
-    );
+    try {
+      const response = await authService.login({
+        email: formData.get("email"),
+        password: formData.get("password"),
+      });
+      const { token, user } = response.data;
 
-    navigate(searchParams.get("redirect") || "/profile");
+      if (!token) {
+        toast.info("Vui lòng xác nhận email trước khi đăng nhập.");
+        return;
+      }
+
+      authStore.setAuth(user, token);
+      navigate(searchParams.get("redirect") || "/profile");
+    } catch (error) {
+      toast.error(getErrorMessage(error, "Không thể đăng nhập."));
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -83,8 +95,8 @@ export default function LoginForm() {
             <span className="ml-2 block text-body-sm font-body-sm text-on-surface-variant">Ghi nhớ đăng nhập</span>
           </label>
 
-          <Button className="w-full" size="lg" type="submit" variant="warning">
-            Đăng nhập
+          <Button className="w-full" disabled={isSubmitting} size="lg" type="submit" variant="warning">
+            {isSubmitting ? "Đang đăng nhập..." : "Đăng nhập"}
           </Button>
         </form>
 

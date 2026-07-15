@@ -345,22 +345,22 @@ ALTER TABLE admin_logs        ENABLE ROW LEVEL SECURITY;
 CREATE POLICY airlines_public_read ON airlines
   FOR SELECT USING (true);
 CREATE POLICY airlines_admin_write ON airlines
-  FOR ALL USING ((auth.jwt() -> 'user_metadata' ->> 'role') = 'admin');
+  FOR ALL USING ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin');
 
 CREATE POLICY airports_public_read ON airports
   FOR SELECT USING (true);
 CREATE POLICY airports_admin_write ON airports
-  FOR ALL USING ((auth.jwt() -> 'user_metadata' ->> 'role') = 'admin');
+  FOR ALL USING ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin');
 
 CREATE POLICY aircrafts_public_read ON aircrafts
   FOR SELECT USING (true);
 CREATE POLICY aircrafts_admin_write ON aircrafts
-  FOR ALL USING ((auth.jwt() -> 'user_metadata' ->> 'role') = 'admin');
+  FOR ALL USING ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin');
 
 CREATE POLICY flights_public_read ON flights
   FOR SELECT USING (true);
 CREATE POLICY flights_admin_write ON flights
-  FOR ALL USING ((auth.jwt() -> 'user_metadata' ->> 'role') = 'admin');
+  FOR ALL USING ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin');
 
 CREATE POLICY users_select_own ON users
   FOR SELECT USING (id = auth.uid());
@@ -369,7 +369,7 @@ CREATE POLICY users_update_own ON users
 CREATE POLICY users_insert_own ON users
   FOR INSERT WITH CHECK (id = auth.uid());
 CREATE POLICY users_admin_all ON users
-  FOR ALL USING ((auth.jwt() -> 'user_metadata' ->> 'role') = 'admin');
+  FOR ALL USING ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin');
 
 CREATE POLICY bookings_select_own ON bookings
   FOR SELECT USING (user_id = auth.uid());
@@ -378,7 +378,7 @@ CREATE POLICY bookings_insert_own ON bookings
 CREATE POLICY bookings_update_own ON bookings
   FOR UPDATE USING (user_id = auth.uid());
 CREATE POLICY bookings_admin_all ON bookings
-  FOR ALL USING ((auth.jwt() -> 'user_metadata' ->> 'role') = 'admin');
+  FOR ALL USING ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin');
 
 CREATE POLICY passengers_select_own ON passengers
   FOR SELECT USING (
@@ -389,31 +389,31 @@ CREATE POLICY passengers_insert_own ON passengers
     booking_id IN (SELECT id FROM bookings WHERE user_id = auth.uid())
   );
 CREATE POLICY passengers_admin_all ON passengers
-  FOR ALL USING ((auth.jwt() -> 'user_metadata' ->> 'role') = 'admin');
+  FOR ALL USING ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin');
 
 CREATE POLICY seats_public_read ON seats
   FOR SELECT USING (true);
 CREATE POLICY seats_admin_write ON seats
-  FOR ALL USING ((auth.jwt() -> 'user_metadata' ->> 'role') = 'admin');
+  FOR ALL USING ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin');
 
 CREATE POLICY booking_seats_select_own ON booking_seats
   FOR SELECT USING (
     booking_id IN (SELECT id FROM bookings WHERE user_id = auth.uid())
   );
 CREATE POLICY booking_seats_admin_all ON booking_seats
-  FOR ALL USING ((auth.jwt() -> 'user_metadata' ->> 'role') = 'admin');
+  FOR ALL USING ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin');
 
 CREATE POLICY payments_select_own ON payments
   FOR SELECT USING (
     booking_id IN (SELECT id FROM bookings WHERE user_id = auth.uid())
   );
 CREATE POLICY payments_admin_all ON payments
-  FOR ALL USING ((auth.jwt() -> 'user_metadata' ->> 'role') = 'admin');
+  FOR ALL USING ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin');
 
 CREATE POLICY baggage_options_public_read ON baggage_options
   FOR SELECT USING (true);
 CREATE POLICY baggage_options_admin_write ON baggage_options
-  FOR ALL USING ((auth.jwt() -> 'user_metadata' ->> 'role') = 'admin');
+  FOR ALL USING ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin');
 
 CREATE POLICY booking_baggage_select_own ON booking_baggage
   FOR SELECT USING (
@@ -424,12 +424,12 @@ CREATE POLICY booking_baggage_insert_own ON booking_baggage
     booking_id IN (SELECT id FROM bookings WHERE user_id = auth.uid())
   );
 CREATE POLICY booking_baggage_admin_all ON booking_baggage
-  FOR ALL USING ((auth.jwt() -> 'user_metadata' ->> 'role') = 'admin');
+  FOR ALL USING ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin');
 
 CREATE POLICY meal_options_public_read ON meal_options
   FOR SELECT USING (true);
 CREATE POLICY meal_options_admin_write ON meal_options
-  FOR ALL USING ((auth.jwt() -> 'user_metadata' ->> 'role') = 'admin');
+  FOR ALL USING ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin');
 
 CREATE POLICY booking_meals_select_own ON booking_meals
   FOR SELECT USING (
@@ -440,19 +440,19 @@ CREATE POLICY booking_meals_insert_own ON booking_meals
     booking_id IN (SELECT id FROM bookings WHERE user_id = auth.uid())
   );
 CREATE POLICY booking_meals_admin_all ON booking_meals
-  FOR ALL USING ((auth.jwt() -> 'user_metadata' ->> 'role') = 'admin');
+  FOR ALL USING ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin');
 
 CREATE POLICY discounts_public_read ON discounts
   FOR SELECT USING (is_active = true AND NOW() BETWEEN start_date AND end_date);
 CREATE POLICY discounts_admin_all ON discounts
-  FOR ALL USING ((auth.jwt() -> 'user_metadata' ->> 'role') = 'admin');
+  FOR ALL USING ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin');
 
 CREATE POLICY booking_discounts_select_own ON booking_discounts
   FOR SELECT USING (
     booking_id IN (SELECT id FROM bookings WHERE user_id = auth.uid())
   );
 CREATE POLICY booking_discounts_admin_all ON booking_discounts
-  FOR ALL USING ((auth.jwt() -> 'user_metadata' ->> 'role') = 'admin');
+  FOR ALL USING ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin');
 
 CREATE POLICY notifications_own ON notifications
   FOR ALL USING (user_id = auth.uid());
@@ -464,10 +464,10 @@ CREATE POLICY reviews_insert_own ON reviews
 CREATE POLICY reviews_update_own ON reviews
   FOR UPDATE USING (user_id = auth.uid());
 CREATE POLICY reviews_admin_all ON reviews
-  FOR ALL USING ((auth.jwt() -> 'user_metadata' ->> 'role') = 'admin');
+  FOR ALL USING ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin');
 
 CREATE POLICY admin_logs_admin_read ON admin_logs
-  FOR SELECT USING ((auth.jwt() -> 'user_metadata' ->> 'role') = 'admin');
+  FOR SELECT USING ((auth.jwt() -> 'app_metadata' ->> 'role') = 'admin');
 
 
 ALTER PUBLICATION supabase_realtime ADD TABLE bookings;

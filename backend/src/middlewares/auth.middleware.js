@@ -7,18 +7,24 @@ export const authenticate = async (req, res, next) => {
     return res.status(401).json({ error: 'Missing authorization token' });
   }
 
-  const [scheme, token] = authorization.trim().split(/\s+/);
+  const parts = authorization.trim().split(/\s+/);
+  const [scheme, token] = parts;
 
-  if (scheme?.toLowerCase() !== 'bearer' || !token) {
+  if (parts.length !== 2 || scheme?.toLowerCase() !== 'bearer' || !token) {
     return res.status(401).json({ error: 'Invalid authorization token' });
   }
 
-  const { data, error } = await supabase.auth.getUser(token);
+  try {
+    const { data, error } = await supabase.auth.getUser(token);
 
-  if (error || !data?.user) {
-    return res.status(401).json({ error: 'Invalid authorization token' });
+    if (error || !data?.user) {
+      return res.status(401).json({ error: 'Invalid authorization token' });
+    }
+
+    req.user = data.user;
+    req.accessToken = token;
+    return next();
+  } catch (error) {
+    return next(error);
   }
-
-  req.user = data.user;
-  return next();
 };

@@ -4,6 +4,9 @@ import { Mail, UserRound } from "lucide-react";
 import Button from "@/components/common/Button";
 import Input from "@/components/common/Input";
 import { authStore } from "@/store/authStore";
+import { getErrorMessage } from "@/lib/apiError";
+import { authService } from "./authService";
+import { toast } from "sonner";
 import AuthLayout from "./AuthLayout";
 import PasswordField from "./PasswordField";
 import SocialAuthButtons from "./SocialAuthButtons";
@@ -12,21 +15,42 @@ export default function RegisterForm() {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
 
     const formData = new FormData(event.currentTarget);
-    authStore.setAuth(
-      {
+    const password = formData.get("password");
+
+    if (password !== formData.get("confirmPassword")) {
+      toast.error("Mật khẩu xác nhận chưa khớp.");
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const response = await authService.register({
         email: formData.get("email"),
         fullName: formData.get("fullName"),
-        role: "user",
-      },
-      "demo-token",
-    );
+        password,
+      });
+      const { token, user } = response.data;
 
-    navigate("/profile");
+      if (!token) {
+        toast.success("Đăng ký thành công. Vui lòng xác nhận email để đăng nhập.");
+        navigate("/login");
+        return;
+      }
+
+      authStore.setAuth(user, token);
+      navigate("/profile");
+    } catch (error) {
+      toast.error(getErrorMessage(error, "Không thể tạo tài khoản."));
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -91,8 +115,8 @@ export default function RegisterForm() {
             </span>
           </label>
 
-          <Button className="w-full" size="lg" type="submit" variant="warning">
-            Tạo tài khoản
+          <Button className="w-full" disabled={isSubmitting} size="lg" type="submit" variant="warning">
+            {isSubmitting ? "Đang tạo tài khoản..." : "Tạo tài khoản"}
           </Button>
         </form>
 

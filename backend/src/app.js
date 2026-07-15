@@ -32,7 +32,6 @@ export const createApp = () => {
         if (isAllowedOrigin(origin)) {
           return callback(null, true);
         }
-
         return callback(null, false);
       },
       credentials: true,

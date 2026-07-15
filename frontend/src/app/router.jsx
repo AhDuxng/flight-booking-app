@@ -1,6 +1,8 @@
 import { Suspense, lazy } from "react";
 import { Navigate, createBrowserRouter } from "react-router-dom";
 import Loading from "@/components/common/Loading";
+import AdminRoute from "@/components/common/AdminRoute";
+import PrivateRoute from "@/components/common/PrivateRoute";
 import AdminLayout from "@/components/layout/AdminLayout";
 import MainLayout from "@/components/layout/MainLayout";
 
@@ -48,26 +50,26 @@ const router = createBrowserRouter([
       { path: "/", element: withSuspense(HomePage) },
       { path: "/flights", element: withSuspense(FlightListPage) },
       { path: "/flights/:flightId", element: withSuspense(FlightDetailPage) },
-      { path: "/booking/:flightId", element: withSuspense(BookingPage) },
-      { path: "/booking/:flightId/seats", element: withSuspense(SeatSelectionPage) },
+      { path: "/booking/:flightId", element: <PrivateRoute>{withSuspense(BookingPage)}</PrivateRoute> },
+      { path: "/booking/:flightId/seats", element: <PrivateRoute>{withSuspense(SeatSelectionPage)}</PrivateRoute> },
       { path: "/support", element: withSuspense(SupportPage) },
       { path: "/promotions", element: withSuspense(PromotionsPage) },
-      { path: "/my-bookings", element: withSuspense(MyBookingsPage) },
-      { path: "/bookings/:bookingId", element: withSuspense(BookingDetailPage) },
-      { path: "/profile", element: withSuspense(ProfilePage) },
+      { path: "/my-bookings", element: <PrivateRoute>{withSuspense(MyBookingsPage)}</PrivateRoute> },
+      { path: "/bookings/:bookingId", element: <PrivateRoute>{withSuspense(BookingDetailPage)}</PrivateRoute> },
+      { path: "/profile", element: <PrivateRoute>{withSuspense(ProfilePage)}</PrivateRoute> },
     ],
   },
   { path: "/login", element: withSuspense(LoginPage) },
   { path: "/register", element: withSuspense(RegisterPage) },
   { path: "/chatbot", element: withSuspense(ChatbotPage) },
-  { path: "/payment", element: withSuspense(PaymentPage) },
-  { path: "/payment/:bookingId", element: withSuspense(PaymentPage) },
-  { path: "/payment/result", element: withSuspense(PaymentResultPage) },
+  { path: "/payment", element: <PrivateRoute>{withSuspense(PaymentPage)}</PrivateRoute> },
+  { path: "/payment/:bookingId", element: <PrivateRoute>{withSuspense(PaymentPage)}</PrivateRoute> },
+  { path: "/payment/result", element: <PrivateRoute>{withSuspense(PaymentResultPage)}</PrivateRoute> },
   { path: "/payment-result", element: <Navigate replace to="/payment/result" /> },
-  { path: "/my-bookings/:bookingId", element: withSuspense(BookingDetailPage) },
+  { path: "/my-bookings/:bookingId", element: <PrivateRoute>{withSuspense(BookingDetailPage)}</PrivateRoute> },
   {
     path: "/admin",
-    element: <AdminLayout />,
+    element: <AdminRoute><AdminLayout /></AdminRoute>,
     children: [
       { index: true, element: withSuspense(AdminDashboardPage) },
       { path: "flights", element: withSuspense(AdminFlightListPage) },
