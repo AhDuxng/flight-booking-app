@@ -51,7 +51,7 @@ const envSchema = z.object({
   FLIGHT_SEARCH_CACHE_TTL_SECONDS: z.coerce.number().int().min(1).max(300).default(15),
   SEAT_CLEANUP_INTERVAL_MS: z.coerce.number().int().min(30_000).max(900_000).default(60_000),
   GEMINI_API_KEYS: commaSeparatedListSchema,
-  GEMINI_MODEL: optionalStringWithDefault('gemini-2.0-flash'),
+  GEMINI_MODEL: optionalStringWithDefault('gemini-flash-lite-latest'),
   GEMINI_REQUEST_TIMEOUT_MS: z.coerce.number().int().min(1_000).max(60_000).default(15_000),
 });
 

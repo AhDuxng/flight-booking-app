@@ -28,7 +28,7 @@ services:
       - key: SEAT_CLEANUP_INTERVAL_MS
         value: 60000
       - key: GEMINI_MODEL
-        value: gemini-2.0-flash
+        value: gemini-flash-lite-latest
       - key: GEMINI_REQUEST_TIMEOUT_MS
         value: 15000
       - key: JWT_SECRET

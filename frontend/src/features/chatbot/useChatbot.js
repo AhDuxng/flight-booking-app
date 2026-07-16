@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { buildResponse } from "./chatbotUtils";
 import { showcaseMessages, welcomeMessage } from "./chatbotData";
 import { chatbotService } from "./chatbotService";
 import { getErrorMessage } from "@/lib/apiError";
@@ -84,12 +83,17 @@ export const useChatbot = () => {
         return;
       }
 
+      const assistantText = response.data?.text || response.text;
+      if (!assistantText) {
+        throw new Error("Gemini không trả về nội dung phản hồi.");
+      }
+
       setMessages((current) => [
         ...current,
         {
           id: `assistant-${Date.now()}`,
           role: "assistant",
-          text: response.data?.text || buildResponse(value),
+          text: assistantText,
           time: "Vừa xong",
         },
       ]);
@@ -98,13 +102,14 @@ export const useChatbot = () => {
         return;
       }
 
-      toast.error(getErrorMessage(error, "Không thể kết nối VietFly AI. Đang dùng câu trả lời hỗ trợ cơ bản."));
+      const message = getErrorMessage(error, "Không thể nhận phản hồi từ Gemini. Vui lòng thử lại sau.");
+      toast.error(message);
       setMessages((current) => [
         ...current,
         {
           id: `assistant-${Date.now()}`,
           role: "assistant",
-          text: buildResponse(value),
+          text: message,
           time: "Vừa xong",
         },
       ]);
