@@ -1,0 +1,15 @@
+[build]
+  base = "frontend"
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+# Set VITE_API_URL in Netlify environment variables, for example:
+# VITE_API_URL=https://flight-booking-backend.onrender.com/api
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

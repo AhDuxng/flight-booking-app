@@ -144,6 +144,62 @@ npm run build
 npm run preview
 ```
 
+## Deploy Render và Netlify
+
+Repo đã có sẵn `render.yaml` cho backend và `netlify.toml` cho frontend.
+
+### Backend trên Render
+
+Tạo một Blueprint/Web Service từ repository này. Render sẽ đọc `render.yaml` và chạy backend trong thư mục `backend`.
+
+Các biến cần nhập trên Render:
+
+```text
+SUPABASE_URL
+SUPABASE_SERVICE_ROLE_KEY
+FRONTEND_URL
+```
+
+`JWT_SECRET` được Render tự sinh từ `render.yaml`. `FRONTEND_URL` là origin của frontend Netlify, ví dụ `https://your-site.netlify.app`. Nếu cần cho nhiều domain, phân tách bằng dấu phẩy.
+
+Các biến tùy chọn nếu bật cache hoặc thanh toán:
+
+```text
+REDIS_URL
+PAYMENT_PROVIDER
+PAYMENT_SECRET_KEY
+PAYMENT_WEBHOOK_SECRET
+PAYMENT_RETURN_URL
+PAYMENT_CANCEL_URL
+SUPABASE_READ_URL
+SUPABASE_READ_SERVICE_ROLE_KEY
+```
+
+Backend có health check tại:
+
+```text
+/health
+```
+
+### Frontend trên Netlify
+
+Tạo site từ repository này. Netlify sẽ đọc `netlify.toml`, đặt base directory là `frontend`, build bằng `npm run build` và publish thư mục `frontend/dist`.
+
+Đặt biến môi trường trên Netlify:
+
+```text
+VITE_API_URL=https://your-render-service.onrender.com/api
+```
+
+File `netlify.toml` cũng đã cấu hình redirect `/* -> /index.html` để React Router hoạt động khi reload trực tiếp các route con.
+
+### Thứ tự deploy khuyến nghị
+
+1. Tạo site Netlify trước để lấy URL frontend. Lần build đầu có thể chưa gọi API đúng nếu chưa đặt `VITE_API_URL`.
+2. Tạo backend trên Render, nhập `FRONTEND_URL` bằng URL Netlify.
+3. Sau khi Render có URL backend, quay lại Netlify đặt `VITE_API_URL` bằng URL Render kèm `/api`.
+4. Redeploy frontend trên Netlify.
+
 ## Định hướng phát triển
 
 1. Hoàn thiện API và kết nối Supabase cho các module nghiệp vụ.
