@@ -63,6 +63,8 @@ if (!parsedEnv.success) {
 }
 
 const values = parsedEnv.data;
+const productionFrontendOrigins = ['https://vietfly.netlify.app'];
+const corsOrigins = [...new Set([...values.FRONTEND_URL, ...productionFrontendOrigins])];
 
 export const env = {
   nodeEnv: values.NODE_ENV,
@@ -72,8 +74,8 @@ export const env = {
   supabaseReadUrl: values.SUPABASE_READ_URL,
   supabaseReadServiceRoleKey: values.SUPABASE_READ_SERVICE_ROLE_KEY,
   jwtSecret: values.JWT_SECRET,
-  frontendUrl: values.FRONTEND_URL[0],
-  corsOrigins: values.FRONTEND_URL,
+  frontendUrl: corsOrigins[0],
+  corsOrigins,
   trustProxy: values.TRUST_PROXY,
   bodyLimit: values.BODY_LIMIT,
   rateLimitWindowMs: values.RATE_LIMIT_WINDOW_MS ?? 15 * 60 * 1000,

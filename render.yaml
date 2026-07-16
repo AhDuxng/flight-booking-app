@@ -40,4 +40,4 @@ services:
       - key: GEMINI_API_KEYS
         sync: false
       - key: FRONTEND_URL
-        sync: false
+        value: https://vietfly.netlify.app

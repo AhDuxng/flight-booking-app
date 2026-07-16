@@ -5,9 +5,10 @@
 
 [build.environment]
   NODE_VERSION = "20"
+  VITE_API_URL = "https://flight-booking-app-sjmo.onrender.com/api"
 
-# Set VITE_API_URL in Netlify environment variables, for example:
-# VITE_API_URL=https://flight-booking-backend.onrender.com/api
+# Local frontend dev uses frontend/.env. Netlify production builds use the Render URL above.
+# If VITE_API_URL is also set in the Netlify UI, keep it identical to the value above.
 
 [[redirects]]
   from = "/*"
