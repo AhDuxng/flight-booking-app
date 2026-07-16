@@ -6,6 +6,39 @@ let client;
 let connectionPromise;
 let retryAt = 0;
 
+const REDIS_TIMEOUT_MS = 1_000;
+const REDIS_RETRY_DELAY_MS = 30_000;
+
+const withTimeout = async (promise, fallback = null) => {
+  let timeoutId;
+
+  try {
+    return await Promise.race([
+      promise,
+      new Promise((resolve) => {
+        timeoutId = setTimeout(() => resolve(fallback), REDIS_TIMEOUT_MS);
+      }),
+    ]);
+  } finally {
+    clearTimeout(timeoutId);
+  }
+};
+
+const closeClient = () => {
+  if (!client) {
+    return;
+  }
+
+  const currentClient = client;
+  client = null;
+
+  try {
+    Promise.resolve(currentClient.disconnect()).catch(() => {});
+  } catch {
+    return;
+  }
+};
+
 const getClient = async () => {
   if (!env.redisUrl || Date.now() < retryAt) {
     return null;
@@ -16,14 +49,25 @@ const getClient = async () => {
   }
 
   if (!connectionPromise) {
-    client = createClient({ url: env.redisUrl });
-    client.on('error', () => {});
-    connectionPromise = client.connect().catch(() => {
-      retryAt = Date.now() + 30_000;
-      return null;
-    }).finally(() => {
-      connectionPromise = null;
+    client = createClient({
+      url: env.redisUrl,
+      socket: {
+        connectTimeout: REDIS_TIMEOUT_MS,
+        reconnectStrategy: false,
+      },
     });
+    client.on('error', () => {});
+    connectionPromise = withTimeout(client.connect())
+      .catch(() => null)
+      .then(() => {
+        if (!client?.isReady) {
+          retryAt = Date.now() + REDIS_RETRY_DELAY_MS;
+          closeClient();
+        }
+      })
+      .finally(() => {
+        connectionPromise = null;
+      });
   }
 
   await connectionPromise;
@@ -39,7 +83,7 @@ export const getCachedJson = async (key) => {
   }
 
   try {
-    const value = await redis.get(key);
+    const value = await withTimeout(redis.get(key));
     return value ? JSON.parse(value) : null;
   } catch {
     return null;
@@ -55,7 +99,7 @@ export const setCachedJson = async (key, value, ttlSeconds) => {
   }
 
   try {
-    await redis.set(key, JSON.stringify(value), { EX: ttlSeconds });
+    await withTimeout(redis.set(key, JSON.stringify(value), { EX: ttlSeconds }));
   } catch {
     return;
   }
@@ -70,7 +114,7 @@ export const getCacheVersion = async (scope) => {
   }
 
   try {
-    return (await redis.get(`cache-version:${scope}`)) ?? '0';
+    return (await withTimeout(redis.get(`cache-version:${scope}`))) ?? '0';
   } catch {
     return '0';
   }
@@ -85,7 +129,7 @@ export const bumpCacheVersion = async (scope) => {
   }
 
   try {
-    await redis.incr(`cache-version:${scope}`);
+    await withTimeout(redis.incr(`cache-version:${scope}`));
   } catch {
     return;
   }
@@ -94,9 +138,11 @@ export const bumpCacheVersion = async (scope) => {
 // Bài toán 1 - Seat Inventory & Concurrency: chỉ xóa Redis lock nếu token vẫn thuộc request hiện tại, tránh xóa lock của request khác.
 const releaseLock = async (redis, key, token) => {
   try {
-    await redis.eval(
-      'if redis.call("get", KEYS[1]) == ARGV[1] then return redis.call("del", KEYS[1]) end return 0',
-      { keys: [key], arguments: [token] },
+    await withTimeout(
+      redis.eval(
+        'if redis.call("get", KEYS[1]) == ARGV[1] then return redis.call("del", KEYS[1]) end return 0',
+        { keys: [key], arguments: [token] },
+      ),
     );
   } catch {
     return;
@@ -117,7 +163,7 @@ export const withRedisLocks = async (keys, task) => {
 
   try {
     for (const key of lockKeys) {
-      const acquired = await redis.set(key, token, { NX: true, PX: 5_000 });
+      const acquired = await withTimeout(redis.set(key, token, { NX: true, PX: 5_000 }));
 
       if (!acquired) {
         throw Object.assign(new Error('Seat selection is being processed. Please try again'), { status: 409 });
