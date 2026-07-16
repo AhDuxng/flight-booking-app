@@ -11,7 +11,7 @@ import { apiLimiter } from './middlewares/rateLimiter.middleware.js';
 
 const app = express();
 
-// 1. Bảo mật HTTP Headers với Helmet
+// 1. Bảo mật HTTP Headers với Helmet.
 app.use(helmet());
 
 // 2. Cấu hình CORS (Cross-Origin Resource Sharing)
