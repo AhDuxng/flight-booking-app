@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+
+<html class="light" lang="vi"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>VietFly AI Assistant - Trợ lý hàng không thông minh</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;family=JetBrains+Mono:wght@500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-dim": "#d7dadc",
+                    "on-surface-variant": "#43474e",
+                    "secondary-fixed": "#ffddba",
+                    "surface-container-lowest": "#ffffff",
+                    "surface": "#f7fafc",
+                    "secondary": "#875200",
+                    "surface-container": "#ebeef0",
+                    "on-primary-fixed": "#001b3c",
+                    "on-error": "#ffffff",
+                    "tertiary": "#321b00",
+                    "surface-container-high": "#e5e9eb",
+                    "status-error": "#EF4444",
+                    "slate-gray": "#4A5568",
+                    "deep-navy": "#0F172A",
+                    "tertiary-container": "#4f2e00",
+                    "outline": "#74777f",
+                    "surface-container-highest": "#e0e3e5",
+                    "on-surface": "#181c1e",
+                    "secondary-fixed-dim": "#ffb866",
+                    "status-warning": "#FBBF24",
+                    "primary-container": "#1a365d",
+                    "on-secondary-container": "#744600",
+                    "on-secondary": "#ffffff",
+                    "status-info": "#3B82F6",
+                    "surface-variant": "#e0e3e5",
+                    "on-error-container": "#93000a",
+                    "on-tertiary": "#ffffff",
+                    "tertiary-fixed-dim": "#f2bc82",
+                    "background": "#f7fafc",
+                    "inverse-surface": "#2d3133",
+                    "on-primary-container": "#86a0cd",
+                    "on-tertiary-fixed": "#2b1700",
+                    "status-success": "#10B981",
+                    "on-secondary-fixed-variant": "#673d00",
+                    "tertiary-fixed": "#ffddba",
+                    "inverse-on-surface": "#eef1f3",
+                    "inverse-primary": "#adc7f7",
+                    "on-tertiary-container": "#c6955e",
+                    "primary": "#002045",
+                    "outline-variant": "#c4c6cf",
+                    "primary-fixed": "#d6e3ff",
+                    "on-primary-fixed-variant": "#2d476f",
+                    "on-primary": "#ffffff",
+                    "on-tertiary-fixed-variant": "#633f0f",
+                    "surface-bright": "#f7fafc",
+                    "error": "#ba1a1a",
+                    "error-container": "#ffdad6",
+                    "surface-tint": "#455f88",
+                    "on-background": "#181c1e",
+                    "primary-fixed-dim": "#adc7f7",
+                    "on-secondary-fixed": "#2b1700",
+                    "surface-container-low": "#f1f4f6",
+                    "sky-blue": "#EBF8FF",
+                    "secondary-container": "#ffb55c"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "container-padding": "24px",
+                    "gutter-md": "16px",
+                    "base": "4px",
+                    "stack-md": "16px",
+                    "section-gap": "64px",
+                    "stack-sm": "8px",
+                    "stack-lg": "32px"
+            },
+            "fontFamily": {
+                    "display-lg": ["Inter"],
+                    "body-md": ["Inter"],
+                    "label-md": ["Inter"],
+                    "data-mono": ["JetBrains Mono"],
+                    "headline-lg": ["Inter"],
+                    "title-lg": ["Inter"],
+                    "headline-md": ["Inter"],
+                    "body-lg": ["Inter"],
+                    "body-sm": ["Inter"]
+            }
+          }
+        }
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .chat-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .chat-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .chat-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e0;
+            border-radius: 10px;
+        }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+    </style>
+</head>
+<body class="bg-surface font-body-md text-on-surface">
+<!-- Top Navigation Anchor (from JSON) -->
+<nav class="fixed top-0 w-full z-50 bg-surface dark:bg-deep-navy shadow-sm">
+<div class="flex justify-between items-center w-full px-container-padding h-16 max-w-7xl mx-auto">
+<div class="flex items-center gap-stack-md">
+<span class="text-headline-md font-headline-md font-bold text-primary dark:text-inverse-primary">VietFly</span>
+</div>
+<div class="hidden md:flex items-center gap-gutter-md">
+<a class="font-label-md text-label-md text-on-surface-variant hover:text-primary transition-colors duration-200" href="#">Chuyến bay</a>
+<a class="font-label-md text-label-md text-on-surface-variant hover:text-primary transition-colors duration-200" href="#">Khuyến mãi</a>
+<a class="font-label-md text-label-md text-on-surface-variant hover:text-primary transition-colors duration-200" href="#">Đặt chỗ của tôi</a>
+<a class="font-label-md text-label-md text-on-surface-variant hover:text-primary transition-colors duration-200" href="#">Hỗ trợ</a>
+</div>
+<div class="flex items-center gap-base">
+<button class="p-2 text-primary">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<div class="w-8 h-8 rounded-full overflow-hidden border border-outline-variant">
+<img class="w-full h-full object-cover" data-alt="A professional studio portrait of a friendly customer service representative with a warm smile, wearing a modern navy corporate uniform against a soft gray backdrop. Professional lighting with clean, high-contrast details and a high-end enterprise feel." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAw_Ytm-1DLSV_AaKZQLTy3t-SXU79CYyXZRDQo9Znk3YScyUuVSYEzeLWh5u9c3ZN3SIinnPHCAevBC1ek3MF_OPmLCwcntYIvkChVX1fCmoynNJXcASt-xqoYdY4AUv6WvOrapvBc0XrbDZUdruwzAELcW2v8mHGb7onLTn7jg2-2zmOW1Qsa6nxgr5meVnYXesbNQOh8Eh-Yxx_KN459TbhZiQCPe3yJo1wPG2BcGQdr9viRoTcpyfXCWhmLbG1J32gMZ3Ejyog"/>
+</div>
+</div>
+</div>
+</nav>
+<main class="pt-16 h-screen flex overflow-hidden">
+<!-- Sidebar: Chat History -->
+<aside class="hidden lg:flex w-72 flex-col bg-surface-container-low border-r border-outline-variant">
+<div class="p-container-padding flex-1 overflow-y-auto chat-scrollbar">
+<div class="mb-stack-lg">
+<h2 class="font-title-lg text-title-lg mb-stack-md text-primary">Lịch sử trò chuyện</h2>
+<div class="space-y-stack-sm">
+<!-- History Item -->
+<button class="w-full text-left p-stack-sm rounded-lg hover:bg-surface-container-high transition-all flex items-center gap-stack-sm">
+<span class="material-symbols-outlined text-primary">chat_bubble</span>
+<div class="overflow-hidden">
+<p class="font-label-md text-label-md text-on-surface truncate">Tìm vé đi Đà Lạt tháng 12</p>
+<p class="text-[12px] text-on-surface-variant">2 giờ trước</p>
+</div>
+</button>
+<button class="w-full text-left p-stack-sm rounded-lg bg-primary-fixed border border-primary/10 flex items-center gap-stack-sm">
+<span class="material-symbols-outlined text-primary">chat_bubble</span>
+<div class="overflow-hidden">
+<p class="font-label-md text-label-md text-primary font-bold truncate">Hỗ trợ hành lý quá khổ</p>
+<p class="text-[12px] text-on-primary-fixed-variant">Đang diễn ra</p>
+</div>
+</button>
+<button class="w-full text-left p-stack-sm rounded-lg hover:bg-surface-container-high transition-all flex items-center gap-stack-sm">
+<span class="material-symbols-outlined text-primary">chat_bubble</span>
+<div class="overflow-hidden">
+<p class="font-label-md text-label-md text-on-surface truncate">Khám phá tour Phú Quốc</p>
+<p class="text-[12px] text-on-surface-variant">Hôm qua</p>
+</div>
+</button>
+</div>
+</div>
+<div class="mt-auto pt-stack-md border-t border-outline-variant">
+<h3 class="font-label-md text-label-md uppercase tracking-wider text-on-surface-variant mb-stack-sm">Liên kết nhanh</h3>
+<ul class="space-y-stack-sm">
+<li><a class="flex items-center gap-2 text-on-surface-variant hover:text-primary font-label-md text-label-md" href="#"><span class="material-symbols-outlined text-sm">contact_support</span> Trung tâm hỗ trợ</a></li>
+<li><a class="flex items-center gap-2 text-on-surface-variant hover:text-primary font-label-md text-label-md" href="#"><span class="material-symbols-outlined text-sm">receipt_long</span> Quy định hoàn vé</a></li>
+</ul>
+</div>
+</div>
+</aside>
+<!-- Main Chat Canvas -->
+<section class="flex-1 flex flex-col bg-surface relative">
+<!-- Header for AI Assistant -->
+<header class="flex items-center justify-between px-container-padding py-stack-md glass-panel border-b border-outline-variant z-10">
+<div class="flex items-center gap-stack-md">
+<div class="w-10 h-10 rounded-xl bg-primary flex items-center justify-center shadow-md">
+<span class="material-symbols-outlined text-on-primary" style="font-variation-settings: 'FILL' 1;">smart_toy</span>
+</div>
+<div>
+<h1 class="font-headline-md text-headline-md text-primary">VietFly AI Assistant</h1>
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-status-success animate-pulse"></span>
+<span class="text-body-sm font-label-md text-on-surface-variant">Trực tuyến • Phản hồi ngay lập tức</span>
+</div>
+</div>
+</div>
+<div class="flex gap-stack-sm">
+<button class="p-2 rounded-full hover:bg-surface-container transition-colors"><span class="material-symbols-outlined">refresh</span></button>
+<button class="p-2 rounded-full hover:bg-surface-container transition-colors"><span class="material-symbols-outlined">more_vert</span></button>
+</div>
+</header>
+<!-- Messages Area -->
+<div class="flex-1 overflow-y-auto chat-scrollbar px-container-padding py-stack-lg space-y-stack-lg flex flex-col">
+<!-- AI Message -->
+<div class="flex flex-col items-start max-w-2xl">
+<div class="flex items-center gap-stack-sm mb-stack-sm">
+<div class="w-6 h-6 rounded-md bg-primary flex items-center justify-center">
+<span class="material-symbols-outlined text-[14px] text-on-primary" style="font-variation-settings: 'FILL' 1;">smart_toy</span>
+</div>
+<span class="font-label-md text-label-md text-primary font-bold">VietFly AI</span>
+<span class="text-[12px] text-on-surface-variant">09:15 AM</span>
+</div>
+<div class="bg-sky-blue text-on-surface p-stack-md rounded-2xl rounded-tl-none shadow-sm border border-primary/5">
+<p class="font-body-md text-body-md">Xin chào! Tôi là trợ lý ảo của VietFly. Tôi có thể giúp bạn tìm chuyến bay, kiểm tra hành lý hoặc gợi ý những điểm đến tuyệt vời cho chuyến đi sắp tới. Bạn muốn bắt đầu từ đâu?</p>
+</div>
+</div>
+<!-- User Message -->
+<div class="flex flex-col items-end self-end max-w-2xl">
+<div class="flex items-center gap-stack-sm mb-stack-sm flex-row-reverse">
+<span class="font-label-md text-label-md text-primary font-bold">Bạn</span>
+<span class="text-[12px] text-on-surface-variant">09:16 AM</span>
+</div>
+<div class="bg-primary text-on-primary p-stack-md rounded-2xl rounded-tr-none shadow-md">
+<p class="font-body-md text-body-md">Gợi ý cho tôi một số tour du lịch tại Phú Quốc trong tuần tới với giá tốt nhất.</p>
+</div>
+</div>
+<!-- AI Message with Rich Card -->
+<div class="flex flex-col items-start max-w-3xl">
+<div class="flex items-center gap-stack-sm mb-stack-sm">
+<div class="w-6 h-6 rounded-md bg-primary flex items-center justify-center">
+<span class="material-symbols-outlined text-[14px] text-on-primary" style="font-variation-settings: 'FILL' 1;">smart_toy</span>
+</div>
+<span class="font-label-md text-label-md text-primary font-bold">VietFly AI</span>
+<span class="text-[12px] text-on-surface-variant">09:17 AM</span>
+</div>
+<div class="bg-sky-blue text-on-surface p-stack-md rounded-2xl rounded-tl-none shadow-sm border border-primary/5 mb-stack-md w-full">
+<p class="font-body-md text-body-md">Phú Quốc hiện đang vào mùa đẹp nhất! Tôi đã tìm thấy một số lựa chọn tuyệt vời dành riêng cho bạn:</p>
+</div>
+<!-- Rich Destination Card -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-stack-md w-full">
+<!-- Card 1 -->
+<div class="bg-surface-container-lowest rounded-xl overflow-hidden shadow-sm border border-outline-variant hover:shadow-md transition-all group">
+<div class="h-40 relative">
+<img class="w-full h-full object-cover" data-alt="A breathtaking panoramic view of a tropical paradise beach in Phu Quoc, Vietnam. Crystal clear turquoise water meets pristine white sand, with palm trees swaying in the gentle breeze. The lighting is warm golden hour, creating a premium, luxurious travel magazine aesthetic with deep navy blue shadows and vibrant orange highlights in the sky." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCLG_R2c6QhuONlXLNhtHRPliLCaa3bKlOkyEiIvKuwM6TyZFjVWitJZTjf-c6_3KYnFAE1s_UNyxWWSXIMpeeF2xmFEngtZl8L2ZnyjCMir3m9nUgHCKk4DNQzFQ1BxWRWoFAqimliCO1FijsuN7hpgWDAi5-VPf7DtZJU2gU9pdUYps9LdXK57zoisjlFnuDrYlMTkOLS6hkE6GFOV-RJ_pjjVXSlJ2Kw08gc5A1I1r6Wyrv988L0KVqwZ4l62a9EuA5lks7MOdk"/>
+<div class="absolute top-2 right-2 bg-secondary-container text-on-secondary-container font-label-md px-2 py-1 rounded-full">Khuyến mãi hot</div>
+</div>
+<div class="p-stack-md">
+<h4 class="font-title-lg text-title-lg text-primary mb-1">Khám phá Nam Đảo &amp; Lặn ngắm san hô</h4>
+<p class="text-body-sm text-on-surface-variant mb-stack-md">Tour 3 ngày 2 đêm, bao gồm khách sạn 4 sao và đưa đón sân bay.</p>
+<div class="flex items-center justify-between mt-auto">
+<div>
+<span class="text-[12px] text-on-surface-variant line-through">4.500.000 VND</span>
+<div class="text-headline-md font-bold text-primary">3.250.000 <span class="text-body-sm font-normal">VND</span></div>
+</div>
+<button class="bg-secondary-container hover:bg-secondary-fixed-dim text-on-secondary-container font-bold px-4 py-2 rounded-lg transition-colors flex items-center gap-2">
+                                        Đặt ngay <span class="material-symbols-outlined text-sm">arrow_forward</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Card 2 -->
+<div class="bg-surface-container-lowest rounded-xl overflow-hidden shadow-sm border border-outline-variant hover:shadow-md transition-all group">
+<div class="h-40 relative">
+<img class="w-full h-full object-cover" data-alt="A modern luxury resort exterior in Phu Quoc during a vibrant sunset. The architecture is contemporary with clean lines and large glass facades reflecting the orange and purple sky. A pristine infinity pool is in the foreground, illuminated by warm ambient lighting, conveying an atmosphere of high-end tranquility and elite corporate leisure." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAl_S6LQtfInSAihSi8hACQu9B52HT93pl5SvYGQJsf9jF6i4QjlfplQaCEi_Azcn72XzKn_ll8uaFdJl2-aUpzY6NLK10FQYjAfXBhNH9zHhV3uccWp_Dm82hA0H-XXhhkY76YJf-fA3p-F4NOlE99e5bwe5l57FCv4n7_-sR1iwklJsX8FoUlDAa_WE2K4_n1avu8-YbJphtGFhwqshf0R6533AtxYRZbFqgFjq25rl8XUyXTPkqGnkp9YhqYkyluJMOdpXzTFZA"/>
+</div>
+<div class="p-stack-md">
+<h4 class="font-title-lg text-title-lg text-primary mb-1">Nghỉ dưỡng Sun World Hòn Thơm</h4>
+<p class="text-body-sm text-on-surface-variant mb-stack-md">Trải nghiệm cáp treo vượt biển dài nhất thế giới và công viên nước.</p>
+<div class="flex items-center justify-between mt-auto">
+<div>
+<span class="text-[12px] text-on-surface-variant">Giá chỉ từ</span>
+<div class="text-headline-md font-bold text-primary">1.890.000 <span class="text-body-sm font-normal">VND</span></div>
+</div>
+<button class="bg-primary hover:bg-primary-container text-on-primary font-bold px-4 py-2 rounded-lg transition-colors flex items-center gap-2">
+                                        Xem chi tiết
+                                    </button>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Suggested Actions -->
+<div class="flex flex-wrap gap-stack-sm pt-stack-md">
+<button class="bg-surface-container-high hover:bg-primary-fixed border border-outline-variant px-4 py-2 rounded-full text-label-md font-label-md text-primary transition-all flex items-center gap-2">
+<span class="material-symbols-outlined text-sm">flight_takeoff</span> Tìm chuyến bay đi Đà Lạt
+                    </button>
+<button class="bg-surface-container-high hover:bg-primary-fixed border border-outline-variant px-4 py-2 rounded-full text-label-md font-label-md text-primary transition-all flex items-center gap-2">
+<span class="material-symbols-outlined text-sm">luggage</span> Chính sách hành lý
+                    </button>
+<button class="bg-surface-container-high hover:bg-primary-fixed border border-outline-variant px-4 py-2 rounded-full text-label-md font-label-md text-primary transition-all flex items-center gap-2">
+<span class="material-symbols-outlined text-sm">local_fire_department</span> Khuyến mãi hot
+                    </button>
+<button class="bg-surface-container-high hover:bg-primary-fixed border border-outline-variant px-4 py-2 rounded-full text-label-md font-label-md text-primary transition-all flex items-center gap-2">
+<span class="material-symbols-outlined text-sm">event_repeat</span> Đổi lịch bay
+                    </button>
+</div>
+</div>
+<!-- Input Area -->
+<footer class="p-container-padding bg-surface border-t border-outline-variant glass-panel">
+<div class="max-w-4xl mx-auto">
+<form class="relative flex items-center gap-stack-md">
+<div class="relative flex-1">
+<input class="w-full bg-surface-container-lowest border border-outline-variant rounded-2xl px-6 py-4 pr-16 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all font-body-md text-body-md shadow-sm" placeholder="Nhập câu hỏi của bạn tại đây..." type="text"/>
+<div class="absolute right-4 top-1/2 -translate-y-1/2 flex gap-base">
+<button class="p-2 text-on-surface-variant hover:text-primary" type="button"><span class="material-symbols-outlined">attach_file</span></button>
+<button class="p-2 text-on-surface-variant hover:text-primary" type="button"><span class="material-symbols-outlined">mic</span></button>
+</div>
+</div>
+<button class="bg-primary hover:bg-deep-navy text-on-primary p-4 rounded-2xl shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all flex items-center justify-center min-w-[56px]" type="submit">
+<span class="material-symbols-outlined">send</span>
+</button>
+</form>
+<p class="text-center text-[11px] text-on-surface-variant mt-stack-sm">
+                        VietFly AI có thể đưa ra câu trả lời chưa chính xác. Vui lòng kiểm tra lại thông tin quan trọng.
+                    </p>
+</div>
+</footer>
+</section>
+<!-- Right Side Panel: User Context (Optional for Desktop) -->
+<aside class="hidden xl:flex w-80 flex-col bg-surface border-l border-outline-variant p-container-padding">
+<div class="mb-stack-lg">
+<h3 class="font-title-lg text-title-lg text-primary mb-stack-md">Thông tin chuyến đi</h3>
+<div class="bg-primary-container/10 p-stack-md rounded-xl border border-primary/10">
+<div class="flex justify-between items-center mb-stack-sm">
+<span class="font-headline-md text-primary">SGN</span>
+<span class="material-symbols-outlined text-primary">trending_flat</span>
+<span class="font-headline-md text-primary">PQC</span>
+</div>
+<p class="font-label-md text-label-md text-on-surface-variant">Thứ 4, 15 Th12, 2024</p>
+<div class="mt-stack-md pt-stack-md border-t border-outline-variant/30 flex justify-between">
+<span class="text-body-sm">Giá tạm tính:</span>
+<span class="font-bold text-primary">1.250.000 VND</span>
+</div>
+</div>
+</div>
+<div class="mb-stack-lg">
+<h3 class="font-title-lg text-title-lg text-primary mb-stack-md">Chương trình thành viên</h3>
+<div class="bg-secondary-container/10 p-stack-md rounded-xl border border-secondary/20">
+<div class="flex items-center gap-stack-sm mb-stack-sm">
+<span class="material-symbols-outlined text-secondary" style="font-variation-settings: 'FILL' 1;">stars</span>
+<span class="font-bold text-on-secondary-container">Hạng Vàng</span>
+</div>
+<p class="text-body-sm text-on-secondary-container">Bạn có 12,450 SkyMiles khả dụng.</p>
+<a class="inline-block mt-stack-sm text-label-md font-bold text-secondary underline" href="#">Đổi thưởng ngay</a>
+</div>
+</div>
+<div class="mt-auto">
+<div class="p-stack-md bg-surface-container-high rounded-xl">
+<p class="text-body-sm font-bold text-primary mb-2">Cần gặp nhân viên hỗ trợ?</p>
+<button class="w-full bg-white border border-primary text-primary py-2 rounded-lg font-label-md hover:bg-primary hover:text-white transition-all">Kết nối nhân viên</button>
+</div>
+</div>
+</aside>
+</main>
+<!-- Navigation Shell Logic for Mobile -->
+<div class="md:hidden fixed bottom-0 left-0 right-0 bg-surface shadow-[0_-4px_10px_rgba(0,0,0,0.05)] px-container-padding py-3 flex justify-around items-center z-50">
+<button class="flex flex-col items-center gap-1 text-primary">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">chat</span>
+<span class="text-[10px] font-bold">Trợ lý</span>
+</button>
+<button class="flex flex-col items-center gap-1 text-on-surface-variant">
+<span class="material-symbols-outlined">flight</span>
+<span class="text-[10px]">Chuyến bay</span>
+</button>
+<button class="flex flex-col items-center gap-1 text-on-surface-variant">
+<span class="material-symbols-outlined">person</span>
+<span class="text-[10px]">Tài khoản</span>
+</button>
+</div>
+<script>
+        // Simple micro-interaction for the chat input
+        const form = document.querySelector('form');
+        const input = document.querySelector('input');
+        const chatArea = document.querySelector('.chat-scrollbar');
+
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            if (input.value.trim() === '') return;
+
+            // Add user message
+            const userMsg = document.createElement('div');
+            userMsg.className = 'flex flex-col items-end self-end max-w-2xl';
+            userMsg.innerHTML = `
+                <div class="flex items-center gap-stack-sm mb-stack-sm flex-row-reverse">
+                    <span class="font-label-md text-label-md text-primary font-bold">Bạn</span>
+                    <span class="text-[12px] text-on-surface-variant">Bây giờ</span>
+                </div>
+                <div class="bg-primary text-on-primary p-stack-md rounded-2xl rounded-tr-none shadow-md">
+                    <p class="font-body-md text-body-md">${input.value}</p>
+                </div>
+            `;
+            chatArea.appendChild(userMsg);
+            
+            // Clear input and scroll
+            input.value = '';
+            chatArea.scrollTop = chatArea.scrollHeight;
+
+            // Mock AI typing...
+            setTimeout(() => {
+                const typingMsg = document.createElement('div');
+                typingMsg.className = 'flex items-center gap-2 text-on-surface-variant animate-pulse';
+                typingMsg.innerHTML = '<span class="material-symbols-outlined text-sm">more_horiz</span> VietFly AI đang xử lý...';
+                chatArea.appendChild(typingMsg);
+                chatArea.scrollTop = chatArea.scrollHeight;
+
+                setTimeout(() => {
+                    typingMsg.remove();
+                    const aiMsg = document.createElement('div');
+                    aiMsg.className = 'flex flex-col items-start max-w-2xl';
+                    aiMsg.innerHTML = `
+                        <div class="flex items-center gap-stack-sm mb-stack-sm">
+                            <div class="w-6 h-6 rounded-md bg-primary flex items-center justify-center">
+                                <span class="material-symbols-outlined text-[14px] text-on-primary" style="font-variation-settings: 'FILL' 1;">smart_toy</span>
+                            </div>
+                            <span class="font-label-md text-label-md text-primary font-bold">VietFly AI</span>
+                            <span class="text-[12px] text-on-surface-variant">Vừa xong</span>
+                        </div>
+                        <div class="bg-sky-blue text-on-surface p-stack-md rounded-2xl rounded-tl-none shadow-sm border border-primary/5">
+                            <p class="font-body-md text-body-md">Đã tiếp nhận yêu cầu của bạn. Tôi sẽ gửi cho bạn thông tin chi tiết nhất trong giây lát!</p>
+                        </div>
+                    `;
+                    chatArea.appendChild(aiMsg);
+                    chatArea.scrollTop = chatArea.scrollHeight;
+                }, 1500);
+            }, 500);
+        });
+    </script>
+</body></html>

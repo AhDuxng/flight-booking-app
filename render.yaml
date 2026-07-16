@@ -27,11 +27,17 @@ services:
         value: 15
       - key: SEAT_CLEANUP_INTERVAL_MS
         value: 60000
+      - key: GEMINI_MODEL
+        value: gemini-2.0-flash
+      - key: GEMINI_REQUEST_TIMEOUT_MS
+        value: 15000
       - key: JWT_SECRET
         generateValue: true
       - key: SUPABASE_URL
         sync: false
       - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: GEMINI_API_KEYS
         sync: false
       - key: FRONTEND_URL
         sync: false

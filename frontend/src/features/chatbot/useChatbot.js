@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { buildResponse } from "./chatbotUtils";
 import { showcaseMessages, welcomeMessage } from "./chatbotData";
+import { chatbotService } from "./chatbotService";
+import { getErrorMessage } from "@/lib/apiError";
 
 export const useChatbot = () => {
   const [activeConversation, setActiveConversation] = useState("phuquoc");
@@ -12,7 +14,7 @@ export const useChatbot = () => {
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const messagesEndRef = useRef(null);
-  const timerRef = useRef(null);
+  const requestRef = useRef(0);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -20,12 +22,12 @@ export const useChatbot = () => {
 
   useEffect(() => {
     return () => {
-      window.clearTimeout(timerRef.current);
+      requestRef.current += 1;
     };
   }, []);
 
   const startNewConversation = () => {
-    window.clearTimeout(timerRef.current);
+    requestRef.current += 1;
     setActiveConversation("new");
     setMessages([welcomeMessage]);
     setInputValue("");
@@ -36,14 +38,20 @@ export const useChatbot = () => {
   };
 
   const selectConversation = (conversation) => {
-    window.clearTimeout(timerRef.current);
+    requestRef.current += 1;
     setActiveConversation(conversation.id);
     setMessages(conversation.messages);
     setIsTyping(false);
     setIsHistoryOpen(false);
   };
 
-  const sendMessage = (rawValue = inputValue) => {
+  const buildHistory = () =>
+    messages
+      .filter((message) => ["user", "assistant"].includes(message.role) && message.text)
+      .map((message) => ({ role: message.role, text: message.text }))
+      .slice(-8);
+
+  const sendMessage = async (rawValue = inputValue) => {
     const value = rawValue.trim();
     if (!value && !attachment) {
       return;
@@ -63,8 +71,34 @@ export const useChatbot = () => {
     setIsTyping(true);
     setActiveConversation("new");
 
-    window.clearTimeout(timerRef.current);
-    timerRef.current = window.setTimeout(() => {
+    const requestId = requestRef.current + 1;
+    requestRef.current = requestId;
+
+    try {
+      const response = await chatbotService.sendMessage({
+        message: messageText,
+        history: buildHistory(),
+      });
+
+      if (requestRef.current !== requestId) {
+        return;
+      }
+
+      setMessages((current) => [
+        ...current,
+        {
+          id: `assistant-${Date.now()}`,
+          role: "assistant",
+          text: response.data?.text || buildResponse(value),
+          time: "Vừa xong",
+        },
+      ]);
+    } catch (error) {
+      if (requestRef.current !== requestId) {
+        return;
+      }
+
+      toast.error(getErrorMessage(error, "Không thể kết nối VietFly AI. Đang dùng câu trả lời hỗ trợ cơ bản."));
       setMessages((current) => [
         ...current,
         {
@@ -74,8 +108,11 @@ export const useChatbot = () => {
           time: "Vừa xong",
         },
       ]);
-      setIsTyping(false);
-    }, 850);
+    } finally {
+      if (requestRef.current === requestId) {
+        setIsTyping(false);
+      }
+    }
   };
 
   const handleAttachment = (event) => {

@@ -38,7 +38,7 @@ Tạo file môi trường từ file mẫu:
 cp .env.example .env
 ```
 
-Cấu hình các biến cần thiết trong `.env`, bao gồm Supabase, JWT, frontend URL và thông tin thanh toán nếu sử dụng.
+Cấu hình các biến cần thiết trong `.env`, bao gồm Supabase, JWT, frontend URL và thông tin thanh toán nếu sử dụng. Chatbot Gemini dùng biến `GEMINI_API_KEYS` dạng danh sách key phân tách bằng dấu phẩy để backend xoay vòng key theo từng lượt hỏi.
 
 ## Chạy dự án
 
@@ -74,6 +74,9 @@ PAYMENT_CANCEL_URL
 REDIS_URL
 SUPABASE_READ_URL
 SUPABASE_READ_SERVICE_ROLE_KEY
+GEMINI_API_KEYS
+GEMINI_MODEL
+GEMINI_REQUEST_TIMEOUT_MS
 ```
 
 `FRONTEND_URL` có thể chứa nhiều origin, phân tách bằng dấu phẩy, ví dụ `http://localhost:5173,https://example.com`.

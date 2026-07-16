@@ -15,6 +15,19 @@ const corsOriginsSchema = z
     'FRONTEND_URL must contain valid URLs',
   );
 
+const commaSeparatedListSchema = z
+  .string()
+  .optional()
+  .default('')
+  .transform((value) => value.split(',').map((item) => item.trim()).filter(Boolean));
+
+const optionalStringWithDefault = (fallback) =>
+  z
+    .string()
+    .optional()
+    .default(fallback)
+    .transform((value) => value.trim() || fallback);
+
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().int().min(1).max(65535).default(5000),
@@ -37,6 +50,9 @@ const envSchema = z.object({
   REDIS_URL: z.string().url().optional().or(z.literal('')).default(''),
   FLIGHT_SEARCH_CACHE_TTL_SECONDS: z.coerce.number().int().min(1).max(300).default(15),
   SEAT_CLEANUP_INTERVAL_MS: z.coerce.number().int().min(30_000).max(900_000).default(60_000),
+  GEMINI_API_KEYS: commaSeparatedListSchema,
+  GEMINI_MODEL: optionalStringWithDefault('gemini-2.0-flash'),
+  GEMINI_REQUEST_TIMEOUT_MS: z.coerce.number().int().min(1_000).max(60_000).default(15_000),
 });
 
 const parsedEnv = envSchema.safeParse(process.env);
@@ -71,4 +87,7 @@ export const env = {
   redisUrl: values.REDIS_URL,
   flightSearchCacheTtlSeconds: values.FLIGHT_SEARCH_CACHE_TTL_SECONDS,
   seatCleanupIntervalMs: values.SEAT_CLEANUP_INTERVAL_MS,
+  geminiApiKeys: values.GEMINI_API_KEYS,
+  geminiModel: values.GEMINI_MODEL,
+  geminiRequestTimeoutMs: values.GEMINI_REQUEST_TIMEOUT_MS,
 };

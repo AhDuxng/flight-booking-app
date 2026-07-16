@@ -157,10 +157,11 @@ Các biến cần nhập trên Render:
 ```text
 SUPABASE_URL
 SUPABASE_SERVICE_ROLE_KEY
+GEMINI_API_KEYS
 FRONTEND_URL
 ```
 
-`JWT_SECRET` được Render tự sinh từ `render.yaml`. `FRONTEND_URL` là origin của frontend Netlify, ví dụ `https://your-site.netlify.app`. Nếu cần cho nhiều domain, phân tách bằng dấu phẩy.
+`JWT_SECRET` được Render tự sinh từ `render.yaml`. `GEMINI_API_KEYS` là danh sách key Gemini cho chatbot, phân tách bằng dấu phẩy để backend xoay vòng theo từng lượt hỏi. `FRONTEND_URL` là origin của frontend Netlify, ví dụ `https://your-site.netlify.app`. Nếu cần cho nhiều domain, phân tách bằng dấu phẩy.
 
 Các biến tùy chọn nếu bật cache hoặc thanh toán:
 
@@ -173,6 +174,8 @@ PAYMENT_RETURN_URL
 PAYMENT_CANCEL_URL
 SUPABASE_READ_URL
 SUPABASE_READ_SERVICE_ROLE_KEY
+GEMINI_MODEL
+GEMINI_REQUEST_TIMEOUT_MS
 ```
 
 Backend có health check tại:
