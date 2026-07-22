@@ -21,6 +21,7 @@ export default function PaymentCheckoutFeature({ bookingId }) {
   const [booking, setBooking] = useState(null);
   const [payment, setPayment] = useState(null);
   const [selectedMethod, setSelectedMethod] = useState("vnpay");
+  const [availableMethods, setAvailableMethods] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -28,13 +29,18 @@ export default function PaymentCheckoutFeature({ bookingId }) {
 
   const loadPaymentData = useCallback(async () => {
     try {
-      const [bookingResponse, paymentsResponse] = await Promise.all([
+      const [bookingResponse, paymentsResponse, configResponse] = await Promise.all([
         bookingService.getById(bookingId),
         paymentService.getByBooking(bookingId),
+        paymentService.getConfig(),
       ]);
       setBooking(bookingResponse.data);
       const payments = paymentsResponse.data ?? [];
-      setPayment(payments.find((item) => item.status === "pending") ?? payments[0] ?? null);
+      const latestPayment = payments.find((item) => item.status === "pending") ?? payments[0] ?? null;
+      const methods = paymentMethods.filter((method) => (configResponse.data?.providers ?? []).includes(method.id));
+      setPayment(latestPayment);
+      setAvailableMethods(methods);
+      setSelectedMethod(latestPayment?.provider ?? methods[0]?.id ?? "");
       setError("");
     } catch (requestError) {
       setError(getErrorMessage(requestError, "Không thể tải thông tin thanh toán."));
@@ -84,6 +90,11 @@ export default function PaymentCheckoutFeature({ bookingId }) {
     }
   };
 
+  const handleRetryPayment = () => {
+    setPayment(null);
+    setError("");
+  };
+
   if (isLoading) {
     return <Loading label="Đang tải thanh toán" />;
   }
@@ -105,7 +116,7 @@ export default function PaymentCheckoutFeature({ bookingId }) {
         <div className="mb-stack-lg"><h1 className="text-headline-lg font-headline-lg text-primary">Thanh toán an toàn</h1><p className="mt-2 text-body-md text-on-surface-variant">Tạo yêu cầu thanh toán cho mã đặt chỗ <span className="font-data-mono text-on-surface">{bookingId}</span>.</p></div>
         {error ? <div className="mb-stack-lg"><ErrorMessage message={error} onRetry={loadPaymentData} /></div> : null}
         <div className="grid grid-cols-1 items-start gap-stack-lg lg:grid-cols-12">
-          <section className="rounded-xl border border-surface-variant bg-surface-container-lowest p-stack-lg shadow-sm lg:col-span-7"><h2 className="text-title-lg font-title-lg text-primary">Phương thức thanh toán</h2>{booking.status === "pending" ? <p className={cn("mt-3 rounded-lg p-3 text-body-sm font-semibold", holdExpired ? "bg-status-error/10 text-status-error" : "bg-status-warning/10 text-status-warning")}>{holdExpired ? "Đã hết thời gian giữ ghế. Vui lòng tạo booking mới." : `Ghế được giữ thêm ${holdTime}.`}</p> : null}<div className="mt-stack-md grid gap-3 sm:grid-cols-2">{paymentMethods.map((method) => <button className={cn("flex items-center gap-3 rounded-lg border p-4 text-left transition-colors", selectedMethod === method.id ? "border-primary bg-primary-fixed" : "border-outline-variant hover:border-primary")} disabled={Boolean(payment) || holdExpired} key={method.id} onClick={() => setSelectedMethod(method.id)} type="button"><method.icon className="h-5 w-5 text-primary" /><span><span className="block text-label-md font-label-md text-on-surface">{method.title}</span><span className="block text-body-sm text-on-surface-variant">{method.description}</span></span></button>)}</div><div className="mt-stack-md flex items-start gap-2 rounded-lg bg-primary-fixed p-3 text-body-sm text-on-primary-fixed"><ShieldCheck className="mt-0.5 h-4 w-4 shrink-0" />Số tiền và trạng thái thanh toán được xác nhận ở máy chủ. Website không lưu dữ liệu thẻ.</div>{payment ? <PaymentStatus payment={payment} onRefresh={loadPaymentData} /> : <button className="mt-stack-lg inline-flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-status-warning px-5 text-label-md font-label-md font-bold text-primary disabled:opacity-50" disabled={isSubmitting || booking.status !== "pending" || holdExpired} onClick={handleCreateIntent} type="button">{isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <CreditCard className="h-4 w-4" />}{isSubmitting ? "Đang tạo yêu cầu" : "Tạo yêu cầu thanh toán"}</button>}{isPaymentFailed ? <div className="mt-4 flex items-center gap-2 text-status-error"><CircleAlert className="h-4 w-4" />Thanh toán chưa thành công. Liên hệ hỗ trợ hoặc tạo booking mới.</div> : null}</section>
+          <section className="rounded-xl border border-surface-variant bg-surface-container-lowest p-stack-lg shadow-sm lg:col-span-7"><h2 className="text-title-lg font-title-lg text-primary">Phương thức thanh toán</h2>{booking.status === "pending" ? <p className={cn("mt-3 rounded-lg p-3 text-body-sm font-semibold", holdExpired ? "bg-status-error/10 text-status-error" : "bg-status-warning/10 text-status-warning")}>{holdExpired ? "Đã hết thời gian giữ ghế. Vui lòng tạo booking mới." : `Ghế được giữ thêm ${holdTime}.`}</p> : null}<div className="mt-stack-md grid gap-3 sm:grid-cols-2">{availableMethods.map((method) => <button className={cn("flex items-center gap-3 rounded-lg border p-4 text-left transition-colors", selectedMethod === method.id ? "border-primary bg-primary-fixed" : "border-outline-variant hover:border-primary")} disabled={Boolean(payment) || holdExpired} key={method.id} onClick={() => setSelectedMethod(method.id)} type="button"><method.icon className="h-5 w-5 text-primary" /><span><span className="block text-label-md font-label-md text-on-surface">{method.title}</span><span className="block text-body-sm text-on-surface-variant">{method.description}</span></span></button>)}</div><div className="mt-stack-md flex items-start gap-2 rounded-lg bg-primary-fixed p-3 text-body-sm text-on-primary-fixed"><ShieldCheck className="mt-0.5 h-4 w-4 shrink-0" />Số tiền và trạng thái thanh toán được xác nhận ở máy chủ. Website không lưu dữ liệu thẻ.</div>{payment ? <PaymentStatus payment={payment} onRefresh={loadPaymentData} /> : <button className="mt-stack-lg inline-flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-status-warning px-5 text-label-md font-label-md font-bold text-primary disabled:opacity-50" disabled={isSubmitting || !selectedMethod || booking.status !== "pending" || holdExpired} onClick={handleCreateIntent} type="button">{isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <CreditCard className="h-4 w-4" />}{isSubmitting ? "Đang tạo yêu cầu" : selectedMethod === "cash" ? "Đăng ký thanh toán tiền mặt" : "Tạo yêu cầu thanh toán"}</button>}{isPaymentFailed ? <div className="mt-4 rounded-lg bg-status-error/10 p-3 text-status-error"><div className="flex items-center gap-2"><CircleAlert className="h-4 w-4" />Thanh toán chưa thành công.</div><button className="mt-2 text-label-md font-semibold underline" disabled={holdExpired} onClick={handleRetryPayment} type="button">Thử lại bằng phương thức khác</button></div> : null}</section>
           <BookingSummary booking={booking} flight={flight} />
         </div>
       </div>
@@ -114,7 +125,8 @@ export default function PaymentCheckoutFeature({ bookingId }) {
 }
 
 function PaymentStatus({ payment, onRefresh }) {
-  return <div className="mt-stack-lg rounded-lg border border-outline-variant bg-surface p-stack-md"><div className="flex items-start justify-between gap-4"><div><p className="text-label-md text-on-surface-variant">Mã giao dịch</p><p className="mt-1 break-all font-data-mono text-body-md text-on-surface">{payment.transaction_ref}</p></div><span className={cn("rounded-full px-3 py-1 text-label-md", payment.status === "success" ? "bg-status-success/10 text-status-success" : payment.status === "failed" ? "bg-status-error/10 text-status-error" : "bg-status-warning/10 text-status-warning")}>{payment.status === "pending" ? "Đang chờ thanh toán" : payment.status === "success" ? "Đã thanh toán" : "Không thành công"}</span></div><p className="mt-3 text-body-sm text-on-surface-variant">Hãy hoàn tất ở cổng thanh toán của nhà cung cấp. Trạng thái sẽ tự cập nhật.</p><button className="mt-3 text-label-md text-primary hover:underline" onClick={onRefresh} type="button">Kiểm tra lại trạng thái</button></div>;
+  const instruction = payment.provider === "cash" ? "Vui lòng thanh toán tại quầy/đại lý. Nhân viên sẽ xác nhận giao dịch trên hệ thống." : "Hãy hoàn tất ở cổng thanh toán của nhà cung cấp. Trạng thái sẽ tự cập nhật.";
+  return <div className="mt-stack-lg rounded-lg border border-outline-variant bg-surface p-stack-md"><div className="flex items-start justify-between gap-4"><div><p className="text-label-md text-on-surface-variant">Mã giao dịch</p><p className="mt-1 break-all font-data-mono text-body-md text-on-surface">{payment.transaction_ref}</p></div><span className={cn("rounded-full px-3 py-1 text-label-md", payment.status === "success" ? "bg-status-success/10 text-status-success" : payment.status === "failed" ? "bg-status-error/10 text-status-error" : "bg-status-warning/10 text-status-warning")}>{payment.status === "pending" ? "Đang chờ thanh toán" : payment.status === "success" ? "Đã thanh toán" : "Không thành công"}</span></div><p className="mt-3 text-body-sm text-on-surface-variant">{instruction}</p><button className="mt-3 text-label-md text-primary hover:underline" onClick={onRefresh} type="button">Kiểm tra lại trạng thái</button></div>;
 }
 
 function BookingSummary({ booking, flight }) {

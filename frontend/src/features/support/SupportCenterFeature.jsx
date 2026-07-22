@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   ChevronDown,
   CreditCard,
@@ -43,7 +43,7 @@ const faqs = [
   {
     question: "Tôi đổi ngày bay như thế nào?",
     answer:
-      "Bạn có thể vào mục Đặt chỗ của tôi, nhập mã đặt chỗ và chọn chuyến cần đổi. Hệ thống sẽ hiển thị chênh lệch giá vé hoặc phí đổi trước khi xác nhận.",
+      "Hiện tại bạn có thể hủy đặt chỗ đủ điều kiện trong mục Đặt chỗ của tôi. Để đổi ngày bay, hãy gửi yêu cầu cho bộ phận hỗ trợ để được báo phí và chênh lệch giá trước khi xác nhận.",
   },
   {
     question: "Hạn mức hành lý xách tay là bao nhiêu?",
@@ -58,18 +58,19 @@ const faqs = [
   {
     question: "Tôi có thể yêu cầu suất ăn đặc biệt không?",
     answer:
-      "Có. Bạn có thể chọn suất ăn trong quá trình đặt vé hoặc trong phần quản lý đặt chỗ, chậm nhất 24 tiếng trước giờ khởi hành dự kiến.",
+      "Có. Bạn có thể chọn suất ăn cho từng hành khách trong quá trình đặt vé. Nếu booking đã tạo, hãy liên hệ hỗ trợ để kiểm tra khả năng bổ sung trước giờ bay.",
   },
 ];
 
 const quickActions = [
-  "Kiểm tra mã đặt chỗ",
-  "Thay đổi chuyến bay",
-  "Mua thêm hành lý",
-  "Yêu cầu hóa đơn",
+  { label: "Kiểm tra mã đặt chỗ", to: "/my-bookings" },
+  { label: "Thay đổi chuyến bay", search: "đổi ngày bay" },
+  { label: "Mua thêm hành lý", search: "hành lý" },
+  { label: "Yêu cầu hóa đơn", href: "mailto:support@vietfly.com?subject=Yêu cầu hóa đơn VietFly" },
 ];
 
 export default function SupportCenterFeature() {
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [openFaqIndex, setOpenFaqIndex] = useState(0);
 
@@ -92,6 +93,11 @@ export default function SupportCenterFeature() {
 
       return index;
     });
+  };
+
+  const openHelpSearch = (value) => {
+    setSearchTerm(value);
+    document.getElementById("faq")?.scrollIntoView({ behavior: "smooth" });
   };
 
   return (
@@ -121,10 +127,11 @@ export default function SupportCenterFeature() {
             {quickActions.map((action) => (
               <button
                 className="rounded-full border border-primary-fixed/30 bg-primary-container/70 px-4 py-2 text-body-sm font-body-sm text-primary-fixed transition-colors hover:bg-primary-container"
-                key={action}
+                key={action.label}
+                onClick={() => action.to ? navigate(action.to) : action.href ? window.location.assign(action.href) : openHelpSearch(action.search)}
                 type="button"
               >
-                {action}
+                {action.label}
               </button>
             ))}
           </div>
@@ -141,6 +148,7 @@ export default function SupportCenterFeature() {
             <button
               className="group flex min-h-56 flex-col items-center rounded-xl border border-surface-variant bg-surface-container-lowest p-stack-md text-center shadow-[0_4px_12px_rgba(26,54,93,0.04)] transition-all hover:-translate-y-1 hover:border-primary-fixed-dim hover:shadow-md"
               key={topic.title}
+              onClick={() => openHelpSearch(topic.title)}
               type="button"
             >
               <div className="mb-stack-sm flex h-16 w-16 items-center justify-center rounded-full bg-sky-blue text-primary transition-transform group-hover:scale-105">

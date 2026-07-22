@@ -16,6 +16,7 @@ export default function ChatbotFeature() {
       <HistorySidebar
         activeConversation={chatbot.activeConversation}
         className="hidden lg:flex"
+        conversations={chatbot.conversations}
         onNewConversation={chatbot.startNewConversation}
         onSelect={chatbot.selectConversation}
       />
@@ -31,6 +32,7 @@ export default function ChatbotFeature() {
           <HistorySidebar
             activeConversation={chatbot.activeConversation}
             className="relative h-full w-[min(19rem,88vw)] animate-in slide-in-from-left"
+            conversations={chatbot.conversations}
             onClose={() => chatbot.setIsHistoryOpen(false)}
             onNewConversation={chatbot.startNewConversation}
             onSelect={chatbot.selectConversation}
@@ -42,6 +44,7 @@ export default function ChatbotFeature() {
         <ChatbotHeader
           isMenuOpen={chatbot.isMenuOpen}
           onMenuToggle={() => chatbot.setIsMenuOpen((current) => !current)}
+          onDeleteConversation={chatbot.deleteCurrentConversation}
           onNewConversation={chatbot.startNewConversation}
           onOpenHistory={() => chatbot.setIsHistoryOpen(true)}
         />

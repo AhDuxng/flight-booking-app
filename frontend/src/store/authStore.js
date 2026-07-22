@@ -4,6 +4,9 @@ const storageKey = "vietfly-auth";
 
 const initialState = {
   isAuthenticated: false,
+  expiresAt: null,
+  rememberMe: false,
+  refreshToken: null,
   token: null,
   user: null,
 };
@@ -13,7 +16,9 @@ const readState = () => {
     return initialState;
   }
 
-  const storedValue = window.localStorage.getItem(storageKey);
+  const localValue = window.localStorage.getItem(storageKey);
+  const sessionValue = window.sessionStorage.getItem(storageKey);
+  const storedValue = localValue ?? sessionValue;
   if (!storedValue) {
     return initialState;
   }
@@ -24,6 +29,7 @@ const readState = () => {
       ...initialState,
       ...parsedValue,
       isAuthenticated: Boolean(parsedValue.token),
+      rememberMe: localValue ? true : Boolean(parsedValue.rememberMe),
     };
   } catch {
     return initialState;
@@ -37,7 +43,10 @@ const writeState = (nextState) => {
   state = nextState;
 
   if (typeof window !== "undefined") {
-    window.localStorage.setItem(storageKey, JSON.stringify(nextState));
+    window.localStorage.removeItem(storageKey);
+    window.sessionStorage.removeItem(storageKey);
+    const storage = nextState.rememberMe ? window.localStorage : window.sessionStorage;
+    storage.setItem(storageKey, JSON.stringify(nextState));
   }
 
   listeners.forEach((listener) => listener());
@@ -53,12 +62,20 @@ const subscribe = (listener) => {
 
 export const authStore = {
   clearAuth: () => {
-    writeState(initialState);
+    state = initialState;
+    if (typeof window !== "undefined") {
+      window.localStorage.removeItem(storageKey);
+      window.sessionStorage.removeItem(storageKey);
+    }
+    listeners.forEach((listener) => listener());
   },
   getState: () => state,
-  setAuth: (user, token) => {
+  setAuth: (user, token, refreshToken = null, expiresAt = null, rememberMe = state.rememberMe) => {
     writeState({
+      expiresAt,
       isAuthenticated: Boolean(token),
+      rememberMe,
+      refreshToken,
       token,
       user,
     });

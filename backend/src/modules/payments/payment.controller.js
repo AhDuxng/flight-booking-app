@@ -1,5 +1,13 @@
 import * as paymentService from './payment.service.js';
 
+export const getPaymentConfig = async (req, res, next) => {
+  try {
+    return res.json({ data: paymentService.getPaymentConfig() });
+  } catch (error) {
+    return next(error);
+  }
+};
+
 export const createPaymentIntent = async (req, res, next) => {
   try {
     const data = await paymentService.createPaymentIntent(req.user.id, req.body);

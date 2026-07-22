@@ -68,4 +68,13 @@ Xem bản build:
 npm run preview
 ```
 
+Chạy test hoặc toàn bộ kiểm tra frontend:
+
+```bash
+npm test
+npm run check
+```
+
 Mặc định frontend chạy tại `http://localhost:5173`.
+
+`VITE_API_URL` phải trỏ đúng cổng backend thực tế và có hậu tố `/api`. Các route booking/thanh toán/quản trị được bảo vệ; phiên hết hạn sẽ được refresh một lần trước khi yêu cầu đăng nhập lại. Hội thoại chatbot được lưu tối đa 20 cuộc trên trình duyệt hiện tại, không phải dữ liệu tài khoản trên máy chủ.

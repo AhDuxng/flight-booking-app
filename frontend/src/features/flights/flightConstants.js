@@ -4,7 +4,6 @@ export const FLIGHT_SCOPES = [
 ];
 
 export const FLIGHT_TYPES = [
-  { label: "Khứ hồi", value: "round-trip" },
   { label: "Một chiều", value: "one-way" },
 ];
 

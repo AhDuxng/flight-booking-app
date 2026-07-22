@@ -1,10 +1,11 @@
 import { Link } from "react-router-dom";
 import { Headphones, History, MessageCircle, RefreshCcw, X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { conversations } from "../chatbotData";
 import IconButton from "./IconButton";
 
-export default function HistorySidebar({ activeConversation, className, onClose, onNewConversation, onSelect }) {
+const formatUpdatedAt = (value) => new Intl.DateTimeFormat("vi-VN", { dateStyle: "short", timeStyle: "short" }).format(new Date(value));
+
+export default function HistorySidebar({ activeConversation, className, conversations, onClose, onNewConversation, onSelect }) {
   return (
     <aside className={cn("w-72 shrink-0 flex-col border-r border-outline-variant bg-surface-container-low", className)}>
       <div className="flex items-center justify-between border-b border-outline-variant px-container-padding py-4">
@@ -44,7 +45,7 @@ export default function HistorySidebar({ activeConversation, className, onClose,
                 <History className="h-5 w-5 shrink-0" />
                 <span className="min-w-0">
                   <span className={cn("block truncate text-body-sm", isActive && "font-semibold")}>{conversation.title}</span>
-                  <span className="block text-xs opacity-75">{conversation.time}</span>
+                  <span className="block text-xs opacity-75">{formatUpdatedAt(conversation.updatedAt)}</span>
                 </span>
               </button>
             );

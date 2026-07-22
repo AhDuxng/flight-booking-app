@@ -38,10 +38,13 @@ const addDynamicPrice = (flight) => {
 const buildSearchCacheKey = (filters, version) => {
   const normalizedFilters = {
     airlineId: filters.airlineId ?? null,
+    cabinClass: filters.cabinClass ?? null,
     departureDate: filters.departureDate ?? null,
+    departureTimezone: filters.departureTimezone ?? null,
     destinationAirportId: filters.destinationAirportId ?? null,
     limit: filters.limit,
     originAirportId: filters.originAirportId ?? null,
+    passengerCount: filters.passengerCount,
     page: filters.page,
     status: filters.status ?? null,
   };
@@ -127,9 +130,21 @@ export const updateFlight = async (flightId, payload) => {
 
   const originAirportId = payload.originAirportId ?? currentFlight.origin_airport_id;
   const destinationAirportId = payload.destinationAirportId ?? currentFlight.destination_airport_id;
+  const airlineId = payload.airlineId ?? currentFlight.airline_id;
+  const aircraftId = payload.aircraftId ?? currentFlight.aircraft_id;
 
   if (originAirportId === destinationAirportId) {
     throw createHttpError(400, 'Origin and destination must differ');
+  }
+
+  if (!(await flightQueries.aircraftBelongsToAirline(aircraftId, airlineId))) {
+    throw createHttpError(400, 'Aircraft does not belong to airline');
+  }
+
+  const nextStatus = payload.status ?? currentFlight.status;
+  const nextDeparture = payload.departureTime ?? currentFlight.departure_time;
+  if (['scheduled', 'delayed'].includes(nextStatus) && new Date(nextDeparture) <= new Date()) {
+    throw createHttpError(400, 'Sellable flights must depart in the future');
   }
 
   assertFlightTimes(payload, currentFlight);

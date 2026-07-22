@@ -11,6 +11,9 @@ const FlightListPage = lazy(() => import("@/pages/public/FlightListPage"));
 const FlightDetailPage = lazy(() => import("@/pages/public/FlightDetailPage"));
 const LoginPage = lazy(() => import("@/pages/public/LoginPage"));
 const RegisterPage = lazy(() => import("@/pages/public/RegisterPage"));
+const ForgotPasswordPage = lazy(() => import("@/pages/public/ForgotPasswordPage"));
+const ResetPasswordPage = lazy(() => import("@/pages/public/ResetPasswordPage"));
+const OAuthCallbackPage = lazy(() => import("@/pages/public/OAuthCallbackPage"));
 const SupportPage = lazy(() => import("@/pages/public/SupportPage"));
 const PromotionsPage = lazy(() => import("@/pages/public/PromotionsPage"));
 const ChatbotPage = lazy(() => import("@/pages/public/ChatbotPage"));
@@ -61,8 +64,11 @@ const router = createBrowserRouter([
   },
   { path: "/login", element: withSuspense(LoginPage) },
   { path: "/register", element: withSuspense(RegisterPage) },
+  { path: "/forgot-password", element: withSuspense(ForgotPasswordPage) },
+  { path: "/reset-password", element: withSuspense(ResetPasswordPage) },
+  { path: "/auth/callback", element: withSuspense(OAuthCallbackPage) },
   { path: "/chatbot", element: withSuspense(ChatbotPage) },
-  { path: "/payment", element: <PrivateRoute>{withSuspense(PaymentPage)}</PrivateRoute> },
+  { path: "/payment", element: <Navigate replace to="/my-bookings" /> },
   { path: "/payment/:bookingId", element: <PrivateRoute>{withSuspense(PaymentPage)}</PrivateRoute> },
   { path: "/payment/result", element: <PrivateRoute>{withSuspense(PaymentResultPage)}</PrivateRoute> },
   { path: "/payment-result", element: <Navigate replace to="/payment/result" /> },

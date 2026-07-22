@@ -12,7 +12,7 @@ import AdminPageHeader from "./AdminPageHeader";
 import { adminService } from "./adminService";
 
 const initialValues = { airlineId: "", aircraftId: "", originAirportId: "", destinationAirportId: "", flightNumber: "", departureDate: "", departureTime: "", arrivalDate: "", arrivalTime: "", basePrice: "", seatCount: "" , status: "scheduled" };
-const statusOptions = [{ label: "Đã lên lịch", value: "scheduled" }, { label: "Đang lên máy bay", value: "boarding" }, { label: "Bị hoãn", value: "delayed" }, { label: "Đã hủy", value: "cancelled" }];
+const statusOptions = [{ label: "Đã lên lịch", value: "scheduled" }, { label: "Đang lên máy bay", value: "boarding" }, { label: "Đã khởi hành", value: "departed" }, { label: "Đã đến", value: "arrived" }, { label: "Bị hoãn", value: "delayed" }, { label: "Đã hủy", value: "cancelled" }];
 
 export default function AdminFlightFormFeature({ mode = "create" }) {
   const { flightId } = useParams();
@@ -40,7 +40,8 @@ export default function AdminFlightFormFeature({ mode = "create" }) {
         if (flightResponse?.data) {
           setValues(toFormValues(flightResponse.data));
         } else {
-          setValues((current) => ({ ...current, airlineId: airlines[0]?.id ?? "", aircraftId: aircrafts[0]?.id ?? "", originAirportId: airports[0]?.id ?? "", destinationAirportId: airports[1]?.id ?? airports[0]?.id ?? "" }));
+          const airlineId = airlines[0]?.id ?? "";
+          setValues((current) => ({ ...current, airlineId, aircraftId: aircrafts.find((aircraft) => aircraft.airline_id === airlineId)?.id ?? "", originAirportId: airports[0]?.id ?? "", destinationAirportId: airports[1]?.id ?? airports[0]?.id ?? "" }));
         }
         setError("");
       } catch (requestError) {
@@ -57,14 +58,33 @@ export default function AdminFlightFormFeature({ mode = "create" }) {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+    const departure = new Date(`${values.departureDate}T${values.departureTime}:00`);
+    const arrival = new Date(`${values.arrivalDate}T${values.arrivalTime}:00`);
+    if (values.originAirportId === values.destinationAirportId) {
+      toast.error("Điểm đi và điểm đến phải khác nhau.");
+      return;
+    }
+    if (arrival <= departure) {
+      toast.error("Thời gian đến phải sau thời gian khởi hành.");
+      return;
+    }
+    if (["scheduled", "delayed"].includes(values.status) && departure <= new Date()) {
+      toast.error("Chuyến bay đang mở bán phải khởi hành trong tương lai.");
+      return;
+    }
+    const selectedAircraft = options.aircrafts.find((item) => item.id === values.aircraftId);
+    if (mode === "create" && Number(values.seatCount) > Number(selectedAircraft?.total_seats ?? 0)) {
+      toast.error(`Số ghế không được vượt quá sức chứa ${selectedAircraft?.total_seats ?? 0} ghế của tàu bay.`);
+      return;
+    }
     const payload = {
       airlineId: values.airlineId,
       aircraftId: values.aircraftId,
       originAirportId: values.originAirportId,
       destinationAirportId: values.destinationAirportId,
       flightNumber: values.flightNumber,
-      departureTime: new Date(`${values.departureDate}T${values.departureTime}:00`).toISOString(),
-      arrivalTime: new Date(`${values.arrivalDate}T${values.arrivalTime}:00`).toISOString(),
+      departureTime: departure.toISOString(),
+      arrivalTime: arrival.toISOString(),
       basePrice: Number(values.basePrice),
       status: values.status,
     };
@@ -98,10 +118,17 @@ export default function AdminFlightFormFeature({ mode = "create" }) {
   }
 
   const airlineOptions = options.airlines.map((item) => ({ value: item.id, label: `${item.code} - ${item.name}` }));
-  const aircraftOptions = options.aircrafts.map((item) => ({ value: item.id, label: `${item.code} - ${item.model}` }));
+  const matchingAircrafts = options.aircrafts.filter((item) => item.airline_id === values.airlineId);
+  const selectedAircraft = matchingAircrafts.find((item) => item.id === values.aircraftId);
+  const aircraftOptions = matchingAircrafts.map((item) => ({ value: item.id, label: `${item.code} - ${item.model}` }));
   const airportOptions = options.airports.map((item) => ({ value: item.id, label: `${item.code} - ${item.city}` }));
 
-  return <div className="flex min-w-0 flex-col gap-stack-md"><AdminPageHeader description="Nhập thông tin lịch bay, tàu bay, chặng và trạng thái mở bán." title={mode === "create" ? "Tạo chuyến bay" : `Cập nhật chuyến bay ${values.flightNumber}`} /><form className="rounded-lg border border-surface-container-high bg-surface-container-lowest p-stack-md shadow-sm" onSubmit={handleSubmit}><div className="grid grid-cols-1 gap-stack-md md:grid-cols-2"><Input label="Mã chuyến bay" name="flightNumber" onChange={(event) => setField("flightNumber", event.target.value.toUpperCase())} required value={values.flightNumber} /><FieldSelect label="Hãng bay" onChange={(value) => setField("airlineId", value)} options={airlineOptions} value={values.airlineId} /><FieldSelect label="Tàu bay" onChange={(value) => setField("aircraftId", value)} options={aircraftOptions} value={values.aircraftId} /><FieldSelect label="Trạng thái" onChange={(value) => setField("status", value)} options={statusOptions} value={values.status} /><FieldSelect label="Điểm đi" onChange={(value) => setField("originAirportId", value)} options={airportOptions} value={values.originAirportId} /><FieldSelect label="Điểm đến" onChange={(value) => setField("destinationAirportId", value)} options={airportOptions} value={values.destinationAirportId} /><Input label="Ngày đi" name="departureDate" onChange={(event) => setField("departureDate", event.target.value)} required type="date" value={values.departureDate} /><Input label="Giờ đi" name="departureTime" onChange={(event) => setField("departureTime", event.target.value)} required type="time" value={values.departureTime} /><Input label="Ngày đến" name="arrivalDate" onChange={(event) => setField("arrivalDate", event.target.value)} required type="date" value={values.arrivalDate} /><Input label="Giờ đến" name="arrivalTime" onChange={(event) => setField("arrivalTime", event.target.value)} required type="time" value={values.arrivalTime} /><Input label="Giá vé cơ bản" min="0" name="basePrice" onChange={(event) => setField("basePrice", event.target.value)} required type="number" value={values.basePrice} />{mode === "create" ? <Input label="Số ghế mở bán" max="1000" min="1" name="seatCount" onChange={(event) => setField("seatCount", event.target.value)} required type="number" value={values.seatCount} /> : null}</div><div className="mt-stack-md flex justify-end"><Button disabled={isSubmitting} type="submit">{isSubmitting ? "Đang lưu..." : mode === "create" ? "Tạo chuyến bay" : "Lưu thay đổi"}</Button></div></form></div>;
+  const handleAirlineChange = (airlineId) => {
+    const firstAircraft = options.aircrafts.find((item) => item.airline_id === airlineId);
+    setValues((current) => ({ ...current, airlineId, aircraftId: firstAircraft?.id ?? "" }));
+  };
+
+  return <div className="flex min-w-0 flex-col gap-stack-md"><AdminPageHeader description="Nhập thông tin lịch bay, tàu bay, chặng và trạng thái mở bán." title={mode === "create" ? "Tạo chuyến bay" : `Cập nhật chuyến bay ${values.flightNumber}`} /><form className="rounded-lg border border-surface-container-high bg-surface-container-lowest p-stack-md shadow-sm" onSubmit={handleSubmit}><div className="grid grid-cols-1 gap-stack-md md:grid-cols-2"><Input label="Mã chuyến bay" name="flightNumber" onChange={(event) => setField("flightNumber", event.target.value.toUpperCase())} required value={values.flightNumber} /><FieldSelect label="Hãng bay" onChange={handleAirlineChange} options={airlineOptions} value={values.airlineId} /><FieldSelect label="Tàu bay" onChange={(value) => setField("aircraftId", value)} options={aircraftOptions} value={values.aircraftId} /><FieldSelect label="Trạng thái" onChange={(value) => setField("status", value)} options={statusOptions} value={values.status} /><FieldSelect label="Điểm đi" onChange={(value) => setField("originAirportId", value)} options={airportOptions} value={values.originAirportId} /><FieldSelect label="Điểm đến" onChange={(value) => setField("destinationAirportId", value)} options={airportOptions} value={values.destinationAirportId} /><Input label="Ngày đi" name="departureDate" onChange={(event) => setField("departureDate", event.target.value)} required type="date" value={values.departureDate} /><Input label="Giờ đi" name="departureTime" onChange={(event) => setField("departureTime", event.target.value)} required type="time" value={values.departureTime} /><Input label="Ngày đến" name="arrivalDate" onChange={(event) => setField("arrivalDate", event.target.value)} required type="date" value={values.arrivalDate} /><Input label="Giờ đến" name="arrivalTime" onChange={(event) => setField("arrivalTime", event.target.value)} required type="time" value={values.arrivalTime} /><Input label="Giá vé cơ bản" min="0" name="basePrice" onChange={(event) => setField("basePrice", event.target.value)} required type="number" value={values.basePrice} />{mode === "create" ? <Input label={`Số ghế mở bán (tối đa ${selectedAircraft?.total_seats ?? 0})`} max={selectedAircraft?.total_seats ?? 1} min="1" name="seatCount" onChange={(event) => setField("seatCount", event.target.value)} required type="number" value={values.seatCount} /> : null}</div><div className="mt-stack-md flex justify-end"><Button disabled={isSubmitting} type="submit">{isSubmitting ? "Đang lưu..." : mode === "create" ? "Tạo chuyến bay" : "Lưu thay đổi"}</Button></div></form></div>;
 }
 
 function FieldSelect({ label, options, value, onChange }) {
@@ -111,7 +138,14 @@ function FieldSelect({ label, options, value, onChange }) {
 function toFormValues(flight) {
   const departure = new Date(flight.departure_time);
   const arrival = new Date(flight.arrival_time);
-  return { airlineId: flight.airline_id, aircraftId: flight.aircraft_id, originAirportId: flight.origin_airport_id, destinationAirportId: flight.destination_airport_id, flightNumber: flight.flight_number, departureDate: departure.toISOString().slice(0, 10), departureTime: departure.toISOString().slice(11, 16), arrivalDate: arrival.toISOString().slice(0, 10), arrivalTime: arrival.toISOString().slice(11, 16), basePrice: String(flight.base_price ?? ""), seatCount: "", status: flight.status };
+  const departureParts = toLocalParts(departure);
+  const arrivalParts = toLocalParts(arrival);
+  return { airlineId: flight.airline_id, aircraftId: flight.aircraft_id, originAirportId: flight.origin_airport_id, destinationAirportId: flight.destination_airport_id, flightNumber: flight.flight_number, departureDate: departureParts.date, departureTime: departureParts.time, arrivalDate: arrivalParts.date, arrivalTime: arrivalParts.time, basePrice: String(flight.base_price ?? ""), seatCount: "", status: flight.status };
+}
+
+function toLocalParts(value) {
+  const pad = (number) => String(number).padStart(2, "0");
+  return { date: `${value.getFullYear()}-${pad(value.getMonth() + 1)}-${pad(value.getDate())}`, time: `${pad(value.getHours())}:${pad(value.getMinutes())}` };
 }
 
 function createSeats(count, price) {

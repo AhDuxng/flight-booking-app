@@ -1,12 +1,36 @@
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { showcaseMessages, welcomeMessage } from "./chatbotData";
+import { welcomeMessage } from "./chatbotData";
 import { chatbotService } from "./chatbotService";
 import { getErrorMessage } from "@/lib/apiError";
 
+const storageKey = "vietfly-chat-conversations";
+const createId = () => globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+const currentTime = () => new Intl.DateTimeFormat("vi-VN", { hour: "2-digit", minute: "2-digit" }).format(new Date());
+const createConversation = () => ({
+  id: createId(),
+  messages: [{ ...welcomeMessage, id: createId(), time: currentTime() }],
+  title: "Cuộc trò chuyện mới",
+  updatedAt: new Date().toISOString(),
+});
+
+const loadConversations = () => {
+  try {
+    const parsed = JSON.parse(window.localStorage.getItem(storageKey) ?? "[]");
+    const valid = Array.isArray(parsed)
+      ? parsed.filter((item) => item?.id && Array.isArray(item.messages) && item.messages.length > 0)
+      : [];
+    return valid.length > 0 ? valid : [createConversation()];
+  } catch {
+    return [createConversation()];
+  }
+};
+
 export const useChatbot = () => {
-  const [activeConversation, setActiveConversation] = useState("phuquoc");
-  const [messages, setMessages] = useState(showcaseMessages);
+  const [initialConversations] = useState(loadConversations);
+  const [conversations, setConversations] = useState(initialConversations);
+  const [activeConversation, setActiveConversation] = useState(initialConversations[0].id);
+  const [messages, setMessages] = useState(initialConversations[0].messages);
   const [inputValue, setInputValue] = useState("");
   const [attachment, setAttachment] = useState(null);
   const [isTyping, setIsTyping] = useState(false);
@@ -25,10 +49,31 @@ export const useChatbot = () => {
     };
   }, []);
 
+  useEffect(() => {
+    window.localStorage.setItem(storageKey, JSON.stringify(conversations.slice(0, 20)));
+  }, [conversations]);
+
+  useEffect(() => {
+    setConversations((current) => current.map((conversation) => {
+      if (conversation.id !== activeConversation) {
+        return conversation;
+      }
+      const firstQuestion = messages.find((message) => message.role === "user")?.text;
+      return {
+        ...conversation,
+        messages,
+        title: firstQuestion ? firstQuestion.replace(/\s+/g, " ").slice(0, 55) : "Cuộc trò chuyện mới",
+        updatedAt: new Date().toISOString(),
+      };
+    }));
+  }, [activeConversation, messages]);
+
   const startNewConversation = () => {
     requestRef.current += 1;
-    setActiveConversation("new");
-    setMessages([welcomeMessage]);
+    const conversation = createConversation();
+    setConversations((current) => [conversation, ...current].slice(0, 20));
+    setActiveConversation(conversation.id);
+    setMessages(conversation.messages);
     setInputValue("");
     setAttachment(null);
     setIsTyping(false);
@@ -44,6 +89,19 @@ export const useChatbot = () => {
     setIsHistoryOpen(false);
   };
 
+  const deleteCurrentConversation = () => {
+    requestRef.current += 1;
+    const remaining = conversations.filter((conversation) => conversation.id !== activeConversation);
+    const nextConversation = remaining[0] ?? createConversation();
+    setConversations(remaining.length > 0 ? remaining : [nextConversation]);
+    setActiveConversation(nextConversation.id);
+    setMessages(nextConversation.messages);
+    setInputValue("");
+    setAttachment(null);
+    setIsTyping(false);
+    setIsMenuOpen(false);
+  };
+
   const buildHistory = () =>
     messages
       .filter((message) => ["user", "assistant"].includes(message.role) && message.text)
@@ -56,12 +114,18 @@ export const useChatbot = () => {
       return;
     }
 
-    const messageText = attachment ? `${value || "Tôi gửi một tệp đính kèm."}\nTệp: ${attachment.name}` : value;
+    const messageText = attachment
+      ? `${value || "Hãy đọc và hỗ trợ tôi với tệp này."}\n\nTệp ${attachment.name}:\n${attachment.content}`
+      : value;
+    if (messageText.length > 2000) {
+      toast.error("Nội dung câu hỏi và tệp đính kèm không được vượt quá 2.000 ký tự.");
+      return;
+    }
     const userMessage = {
       id: `user-${Date.now()}`,
       role: "user",
       text: messageText,
-      time: "Bây giờ",
+      time: currentTime(),
     };
 
     setMessages((current) => [...current, userMessage]);
@@ -94,7 +158,7 @@ export const useChatbot = () => {
           id: `assistant-${Date.now()}`,
           role: "assistant",
           text: assistantText,
-          time: "Vừa xong",
+          time: currentTime(),
         },
       ]);
     } catch (error) {
@@ -110,7 +174,7 @@ export const useChatbot = () => {
           id: `assistant-${Date.now()}`,
           role: "assistant",
           text: message,
-          time: "Vừa xong",
+          time: currentTime(),
         },
       ]);
     } finally {
@@ -120,19 +184,31 @@ export const useChatbot = () => {
     }
   };
 
-  const handleAttachment = (event) => {
+  const handleAttachment = async (event) => {
     const file = event.target.files?.[0];
     if (!file) {
       return;
     }
 
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error("Tệp đính kèm không được vượt quá 5 MB.");
+    const allowedExtension = /\.(txt|md|csv|json)$/i.test(file.name);
+    if (!allowedExtension || file.size > 100 * 1024) {
+      toast.error("Chỉ hỗ trợ tệp văn bản TXT, MD, CSV hoặc JSON tối đa 100 KB.");
       event.target.value = "";
       return;
     }
 
-    setAttachment(file);
+    try {
+      const content = (await file.text()).trim().slice(0, 1200);
+      if (!content) {
+        toast.error("Tệp đính kèm không có nội dung văn bản.");
+        return;
+      }
+      setAttachment({ content, name: file.name });
+    } catch {
+      toast.error("Không thể đọc tệp đính kèm.");
+    } finally {
+      event.target.value = "";
+    }
   };
 
   const handleVoiceInput = () => {
@@ -154,6 +230,8 @@ export const useChatbot = () => {
   return {
     activeConversation,
     attachment,
+    conversations,
+    deleteCurrentConversation,
     handleAttachment,
     handleVoiceInput,
     inputValue,

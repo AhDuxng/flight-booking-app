@@ -28,15 +28,16 @@ export default function LoginForm() {
         email: formData.get("email"),
         password: formData.get("password"),
       });
-      const { token, user } = response.data;
+      const { expiresAt, refreshToken, token, user } = response.data;
 
       if (!token) {
         toast.info("Vui lòng xác nhận email trước khi đăng nhập.");
         return;
       }
 
-      authStore.setAuth(user, token);
-      navigate(searchParams.get("redirect") || "/profile");
+      authStore.setAuth(user, token, refreshToken, expiresAt, formData.get("rememberMe") === "on");
+      const redirect = searchParams.get("redirect");
+      navigate(redirect?.startsWith("/") && !redirect.startsWith("//") ? redirect : "/profile");
     } catch (error) {
       toast.error(getErrorMessage(error, "Không thể đăng nhập."));
     } finally {
@@ -72,9 +73,9 @@ export default function LoginForm() {
           <div className="space-y-2">
             <div className="flex items-center justify-between gap-4">
               <span className="text-label-md font-label-md text-on-surface">Mật khẩu</span>
-              <button className="text-label-md font-label-md text-primary transition-colors hover:text-primary-container" type="button">
+              <Link className="text-label-md font-label-md text-primary transition-colors hover:text-primary-container" to="/forgot-password">
                 Quên mật khẩu?
-              </button>
+              </Link>
             </div>
             <PasswordField
               autoComplete="current-password"

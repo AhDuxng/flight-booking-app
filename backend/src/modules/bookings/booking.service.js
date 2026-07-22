@@ -45,6 +45,13 @@ export const cancelBooking = async (bookingId, userId) => {
   if (!booking) {
     throw createHttpError(404, 'Booking not found');
   }
+  if (!['pending', 'paid', 'confirmed'].includes(booking.status)) {
+    throw createHttpError(409, 'Booking cannot be cancelled in its current status');
+  }
+  if (!booking.flight || new Date(booking.flight.departure_time) <= new Date()
+    || ['boarding', 'departed', 'arrived', 'cancelled'].includes(booking.flight.status)) {
+    throw createHttpError(409, 'Flight is no longer eligible for cancellation');
+  }
 
   await bookingQueries.cancelAtomically(bookingId, userId);
   const cancelledBooking = await getMyBookingById(bookingId, userId);
@@ -53,9 +60,11 @@ export const cancelBooking = async (bookingId, userId) => {
   await bumpCacheVersion('flight-search');
 
   await notificationService.sendNotification(userId, {
-    type: 'booking_cancelled',
-    title: 'Booking cancelled',
-    body: `Your booking ${bookingId} has been cancelled`,
+    type: cancelledBooking.status === 'refund_pending' ? 'general' : 'booking_cancelled',
+    title: cancelledBooking.status === 'refund_pending' ? 'Refund requested' : 'Booking cancelled',
+    body: cancelledBooking.status === 'refund_pending'
+      ? `Your booking ${bookingId} was cancelled and is awaiting a refund`
+      : `Your booking ${bookingId} has been cancelled`,
     payload: { bookingId },
   });
 

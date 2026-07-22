@@ -19,7 +19,7 @@ export const findByFlightId = async (flightId, from, to) => {
 export const findBookingForUser = async (bookingId, userId) => {
   const { data, error } = await supabase
     .from('bookings')
-    .select('id, flight_id, status')
+    .select('id, flight_id, status, flight:flights!bookings_flight_id_fkey(status, arrival_time)')
     .eq('id', bookingId)
     .eq('user_id', userId)
     .maybeSingle();

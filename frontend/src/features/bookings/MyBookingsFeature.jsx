@@ -14,6 +14,8 @@ const statusOptions = [
   { value: "paid", label: "Đã thanh toán" },
   { value: "pending", label: "Chờ thanh toán" },
   { value: "cancelled", label: "Đã hủy" },
+  { value: "refund_pending", label: "Chờ hoàn tiền" },
+  { value: "refunded", label: "Đã hoàn tiền" },
 ];
 
 const statusLabels = { confirmed: "Đã xác nhận", paid: "Đã thanh toán", pending: "Chờ thanh toán", cancelled: "Đã hủy", refunded: "Đã hoàn tiền", refund_pending: "Chờ hoàn tiền" };

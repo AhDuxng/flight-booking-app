@@ -95,7 +95,7 @@ export default function FlightListFeature() {
           <FlightSort currentSort={currentSort} onSortChange={setCurrentSort} />
           {isLoading && <Loading label="Đang tìm chuyến bay" />}
           {!isLoading && error && <ErrorMessage message={error} />}
-          {!isLoading && !error && <FlightList flights={sortedFlights} onSelectFlight={(flight) => navigate(`/flights/${flight.id}`)} />}
+          {!isLoading && !error && <FlightList flights={sortedFlights} onSelectFlight={(flight) => navigate(`/flights/${flight.id}?${searchParams.toString()}`)} />}
         </div>
       </div>
     </div>

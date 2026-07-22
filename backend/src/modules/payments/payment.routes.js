@@ -9,6 +9,7 @@ import * as paymentController from './payment.controller.js';
 
 const router = Router();
 
+router.get('/config', paymentController.getPaymentConfig);
 router.post('/intent', validate(createPaymentIntentSchema), paymentController.createPaymentIntent);
 router.get(
   '/bookings/:bookingId',

@@ -1,5 +1,11 @@
 import { supabase, supabaseRead } from '../../config/supabase.js';
 import { throwDatabaseError } from '../../utils/error.js';
+import dayjs from 'dayjs';
+import utc from 'dayjs/plugin/utc.js';
+import timezone from 'dayjs/plugin/timezone.js';
+
+dayjs.extend(utc);
+dayjs.extend(timezone);
 
 const FLIGHT_COLUMNS = `
   id, airline_id, aircraft_id, origin_airport_id, destination_airport_id,
@@ -12,9 +18,12 @@ const FLIGHT_COLUMNS = `
 `;
 
 export const search = async (filters, from, to) => {
+  const searchColumns = filters.cabinClass
+    ? `${FLIGHT_COLUMNS}, inventory:seats!inner(id, seat_class, status)`
+    : FLIGHT_COLUMNS;
   let query = supabaseRead
     .from('flights')
-    .select(FLIGHT_COLUMNS, { count: 'planned' })
+    .select(searchColumns, { count: 'planned' })
     .range(from, to)
     .order('departure_time', { ascending: true });
 
@@ -37,15 +46,28 @@ export const search = async (filters, from, to) => {
   }
 
   if (filters.departureDate) {
-    const start = `${filters.departureDate}T00:00:00.000Z`;
-    const end = new Date(`${filters.departureDate}T00:00:00.000Z`);
-    end.setUTCDate(end.getUTCDate() + 1);
-    query = query.gte('departure_time', start).lt('departure_time', end.toISOString());
+    const start = dayjs.tz(filters.departureDate, filters.departureTimezone ?? 'UTC').startOf('day');
+    const end = start.add(1, 'day');
+    const lowerBound = start.isAfter(dayjs()) ? start : dayjs();
+    query = query.gte('departure_time', lowerBound.toISOString()).lt('departure_time', end.toISOString());
+  } else {
+    query = query.gte('departure_time', new Date().toISOString());
+  }
+
+  query = query.gte('available_seats', filters.passengerCount ?? 1);
+
+  if (filters.cabinClass) {
+    query = query
+      .eq('inventory.seat_class', filters.cabinClass)
+      .eq('inventory.status', 'available');
   }
 
   const { data, error, count } = await query;
   throwDatabaseError(error, 'Unable to load flights');
-  return { data, count };
+  return {
+    data: data.map(({ inventory, ...flight }) => flight),
+    count,
+  };
 };
 
 export const findById = async (id) => {
@@ -68,6 +90,18 @@ export const findBasicById = async (id) => {
 
   throwDatabaseError(error, 'Unable to load flight');
   return data;
+};
+
+export const aircraftBelongsToAirline = async (aircraftId, airlineId) => {
+  const { data, error } = await supabase
+    .from('aircrafts')
+    .select('id')
+    .eq('id', aircraftId)
+    .eq('airline_id', airlineId)
+    .maybeSingle();
+
+  throwDatabaseError(error, 'Unable to validate aircraft');
+  return Boolean(data);
 };
 
 export const findSeatsByFlightId = async (flightId) => {

@@ -7,7 +7,7 @@ const getSeatParts = (seatNumber) => {
   return { row: Number(match?.[1] ?? 0), column: match?.[2] ?? seatNumber };
 };
 
-export default function SeatMap({ seats, selectedSeat, onSelectSeat }) {
+export default function SeatMap({ seats, selectedSeats = [], onSelectSeat }) {
   const rows = new Map();
 
   for (const seat of seats) {
@@ -34,9 +34,9 @@ export default function SeatMap({ seats, selectedSeat, onSelectSeat }) {
         <div className="space-y-3">
           {sortedRows.map(([rowNumber, rowSeats]) => (
             <div className="grid grid-cols-[repeat(3,minmax(0,1fr))_2rem_repeat(3,minmax(0,1fr))] gap-2" key={rowNumber}>
-              {columns.left.map((column, index) => <SeatCell isSelected={selectedSeat?.id === rowSeats.get(column)?.id} key={`${rowNumber}-left-${index}`} onSelectSeat={onSelectSeat} seat={rowSeats.get(column)} />)}
+              {columns.left.map((column, index) => <SeatCell isSelected={selectedSeats.some((item) => item.id === rowSeats.get(column)?.id)} key={`${rowNumber}-left-${index}`} onSelectSeat={onSelectSeat} seat={rowSeats.get(column)} />)}
               <div className="flex items-center justify-center font-data-mono text-xs text-outline">{rowNumber}</div>
-              {columns.right.map((column, index) => <SeatCell isSelected={selectedSeat?.id === rowSeats.get(column)?.id} key={`${rowNumber}-right-${index}`} onSelectSeat={onSelectSeat} seat={rowSeats.get(column)} />)}
+              {columns.right.map((column, index) => <SeatCell isSelected={selectedSeats.some((item) => item.id === rowSeats.get(column)?.id)} key={`${rowNumber}-right-${index}`} onSelectSeat={onSelectSeat} seat={rowSeats.get(column)} />)}
             </div>
           ))}
         </div>

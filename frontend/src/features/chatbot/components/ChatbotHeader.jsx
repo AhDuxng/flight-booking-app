@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { Bot, Headphones, Menu, MoreVertical, RefreshCcw, Trash2 } from "lucide-react";
 import IconButton from "./IconButton";
 
-export default function ChatbotHeader({ isMenuOpen, onMenuToggle, onNewConversation, onOpenHistory }) {
+export default function ChatbotHeader({ isMenuOpen, onDeleteConversation, onMenuToggle, onNewConversation, onOpenHistory }) {
   return (
     <header className="z-10 flex min-h-20 items-center justify-between border-b border-outline-variant bg-surface/90 px-4 py-3 backdrop-blur md:px-container-padding">
       <div className="flex min-w-0 items-center gap-3">
@@ -23,8 +23,8 @@ export default function ChatbotHeader({ isMenuOpen, onMenuToggle, onNewConversat
             <span className="hidden sm:inline">VietFly AI Assistant</span>
           </h1>
           <div className="flex items-center gap-2">
-            <span className="h-2 w-2 shrink-0 animate-pulse rounded-full bg-status-success" />
-            <span className="truncate text-xs text-on-surface-variant sm:text-body-sm">Trực tuyến • Phản hồi ngay</span>
+            <span className="h-2 w-2 shrink-0 rounded-full bg-status-success" />
+            <span className="truncate text-xs text-on-surface-variant sm:text-body-sm">Trợ lý thông tin chuyến bay</span>
           </div>
         </div>
       </div>
@@ -40,7 +40,7 @@ export default function ChatbotHeader({ isMenuOpen, onMenuToggle, onNewConversat
           <div className="absolute right-0 top-12 z-20 w-52 rounded-lg border border-outline-variant bg-surface-container-lowest p-1 shadow-xl">
             <button
               className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-body-sm text-on-surface-variant hover:bg-surface-container hover:text-primary"
-              onClick={onNewConversation}
+              onClick={onDeleteConversation}
               type="button"
             >
               <Trash2 className="h-4 w-4" />

@@ -13,3 +13,20 @@ export const loginSchema = z.object({
   email: emailSchema,
   password: passwordSchema,
 });
+
+export const refreshSessionSchema = z.object({
+  refreshToken: z.string().trim().min(1).max(4096),
+});
+
+export const forgotPasswordSchema = z.object({
+  email: emailSchema,
+});
+
+export const resetPasswordSchema = z.object({
+  accessToken: z.string().trim().min(1).max(4096),
+  password: passwordSchema,
+});
+
+export const oauthProviderParamsSchema = z.object({
+  provider: z.enum(['google', 'facebook']),
+});

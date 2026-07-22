@@ -15,7 +15,8 @@ const BOOKING_COLUMNS = `
   booking_baggage(id, passenger_id, baggage_option_id, quantity, price_snapshot),
   booking_meals(id, passenger_id, meal_option_id, quantity, price_snapshot),
   booking_discounts(id, discount_id, discount_amount, applied_at),
-  payments(id, amount, currency, provider, transaction_ref, status, paid_at, created_at)
+  payments(id, amount, currency, provider, transaction_ref, status, paid_at, created_at),
+  reviews(id, rating, comment, is_visible, created_at, updated_at)
 `;
 
 export const findMine = async (userId, status, from, to) => {
@@ -50,7 +51,7 @@ export const findMineById = async (id, userId) => {
 export const findBasicMineById = async (id, userId) => {
   const { data, error } = await supabase
     .from('bookings')
-    .select('id, user_id, flight_id, status, total_price, hold_expires_at')
+    .select('id, user_id, flight_id, status, total_price, hold_expires_at, flight:flights!bookings_flight_id_fkey(id, departure_time, status)')
     .eq('id', id)
     .eq('user_id', userId)
     .maybeSingle();
@@ -88,7 +89,7 @@ export const cancelAtomically = async (bookingId, userId) => {
   });
 
   if (error) {
-    throw createHttpError(400, 'Unable to cancel booking');
+    throw createHttpError(409, error.code === 'P0002' ? error.message : 'Unable to cancel booking');
   }
 
   return data;

@@ -1,6 +1,6 @@
 import { ArrowLeftRight, ArrowRight } from "lucide-react";
 
-export default function RouteCard({ route }) {
+export default function RouteCard({ route, onSelect }) {
   return (
     <div className="group cursor-pointer overflow-hidden rounded-lg border border-outline-variant bg-surface-container-lowest shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg">
       <div className="h-48 relative overflow-hidden">
@@ -24,16 +24,13 @@ export default function RouteCard({ route }) {
         </div>
         <div className="flex justify-between items-end">
           <div>
-            <p className="text-label-md font-label-md text-on-surface-variant mb-1">
-              Giá chỉ từ
-            </p>
-            <p className="text-title-lg font-title-lg text-primary font-bold">
-              {route.price} <span className="text-body-sm font-body-sm font-normal">VND</span>
-            </p>
+            <p className="mb-1 text-label-md font-label-md text-on-surface-variant">Khám phá lịch bay</p>
+            <p className="text-title-lg font-title-lg font-bold text-primary">{route.originCode} → {route.destinationCode}</p>
           </div>
           <button
             aria-label={`Xem chuyến bay đến ${route.destination}`}
             className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary-container text-secondary-container transition-colors hover:bg-primary"
+            onClick={onSelect}
             type="button"
           >
             <ArrowRight className="h-5 w-5" />

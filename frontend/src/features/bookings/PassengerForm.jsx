@@ -31,7 +31,7 @@ function SectionHeader({ icon: Icon, title, subtitle }) {
   );
 }
 
-export default function PassengerForm({ contact, passenger, onContactChange, onPassengerChange }) {
+export default function PassengerForm({ contact, passengers, onContactChange, onPassengerChange }) {
   return (
     <div className="flex flex-col gap-stack-lg">
       <section className="rounded-xl border border-surface-container-high bg-surface-container-lowest p-stack-md shadow-[0_4px_12px_rgba(26,54,93,0.05)] sm:p-stack-lg">
@@ -82,12 +82,13 @@ export default function PassengerForm({ contact, passenger, onContactChange, onP
         </div>
       </section>
 
-      <section className="rounded-xl border border-surface-container-high bg-surface-container-lowest p-stack-md shadow-[0_4px_12px_rgba(26,54,93,0.05)] sm:p-stack-lg">
-        <SectionHeader icon={UserRound} title="Hành khách 1 (Người lớn)" />
+      {passengers.map((passenger, index) => (
+      <section className="rounded-xl border border-surface-container-high bg-surface-container-lowest p-stack-md shadow-[0_4px_12px_rgba(26,54,93,0.05)] sm:p-stack-lg" key={`${passenger.passengerType}-${index}`}>
+        <SectionHeader icon={UserRound} title={`Hành khách ${index + 1} (${passenger.passengerType === "child" ? "Trẻ em" : "Người lớn"})`} />
         <div className="mt-stack-md grid grid-cols-1 gap-stack-md sm:grid-cols-12">
           <div className="sm:col-span-3">
             <Field label="Danh xưng" required>
-              <select className={selectClass} name="title" onChange={onPassengerChange} value={passenger.title}>
+              <select className={selectClass} name="title" onChange={(event) => onPassengerChange(index, event)} value={passenger.title}>
                 <option>Ông</option>
                 <option>Bà</option>
                 <option>Cô</option>
@@ -99,7 +100,7 @@ export default function PassengerForm({ contact, passenger, onContactChange, onP
               <input
                 className={inputClass}
                 name="lastName"
-                onChange={onPassengerChange}
+                onChange={(event) => onPassengerChange(index, event)}
                 placeholder="VD: NGUYEN"
                 type="text"
                 value={passenger.lastName}
@@ -111,7 +112,7 @@ export default function PassengerForm({ contact, passenger, onContactChange, onP
               <input
                 className={inputClass}
                 name="firstName"
-                onChange={onPassengerChange}
+                onChange={(event) => onPassengerChange(index, event)}
                 placeholder="VD: VAN A"
                 type="text"
                 value={passenger.firstName}
@@ -124,8 +125,9 @@ export default function PassengerForm({ contact, passenger, onContactChange, onP
                 <CalendarDays className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-outline" />
                 <input
                   className={`${inputClass} pl-10`}
+                  max={new Intl.DateTimeFormat("en-CA").format(new Date())}
                   name="birthDate"
-                  onChange={onPassengerChange}
+                  onChange={(event) => onPassengerChange(index, event)}
                   type="date"
                   value={passenger.birthDate}
                 />
@@ -134,7 +136,7 @@ export default function PassengerForm({ contact, passenger, onContactChange, onP
           </div>
           <div className="sm:col-span-4">
             <Field label="Quốc tịch" required>
-              <select className={selectClass} name="nationality" onChange={onPassengerChange} value={passenger.nationality}>
+              <select className={selectClass} name="nationality" onChange={(event) => onPassengerChange(index, event)} value={passenger.nationality}>
                 <option>Việt Nam</option>
                 <option>Singapore</option>
                 <option>Nhật Bản</option>
@@ -147,7 +149,7 @@ export default function PassengerForm({ contact, passenger, onContactChange, onP
               <input
                 className={inputClass}
                 name="documentNumber"
-                onChange={onPassengerChange}
+                onChange={(event) => onPassengerChange(index, event)}
                 placeholder="0123456789"
                 type="text"
                 value={passenger.documentNumber}
@@ -156,6 +158,7 @@ export default function PassengerForm({ contact, passenger, onContactChange, onP
           </div>
         </div>
       </section>
+      ))}
     </div>
   );
 }

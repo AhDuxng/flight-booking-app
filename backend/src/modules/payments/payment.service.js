@@ -4,8 +4,17 @@ import * as notificationService from '../notifications/notification.service.js';
 import * as paymentQueries from './payment.queries.js';
 import { createHttpError } from '../../utils/error.js';
 import { bumpCacheVersion } from '../../config/cache.js';
+import { env } from '../../config/env.js';
+
+const supportedProviders = [...new Set(['cash', ...env.paymentProviders])]
+  .filter((provider) => ['vnpay', 'momo', 'stripe', 'cash'].includes(provider));
+
+export const getPaymentConfig = () => ({ providers: supportedProviders });
 
 export const createPaymentIntent = async (userId, payload) => {
+  if (!supportedProviders.includes(payload.provider)) {
+    throw createHttpError(400, 'Payment provider is not configured');
+  }
   const booking = await bookingQueries.findBasicMineById(payload.bookingId, userId);
 
   if (!booking) {

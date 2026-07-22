@@ -2,7 +2,7 @@
 
 Flight Booking App là dự án web hỗ trợ tìm kiếm chuyến bay, đặt vé máy bay, quản lý hành khách, thanh toán và theo dõi trạng thái đặt chỗ. Dự án được tổ chức theo mô hình tách riêng frontend và backend, phù hợp cho việc phát triển, kiểm thử và mở rộng từng phân hệ một cách độc lập.
 
-Repository hiện cung cấp cấu trúc nền tảng cho một hệ thống đặt vé máy bay gồm ứng dụng React ở phía client và API Node.js Express ở phía server. Backend dự kiến kết nối Supabase để quản lý dữ liệu, xác thực, thông tin chuyến bay, đặt chỗ, ghế, thanh toán và các tác vụ quản trị.
+Repository cung cấp ứng dụng React hoàn chỉnh và API Express kết nối Supabase cho xác thực, tìm kiếm chuyến bay, booking nhiều hành khách, giữ ghế, thanh toán, hoàn tiền, thông báo, đánh giá và vận hành quản trị.
 
 ## Mục tiêu dự án
 
@@ -14,10 +14,11 @@ Xây dựng một nền tảng đặt vé máy bay có trải nghiệm rõ ràng
 2. Xem chi tiết chuyến bay, hãng bay, sân bay, tàu bay và thông tin ghế.
 3. Đăng ký, đăng nhập và quản lý thông tin tài khoản người dùng.
 4. Tạo đặt chỗ, nhập thông tin hành khách và lựa chọn ghế.
-5. Xử lý thanh toán và hiển thị kết quả thanh toán.
+5. Xử lý thanh toán tiền mặt end-to-end, webhook có chữ ký cho cổng thanh toán ngoài và quy trình hoàn tiền.
 6. Theo dõi lịch sử đặt vé và chi tiết từng đơn đặt chỗ.
 7. Quản trị chuyến bay, sân bay, hãng bay, tàu bay, người dùng, đặt chỗ, thanh toán và đánh giá.
-8. Hỗ trợ thông báo và đánh giá dịch vụ sau chuyến bay.
+8. Thông báo thay đổi chuyến bay/thanh toán, đánh giá sau chuyến và chatbot Gemini.
+9. Quên mật khẩu, OAuth Google/GitHub, tự làm mới phiên và upload avatar riêng tư.
 
 ## Công nghệ sử dụng
 
@@ -73,7 +74,7 @@ Biến môi trường mẫu nằm tại `frontend/.env.example`.
 1. Node.js phiên bản phù hợp với Vite 5 và Express 4.
 2. npm để cài đặt package.
 3. Tài khoản Supabase nếu cần kết nối cơ sở dữ liệu và xác thực.
-4. Thông tin cấu hình nhà cung cấp thanh toán nếu bật tính năng thanh toán.
+4. Thông tin cấu hình nhà cung cấp thanh toán nếu tích hợp cổng thanh toán ngoài; `cash` luôn dùng được.
 
 ## Hướng dẫn chạy dự án
 
@@ -134,6 +135,8 @@ Backend:
 ```bash
 npm run dev
 npm start
+npm test
+npm run check
 ```
 
 Frontend:
@@ -142,6 +145,8 @@ Frontend:
 npm run dev
 npm run build
 npm run preview
+npm test
+npm run check
 ```
 
 ## Deploy Render và Netlify
@@ -203,14 +208,6 @@ File `netlify.toml` cũng đã cấu hình redirect `/* -> /index.html` để Re
 3. Sau khi Render có URL backend, quay lại Netlify đặt `VITE_API_URL` bằng URL Render kèm `/api`.
 4. Redeploy frontend trên Netlify.
 
-## Định hướng phát triển
-
-1. Hoàn thiện API và kết nối Supabase cho các module nghiệp vụ.
-2. Xây dựng giao diện người dùng cho luồng tìm kiếm, đặt vé, chọn ghế và thanh toán.
-3. Xây dựng giao diện quản trị cho việc quản lý dữ liệu vận hành.
-4. Bổ sung validation, phân quyền, xử lý lỗi và thông báo hệ thống.
-5. Bổ sung dữ liệu mẫu, tài liệu API và test cho các luồng nghiệp vụ quan trọng.
-
 ## Trạng thái hiện tại
 
-Dự án đang ở giai đoạn khởi tạo cấu trúc. Các thư mục, module, package và biến môi trường nền tảng đã được định hướng sẵn sàng cho việc triển khai chi tiết.
+Dự án đã có các luồng người dùng và quản trị chính hoạt động xuyên suốt. Trước khi chạy trên một Supabase mới, cần áp dụng `schema.sql`, `seed.sql` và toàn bộ migration theo đúng thứ tự trong [backend/README.md](backend/README.md). Các dịch vụ ngoài vẫn cần cấu hình thật: Supabase OAuth/email, Gemini và adapter của từng cổng thanh toán trực tuyến.

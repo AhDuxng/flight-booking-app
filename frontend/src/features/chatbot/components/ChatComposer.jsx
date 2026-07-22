@@ -50,7 +50,7 @@ export default function ChatComposer({
             <label className="mb-1 flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg text-on-surface-variant transition-colors hover:bg-surface-container hover:text-primary" title="Đính kèm tệp">
               <Paperclip className="h-5 w-5" />
               <span className="sr-only">Đính kèm tệp</span>
-              <input className="sr-only" onChange={onAttachmentChange} type="file" />
+              <input accept=".txt,.md,.csv,.json,text/plain,text/markdown,text/csv,application/json" className="sr-only" onChange={onAttachmentChange} type="file" />
             </label>
             <button
               aria-label="Nhập bằng giọng nói"

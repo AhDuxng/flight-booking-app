@@ -36,7 +36,7 @@ export default function RegisterForm() {
         fullName: formData.get("fullName"),
         password,
       });
-      const { token, user } = response.data;
+      const { expiresAt, refreshToken, token, user } = response.data;
 
       if (!token) {
         toast.success("Đăng ký thành công. Vui lòng xác nhận email để đăng nhập.");
@@ -44,7 +44,7 @@ export default function RegisterForm() {
         return;
       }
 
-      authStore.setAuth(user, token);
+      authStore.setAuth(user, token, refreshToken, expiresAt);
       navigate("/profile");
     } catch (error) {
       toast.error(getErrorMessage(error, "Không thể tạo tài khoản."));

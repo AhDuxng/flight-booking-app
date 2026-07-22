@@ -6,7 +6,21 @@ const initialState = {
   selectedSeats: [],
 };
 
-let state = initialState;
+const storageKey = "vietfly-booking-flow";
+
+const readState = () => {
+  if (typeof window === "undefined") {
+    return initialState;
+  }
+
+  try {
+    return { ...initialState, ...JSON.parse(window.sessionStorage.getItem(storageKey) || "{}") };
+  } catch {
+    return initialState;
+  }
+};
+
+let state = readState();
 const listeners = new Set();
 
 const emit = () => {
@@ -15,6 +29,9 @@ const emit = () => {
 
 const setState = (nextState) => {
   state = nextState;
+  if (typeof window !== "undefined") {
+    window.sessionStorage.setItem(storageKey, JSON.stringify(nextState));
+  }
   emit();
 };
 

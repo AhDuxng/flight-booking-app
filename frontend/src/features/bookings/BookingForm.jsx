@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, ArrowRight, BadgePercent, Briefcase, Check, Plane, Utensils } from "lucide-react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import BookingSteps from "@/components/booking/BookingSteps";
 import ErrorMessage from "@/components/common/ErrorMessage";
@@ -17,23 +17,22 @@ import { bookingStore } from "@/store/bookingStore";
 
 export default function BookingForm() {
   const { flightId } = useParams();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const passengerTypes = useMemo(() => {
+    const adultCount = Math.min(9, Math.max(1, Number(searchParams.get("adultCount")) || 1));
+    const childCount = Math.min(9 - adultCount, Math.max(0, Number(searchParams.get("childCount")) || 0));
+    return [...Array(adultCount).fill("adult"), ...Array(childCount).fill("child")];
+  }, [searchParams]);
   const [flight, setFlight] = useState(null);
   const [baggageOptions, setBaggageOptions] = useState([]);
   const [mealOptions, setMealOptions] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [contact, setContact] = useState({ email: "", countryCode: "+84", phone: "" });
-  const [passenger, setPassenger] = useState({
-    title: "Ông",
-    lastName: "",
-    firstName: "",
-    birthDate: "",
-    nationality: "Việt Nam",
-    documentNumber: "",
-  });
-  const [baggage, setBaggage] = useState(null);
-  const [meal, setMeal] = useState(null);
+  const [passengers, setPassengers] = useState(() => passengerTypes.map((passengerType) => createPassenger(passengerType)));
+  const [baggage, setBaggage] = useState(() => passengerTypes.map(() => null));
+  const [meal, setMeal] = useState(() => passengerTypes.map(() => null));
   const [discountCode, setDiscountCode] = useState("");
   const [isDiscountApplied, setIsDiscountApplied] = useState(false);
 
@@ -62,11 +61,14 @@ export default function BookingForm() {
   }, [flightId]);
 
   const estimatedTotal = useMemo(() => {
-    return (flight?.price ?? 0) + Number(baggage?.price ?? 0) + Number(meal?.price ?? 0);
-  }, [baggage, flight, meal]);
+    const baggageTotal = baggage.reduce((total, item) => total + Number(item?.price ?? 0), 0);
+    const mealTotal = meal.reduce((total, item) => total + Number(item?.price ?? 0), 0);
+    return (flight?.price ?? 0) * passengers.length + baggageTotal + mealTotal;
+  }, [baggage, flight, meal, passengers.length]);
 
   const handleContinue = () => {
-    if (!contact.email || !contact.phone || !passenger.firstName || !passenger.lastName || !passenger.birthDate || !passenger.documentNumber) {
+    const hasIncompletePassenger = passengers.some((passenger) => !passenger.firstName || !passenger.lastName || !passenger.birthDate || !passenger.documentNumber);
+    if (!contact.email || !contact.phone || hasIncompletePassenger) {
       toast.error("Vui lòng điền đầy đủ thông tin liên hệ và hành khách.");
       return;
     }
@@ -75,20 +77,20 @@ export default function BookingForm() {
     bookingStore.setPassengerInfo({
       contactEmail: contact.email,
       contactPhone: `${contact.countryCode}${contact.phone}`.replaceAll(" ", ""),
-      passenger: {
+      passengers: passengers.map((passenger) => ({
         firstName: passenger.firstName,
         lastName: passenger.lastName,
         dateOfBirth: passenger.birthDate,
         gender: passenger.title === "Bà" || passenger.title === "Cô" ? "female" : "male",
         nationality: passenger.nationality,
         passportNumber: passenger.documentNumber,
-        passengerType: "adult",
-      },
+        passengerType: passenger.passengerType,
+      })),
       baggage,
       meal,
       discountCode: isDiscountApplied ? discountCode.trim().toUpperCase() : null,
     });
-    navigate(`/booking/${flight.id}/seats`);
+    navigate(`/booking/${flight.id}/seats${window.location.search}`);
   };
 
   const handleApplyDiscount = async () => {
@@ -142,8 +144,8 @@ export default function BookingForm() {
         <div className="grid grid-cols-1 gap-stack-lg lg:grid-cols-12">
           <div className="flex flex-col gap-stack-lg lg:col-span-8">
             <FlightNotice flight={flight} />
-            <PassengerForm contact={contact} onContactChange={(event) => setContact((current) => ({ ...current, [event.target.name]: event.target.value }))} onPassengerChange={(event) => setPassenger((current) => ({ ...current, [event.target.name]: event.target.value }))} passenger={passenger} />
-            <BookingOptions baggage={baggage} baggageOptions={baggageOptions} discountCode={discountCode} isDiscountApplied={isDiscountApplied} meal={meal} mealOptions={mealOptions} onApplyDiscount={handleApplyDiscount} onBaggageChange={setBaggage} onDiscountCodeChange={(value) => { setDiscountCode(value); setIsDiscountApplied(false); }} onMealChange={setMeal} />
+            <PassengerForm contact={contact} onContactChange={(event) => setContact((current) => ({ ...current, [event.target.name]: event.target.value }))} onPassengerChange={(index, event) => setPassengers((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, [event.target.name]: event.target.value } : item))} passengers={passengers} />
+            <BookingOptions baggage={baggage} baggageOptions={baggageOptions} discountCode={discountCode} isDiscountApplied={isDiscountApplied} meal={meal} mealOptions={mealOptions} onApplyDiscount={handleApplyDiscount} onBaggageChange={(index, value) => setBaggage((current) => current.map((item, itemIndex) => itemIndex === index ? value : item))} onDiscountCodeChange={(value) => { setDiscountCode(value); setIsDiscountApplied(false); }} onMealChange={(index, value) => setMeal((current) => current.map((item, itemIndex) => itemIndex === index ? value : item))} passengerCount={passengers.length} />
             <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
               <button className="inline-flex h-12 items-center justify-center gap-2 rounded-lg border border-outline-variant px-5 text-label-md font-label-md text-on-surface-variant transition-colors hover:bg-surface-container" onClick={() => navigate(`/flights/${flight.id}`)} type="button">
                 <ArrowLeft className="h-4 w-4" />
@@ -177,11 +179,11 @@ function Metric({ label, value }) {
   return <div><div className="text-body-sm font-body-sm text-on-surface-variant">{label}</div><div className="text-label-md font-label-md text-on-surface">{value}</div></div>;
 }
 
-function BookingOptions({ baggage, baggageOptions, meal, mealOptions, discountCode, isDiscountApplied, onBaggageChange, onMealChange, onDiscountCodeChange, onApplyDiscount }) {
+function BookingOptions({ baggage, baggageOptions, meal, mealOptions, passengerCount, discountCode, isDiscountApplied, onBaggageChange, onMealChange, onDiscountCodeChange, onApplyDiscount }) {
   return (
     <div className="grid grid-cols-1 gap-stack-lg xl:grid-cols-2">
-      <OptionPanel icon={Briefcase} title="Hành lý"><RadioList emptyLabel="Không chọn hành lý ký gửi" items={baggageOptions} itemLabel={(item) => `${item.weight_kg}kg${item.description ? ` · ${item.description}` : ""}`} onChange={onBaggageChange} selectedItem={baggage} /></OptionPanel>
-      <OptionPanel icon={Utensils} title="Suất ăn"><RadioList emptyLabel="Không chọn suất ăn" items={mealOptions} itemLabel={(item) => item.name} onChange={onMealChange} selectedItem={meal} /></OptionPanel>
+      {Array.from({ length: passengerCount }, (_, index) => <OptionPanel icon={Briefcase} key={`baggage-${index}`} title={`Hành lý · Hành khách ${index + 1}`}><RadioList emptyLabel="Không chọn hành lý ký gửi" items={baggageOptions} itemLabel={(item) => `${item.weight_kg}kg${item.description ? ` · ${item.description}` : ""}`} onChange={(value) => onBaggageChange(index, value)} selectedItem={baggage[index]} /></OptionPanel>)}
+      {Array.from({ length: passengerCount }, (_, index) => <OptionPanel icon={Utensils} key={`meal-${index}`} title={`Suất ăn · Hành khách ${index + 1}`}><RadioList emptyLabel="Không chọn suất ăn" items={mealOptions} itemLabel={(item) => item.name} onChange={(value) => onMealChange(index, value)} selectedItem={meal[index]} /></OptionPanel>)}
       <OptionPanel icon={BadgePercent} title="Mã giảm giá"><div className="flex gap-2"><input className="h-11 min-w-0 flex-1 rounded-lg border border-outline-variant bg-surface-container-lowest px-4 text-body-md font-body-md uppercase text-on-surface placeholder:normal-case placeholder:text-outline focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20" onChange={(event) => onDiscountCodeChange(event.target.value)} placeholder="Nhập mã giảm giá" type="text" value={discountCode} /><button className="inline-flex h-11 items-center justify-center rounded-lg bg-primary px-4 text-label-md font-label-md text-on-primary transition-colors hover:bg-primary-container" onClick={onApplyDiscount} type="button">Áp dụng</button></div><div className={cn("mt-3 flex items-center gap-2 text-body-sm font-body-sm", isDiscountApplied ? "text-status-success" : "text-on-surface-variant")}>{isDiscountApplied ? <Check className="h-4 w-4" /> : <BadgePercent className="h-4 w-4" />}{isDiscountApplied ? "Mã đã được kiểm tra. Giá cuối cùng do máy chủ xác nhận." : "Mã được kiểm tra trước khi tạo booking."}</div></OptionPanel>
     </div>
   );
@@ -196,7 +198,14 @@ function RadioList({ items, selectedItem, onChange, itemLabel, emptyLabel }) {
 }
 
 function BookingEstimate({ flight, baggage, meal, total }) {
-  return <aside className="h-fit rounded-xl border border-surface-container-high bg-surface-container-lowest p-stack-lg shadow-sm lg:col-span-4 lg:sticky lg:top-24"><h2 className="text-title-lg font-title-lg text-primary">Tóm tắt dự kiến</h2><div className="mt-4 space-y-3 border-y border-surface-container-high py-4 text-body-sm"><PriceLine label={`Vé ${flight.origin} - ${flight.destination}`} value={flight.price} /><PriceLine label="Hành lý" value={baggage?.price ?? 0} /><PriceLine label="Suất ăn" value={meal?.price ?? 0} /></div><div className="mt-4 flex items-end justify-between"><span className="text-title-lg font-title-lg text-primary">Tạm tính</span><span className="text-headline-md font-headline-md text-primary">{formatCurrency(total)}</span></div><p className="mt-3 text-body-sm text-on-surface-variant">Tổng tiền cuối cùng sẽ được tính an toàn trên máy chủ sau khi chọn ghế.</p></aside>;
+  const passengerCount = baggage.length;
+  const baggageTotal = baggage.reduce((sum, item) => sum + Number(item?.price ?? 0), 0);
+  const mealTotal = meal.reduce((sum, item) => sum + Number(item?.price ?? 0), 0);
+  return <aside className="h-fit rounded-xl border border-surface-container-high bg-surface-container-lowest p-stack-lg shadow-sm lg:col-span-4 lg:sticky lg:top-24"><h2 className="text-title-lg font-title-lg text-primary">Tóm tắt dự kiến</h2><div className="mt-4 space-y-3 border-y border-surface-container-high py-4 text-body-sm"><PriceLine label={`Vé ${flight.origin} - ${flight.destination} · ${passengerCount} người`} value={flight.price * passengerCount} /><PriceLine label="Hành lý" value={baggageTotal} /><PriceLine label="Suất ăn" value={mealTotal} /></div><div className="mt-4 flex items-end justify-between"><span className="text-title-lg font-title-lg text-primary">Tạm tính</span><span className="text-headline-md font-headline-md text-primary">{formatCurrency(total)}</span></div><p className="mt-3 text-body-sm text-on-surface-variant">Tổng tiền cuối cùng sẽ được tính an toàn trên máy chủ sau khi chọn ghế.</p></aside>;
+}
+
+function createPassenger(passengerType) {
+  return { title: passengerType === "child" ? "Cô" : "Ông", lastName: "", firstName: "", birthDate: "", nationality: "Việt Nam", documentNumber: "", passengerType };
 }
 
 function PriceLine({ label, value }) {

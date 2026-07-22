@@ -24,6 +24,51 @@ export const getPayments = sendList(adminService.getPayments);
 export const getReviews = sendList(adminService.getReviews);
 export const getUsers = sendList(adminService.getUsers);
 
+export const cancelBooking = async (req, res, next) => {
+  try {
+    const data = await adminService.cancelBooking(req.user.id, req.params.bookingId);
+    return res.json({ data });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+export const getUserById = async (req, res, next) => {
+  try {
+    const data = await adminService.getUserById(req.params.userId);
+    return res.json({ data });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+export const moderateReview = async (req, res, next) => {
+  try {
+    const data = await adminService.moderateReview(req.user.id, req.params.reviewId, req.body.isVisible);
+    return res.json({ data });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+export const processCashPayment = async (req, res, next) => {
+  try {
+    const data = await adminService.processCashPayment(req.user.id, req.params.paymentId, req.body.status);
+    return res.json({ data });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+export const refundPayment = async (req, res, next) => {
+  try {
+    const data = await adminService.refundPayment(req.user.id, req.params.paymentId);
+    return res.json({ data });
+  } catch (error) {
+    return next(error);
+  }
+};
+
 export const createFlight = async (req, res, next) => {
   try {
     const data = await adminService.createFlight(req.user.id, req.body);

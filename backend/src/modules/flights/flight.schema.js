@@ -4,14 +4,30 @@ const flightStatuses = ['scheduled', 'boarding', 'departed', 'arrived', 'cancell
 
 const dateTimeSchema = z.string().datetime({ offset: true });
 
+const timezoneSchema = z.string().trim().min(1).max(100).refine((value) => {
+  try {
+    new Intl.DateTimeFormat('en-US', { timeZone: value });
+    return true;
+  } catch {
+    return false;
+  }
+}, 'Invalid IANA timezone');
+
 export const flightSearchSchema = z.object({
   originAirportId: z.string().uuid().optional(),
   destinationAirportId: z.string().uuid().optional(),
   departureDate: z.string().date().optional(),
+  departureTimezone: timezoneSchema.optional(),
   airlineId: z.string().uuid().optional(),
+  cabinClass: z.enum(['economy', 'business', 'first']).optional(),
+  passengerCount: z.coerce.number().int().min(1).max(9).default(1),
   status: z.enum(flightStatuses).optional(),
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(100).default(20),
+}).superRefine((value, context) => {
+  if (value.originAirportId && value.originAirportId === value.destinationAirportId) {
+    context.addIssue({ code: z.ZodIssueCode.custom, path: ['destinationAirportId'], message: 'Origin and destination must differ' });
+  }
 });
 
 export const flightParamsSchema = z.object({
@@ -42,6 +58,9 @@ export const createFlightSchema = flightInputSchema.superRefine((value, context)
 
   if (new Date(value.arrivalTime) <= new Date(value.departureTime)) {
     context.addIssue({ code: z.ZodIssueCode.custom, path: ['arrivalTime'], message: 'Arrival must be after departure' });
+  }
+  if (['scheduled', 'delayed'].includes(value.status) && new Date(value.departureTime) <= new Date()) {
+    context.addIssue({ code: z.ZodIssueCode.custom, path: ['departureTime'], message: 'Sellable flights must depart in the future' });
   }
 });
 

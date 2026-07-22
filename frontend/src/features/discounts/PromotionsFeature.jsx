@@ -1,17 +1,27 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ArrowRight, CalendarDays, Check, Copy, Plane, Sparkles, Tag } from "lucide-react";
 import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
+import heroBg from "@/assets/images/home/hero-bg.jpg";
+import danangImage from "@/assets/images/home/danang.jpg";
+import phuquocImage from "@/assets/images/home/phuquoc.jpg";
+import nhatrangImage from "@/assets/images/home/nhatrang.jpg";
+import EmptyState from "@/components/common/EmptyState";
+import ErrorMessage from "@/components/common/ErrorMessage";
+import Loading from "@/components/common/Loading";
+import { formatDateTime } from "@/features/flights/flightView";
+import { getErrorMessage } from "@/lib/apiError";
+import { discountService } from "./discountService";
 
 const heroOffer = {
   badge: "Ưu đãi độc quyền",
   title: "Bay Mùa Thu, Giá Vi Vu",
   description: "Giảm ngay 20% cho tất cả các chặng bay nội địa khi đặt vé cùng VietFly.",
   code: "AUTUMN24",
-  image: "/src/assets/images/home/hero-bg.jpg",
+  image: heroBg,
 };
 
-const promotions = [
+const promotionTemplates = [
   {
     id: "business-class",
     title: "Giảm 15% Vé Hạng Thương Gia",
@@ -19,7 +29,7 @@ const promotions = [
     code: "BIZ15",
     category: "Nội địa",
     expiry: "31 Th12, 2026",
-    image: "/src/assets/images/home/danang.jpg",
+    image: danangImage,
     highlight: "Tiết kiệm 15%",
   },
   {
@@ -29,7 +39,7 @@ const promotions = [
     code: "BEACH20",
     category: "Nghỉ dưỡng",
     expiry: "15 Th01, 2027",
-    image: "/src/assets/images/home/phuquoc.jpg",
+    image: phuquocImage,
     highlight: "Giảm đến 20%",
   },
   {
@@ -39,15 +49,15 @@ const promotions = [
     code: "FAMILY",
     category: "Gia đình",
     expiry: "28 Th02, 2027",
-    image: "/src/assets/images/home/nhatrang.jpg",
+    image: nhatrangImage,
     highlight: "Tặng hành lý",
   },
 ];
 
 const benefits = [
   "Áp dụng linh hoạt cho nhiều chặng bay nội địa",
-  "Nhập mã trực tiếp ở bước thanh toán",
-  "Có thể kết hợp với điểm thành viên VietFly",
+  "Nhập mã ở bước thông tin hành khách",
+  "Giá trị giảm cuối cùng được máy chủ xác nhận",
 ];
 
 function CopyCodeButton({ code, copiedCode, onCopy }) {
@@ -69,34 +79,34 @@ function CopyCodeButton({ code, copiedCode, onCopy }) {
   );
 }
 
-function HeroSection({ copiedCode, onCopy }) {
+function HeroSection({ copiedCode, offer, onCopy }) {
   return (
     <section className="relative mb-section-gap h-[420px] w-full overflow-hidden bg-primary-container md:h-[500px]">
       <img
         alt="Máy bay VietFly bay trên tầng mây trong ánh hoàng hôn"
         className="absolute inset-0 h-full w-full object-cover"
-        src={heroOffer.image}
+        src={offer.image}
       />
       <div className="absolute inset-0 bg-gradient-to-r from-primary/90 via-primary/55 to-primary/10" />
       <div className="relative mx-auto flex h-full max-w-7xl flex-col justify-center px-container-padding">
         <div className="max-w-2xl rounded-xl border border-white/30 border-l-4 border-l-secondary-container bg-surface-container-lowest/85 p-stack-lg shadow-lg backdrop-blur-xl">
           <span className="mb-stack-md inline-flex items-center gap-2 rounded bg-secondary-container px-3 py-1 font-label-md text-label-md font-bold uppercase text-on-secondary-container shadow-sm">
             <Sparkles className="h-4 w-4" />
-            {heroOffer.badge}
+            {offer.badge}
           </span>
           <h1 className="mb-stack-sm font-headline-lg text-headline-lg text-primary md:text-[40px] md:leading-[1.15]">
-            {heroOffer.title}
+            {offer.title}
           </h1>
           <p className="mb-stack-lg font-body-lg text-body-lg text-on-surface-variant">
-            {heroOffer.description}
+            {offer.description}
           </p>
-          <div className="mb-stack-md flex flex-col gap-stack-sm sm:flex-row sm:items-center">
+          {offer.code ? <div className="mb-stack-md flex flex-col gap-stack-sm sm:flex-row sm:items-center">
             <div className="flex min-w-0 items-center justify-between gap-4 rounded-lg border border-dashed border-outline-variant bg-primary-fixed px-4 py-3">
               <span className="font-body-sm text-body-sm uppercase text-on-primary-fixed-variant">Mã ưu đãi</span>
-              <span className="font-data-mono text-data-mono font-bold text-primary">{heroOffer.code}</span>
+              <span className="font-data-mono text-data-mono font-bold text-primary">{offer.code}</span>
             </div>
-            <CopyCodeButton code={heroOffer.code} copiedCode={copiedCode} onCopy={onCopy} />
-          </div>
+            <CopyCodeButton code={offer.code} copiedCode={copiedCode} onCopy={onCopy} />
+          </div> : null}
           <Link
             className="inline-flex h-12 w-full items-center justify-center gap-2 rounded bg-secondary-container px-6 font-label-md text-label-md font-bold text-deep-navy shadow-md transition-colors hover:bg-secondary-fixed-dim sm:w-auto"
             to="/"
@@ -167,7 +177,7 @@ function BenefitPanel() {
             <Tag className="h-4 w-4" />
             Cách dùng mã
           </span>
-          <h2 className="font-headline-lg text-headline-lg text-on-primary">Ưu đãi được áp dụng ngay khi thanh toán</h2>
+          <h2 className="font-headline-lg text-headline-lg text-on-primary">Ưu đãi được kiểm tra trước khi tạo đặt chỗ</h2>
         </div>
         <div className="grid gap-stack-sm sm:grid-cols-3">
           {benefits.map((benefit) => (
@@ -184,6 +194,30 @@ function BenefitPanel() {
 
 export default function PromotionsFeature() {
   const [copiedCode, setCopiedCode] = useState("");
+  const [promotions, setPromotions] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  const loadPromotions = async () => {
+    setIsLoading(true);
+    try {
+      const response = await discountService.getActive();
+      setPromotions((response.data ?? []).map((discount, index) => {
+        const template = promotionTemplates[index % promotionTemplates.length];
+        const discountText = discount.discount_type === "percentage" ? `Giảm ${Number(discount.discount_value)}%` : `Giảm ${new Intl.NumberFormat("vi-VN").format(Number(discount.discount_value))}đ`;
+        return { ...template, id: discount.id, code: discount.code, title: discount.description || discountText, description: `Áp dụng cho ${discount.applicable_to === "all" ? "toàn bộ đơn hàng đủ điều kiện" : discount.applicable_to}. Đơn tối thiểu ${new Intl.NumberFormat("vi-VN").format(Number(discount.min_order_value || 0))}đ.`, expiry: formatDateTime(discount.end_date), highlight: discountText };
+      }));
+      setError("");
+    } catch (requestError) {
+      setError(getErrorMessage(requestError, "Không thể tải khuyến mãi."));
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadPromotions();
+  }, []);
 
   const handleCopy = async (code) => {
     try {
@@ -197,9 +231,11 @@ export default function PromotionsFeature() {
     setCopiedCode(code);
   };
 
+  const offer = promotions[0] ? { ...heroOffer, ...promotions[0], badge: "Ưu đãi đang hoạt động", image: heroBg } : { ...heroOffer, code: "", title: "Ưu đãi VietFly", description: "Các chương trình hợp lệ sẽ được cập nhật trực tiếp từ hệ thống." };
+
   return (
     <div className="flex-grow bg-surface">
-      <HeroSection copiedCode={copiedCode} onCopy={handleCopy} />
+      <HeroSection copiedCode={copiedCode} offer={offer} onCopy={handleCopy} />
       <div className="mx-auto max-w-7xl px-container-padding">
         <section className="mb-section-gap">
           <div className="mb-stack-lg flex min-w-0 flex-col gap-stack-sm md:flex-row md:items-end md:justify-between">
@@ -210,7 +246,7 @@ export default function PromotionsFeature() {
               </p>
             </div>
           </div>
-          <div className="grid grid-cols-1 gap-gutter-md md:grid-cols-2 lg:grid-cols-3">
+          {isLoading ? <Loading label="Đang tải khuyến mãi" /> : error ? <ErrorMessage message={error} onRetry={loadPromotions} /> : promotions.length ? <div className="grid grid-cols-1 gap-gutter-md md:grid-cols-2 lg:grid-cols-3">
             {promotions.map((promotion) => (
               <PromotionCard
                 copiedCode={copiedCode}
@@ -219,7 +255,7 @@ export default function PromotionsFeature() {
                 onCopy={handleCopy}
               />
             ))}
-          </div>
+          </div> : <EmptyState description="Hiện chưa có mã giảm giá còn hiệu lực. Hãy quay lại sau." icon={Tag} title="Chưa có khuyến mãi" />}
         </section>
         <BenefitPanel />
       </div>

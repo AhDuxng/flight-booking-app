@@ -42,7 +42,7 @@ export default function TopNavBar() {
         const response = await notificationService.getAll({ limit: 10 });
         const items = response.data ?? [];
         setNotifications(items);
-        notificationStore.setUnreadCount(items.filter((item) => !item.is_read).length);
+        notificationStore.setUnreadCount(items.filter((item) => !item.read_at).length);
       } catch {
         setNotifications([]);
         notificationStore.setUnreadCount(0);
@@ -173,10 +173,22 @@ export default function TopNavBar() {
             {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
 
-          {isNotificationsOpen ? <NotificationPanel notifications={notifications} onClose={notificationStore.close} onMarkAllRead={async () => {
+          {isNotificationsOpen ? <NotificationPanel notifications={notifications} onClose={notificationStore.close} onMarkRead={async (notification) => {
+            if (!notification.read_at) {
+              try {
+                const response = await notificationService.markRead(notification.id);
+                setNotifications((items) => items.map((item) => item.id === notification.id ? response.data : item));
+                notificationStore.setUnreadCount(Math.max(0, notificationStore.getState().unreadCount - 1));
+              } catch {
+                return;
+              }
+            }
+            notificationStore.close();
+          }} onMarkAllRead={async () => {
             try {
               await notificationService.markAllRead();
-              setNotifications((items) => items.map((item) => ({ ...item, is_read: true })));
+              const readAt = new Date().toISOString();
+              setNotifications((items) => items.map((item) => ({ ...item, read_at: item.read_at ?? readAt })));
               notificationStore.markAllRead();
             } catch {
               return;
@@ -228,7 +240,7 @@ export default function TopNavBar() {
   );
 }
 
-function NotificationPanel({ notifications, onClose, onMarkAllRead }) {
+function NotificationPanel({ notifications, onClose, onMarkAllRead, onMarkRead }) {
   return (
     <div className="absolute right-10 top-12 w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-lg border border-outline-variant bg-surface-container-lowest shadow-xl sm:right-0">
       <div className="flex items-center justify-between border-b border-outline-variant px-4 py-3">
@@ -246,7 +258,7 @@ function NotificationPanel({ notifications, onClose, onMarkAllRead }) {
         </button>
       </div>
       <div className="divide-y divide-outline-variant">
-        {notifications.length > 0 ? notifications.map((notification) => <NotificationItem key={notification.id} text={notification.body} time={new Intl.DateTimeFormat("vi-VN", { dateStyle: "short", timeStyle: "short" }).format(new Date(notification.created_at))} unread={!notification.is_read} />) : <div className="px-4 py-6 text-center text-body-sm text-on-surface-variant">Chưa có thông báo.</div>}
+        {notifications.length > 0 ? notifications.map((notification) => <NotificationItem key={notification.id} notification={notification} onOpen={onMarkRead} time={new Intl.DateTimeFormat("vi-VN", { dateStyle: "short", timeStyle: "short" }).format(new Date(notification.created_at))} />) : <div className="px-4 py-6 text-center text-body-sm text-on-surface-variant">Chưa có thông báo.</div>}
       </div>
       <Link className="block px-4 py-3 text-center text-body-sm font-semibold text-primary hover:bg-surface-container" onClick={onClose} to="/my-bookings">
         Xem đặt chỗ của tôi
@@ -255,14 +267,21 @@ function NotificationPanel({ notifications, onClose, onMarkAllRead }) {
   );
 }
 
-function NotificationItem({ text, time, unread }) {
+function NotificationItem({ notification, time, onOpen }) {
+  const target = notification.payload?.bookingId
+    ? `/bookings/${notification.payload.bookingId}`
+    : notification.payload?.flightId
+      ? `/flights/${notification.payload.flightId}`
+      : "/my-bookings";
+
   return (
-    <div className="flex gap-3 px-4 py-3">
-      <span className={cn("mt-1.5 h-2 w-2 shrink-0 rounded-full", unread ? "bg-status-info" : "bg-outline-variant")} />
+    <Link className="flex gap-3 px-4 py-3 hover:bg-surface-container" onClick={() => onOpen(notification)} to={target}>
+      <span className={cn("mt-1.5 h-2 w-2 shrink-0 rounded-full", !notification.read_at ? "bg-status-info" : "bg-outline-variant")} />
       <div className="min-w-0">
-        <p className="text-body-sm text-on-surface">{text}</p>
+        <p className="text-label-md text-on-surface">{notification.title}</p>
+        <p className="mt-0.5 text-body-sm text-on-surface-variant">{notification.body}</p>
         <p className="mt-1 text-xs text-on-surface-variant">{time}</p>
       </div>
-    </div>
+    </Link>
   );
 }

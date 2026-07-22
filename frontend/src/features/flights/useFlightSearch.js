@@ -3,22 +3,28 @@ import airportService from "../airports/airportService";
 
 export const useFlightSearch = () => {
   const [flightScope, setFlightScope] = useState("domestic");
-  const [flightType, setFlightType] = useState("round-trip");
+  const [flightType, setFlightType] = useState("one-way");
   const [allLocations, setAllLocations] = useState([]);
   const [isLoadingLocations, setIsLoadingLocations] = useState(true);
+  const [locationError, setLocationError] = useState("");
+  const [reloadToken, setReloadToken] = useState(0);
 
   useEffect(() => {
     const loadAirports = async () => {
+      setIsLoadingLocations(true);
       try {
         const response = await airportService.getAll();
         setAllLocations(response.data ?? []);
+        setLocationError("");
+      } catch {
+        setLocationError("Không thể tải danh sách sân bay.");
       } finally {
         setIsLoadingLocations(false);
       }
     };
 
     loadAirports();
-  }, []);
+  }, [reloadToken]);
 
   const locations = useMemo(() => {
     if (flightScope === "international") {
@@ -41,7 +47,9 @@ export const useFlightSearch = () => {
     flightType,
     locations,
     isLoadingLocations,
+    locationError,
     handleScopeChange,
     handleTypeChange,
+    retryLocations: () => setReloadToken((current) => current + 1),
   };
 };

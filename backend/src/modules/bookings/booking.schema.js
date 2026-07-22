@@ -8,6 +8,9 @@ const passengerSchema = z.object({
   nationality: z.string().trim().min(2).max(100),
   passportNumber: z.string().trim().min(4).max(30).nullable().optional(),
   passengerType: z.enum(['adult', 'child', 'infant']).default('adult'),
+}).refine((passenger) => new Date(`${passenger.dateOfBirth}T00:00:00Z`) <= new Date(), {
+  path: ['dateOfBirth'],
+  message: 'Date of birth cannot be in the future',
 });
 
 const baggageSelectionSchema = z.object({
