@@ -10,6 +10,26 @@ const ADMIN_FLIGHT_COLUMNS = `
   destination_airport:airports!flights_destination_airport_id_fkey(id, code, city)
 `;
 
+const attachUserProfiles = async (rows = []) => {
+  const userIds = [...new Set(rows.map((row) => row.user_id).filter(Boolean))];
+  if (userIds.length === 0) {
+    return rows;
+  }
+
+  const { data: users, error } = await supabase
+    .from('users')
+    .select('id, full_name, avatar_url')
+    .in('id', userIds);
+
+  throwDatabaseError(error, 'Unable to load user profiles');
+  const usersById = new Map((users ?? []).map((user) => [user.id, user]));
+
+  return rows.map((row) => ({
+    ...row,
+    user: usersById.get(row.user_id) ?? null,
+  }));
+};
+
 export const getDashboard = async () => {
   const { data, error } = await supabase.rpc('get_admin_dashboard');
   throwDatabaseError(error, 'Unable to load dashboard');
@@ -33,7 +53,6 @@ export const findBookings = async (status, from, to) => {
     .select(`
       id, user_id, flight_id, price_snapshot, total_price, status, contact_email,
       contact_phone, created_at, updated_at,
-      user:users!bookings_user_id_fkey(id, full_name),
       flight:flights!bookings_flight_id_fkey(id, flight_number, departure_time, status)
     `, { count: 'exact' })
     .range(from, to)
@@ -45,7 +64,7 @@ export const findBookings = async (status, from, to) => {
 
   const { data, error, count } = await query;
   throwDatabaseError(error, 'Unable to load bookings');
-  return { data, count };
+  return { data: await attachUserProfiles(data ?? []), count };
 };
 
 export const findBookingById = async (bookingId) => {
@@ -112,14 +131,13 @@ export const findReviews = async (from, to) => {
     .from('reviews')
     .select(`
       id, user_id, booking_id, flight_id, rating, comment, is_visible, created_at,
-      user:users!reviews_user_id_fkey(id, full_name),
       flight:flights!reviews_flight_id_fkey(id, flight_number)
     `, { count: 'exact' })
     .range(from, to)
     .order('created_at', { ascending: false });
 
   throwDatabaseError(error, 'Unable to load reviews');
-  return { data, count };
+  return { data: await attachUserProfiles(data ?? []), count };
 };
 
 export const findUsers = async (from, to) => {

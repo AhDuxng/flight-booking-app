@@ -1,5 +1,5 @@
-export const createHttpError = (status, message) => {
-  return Object.assign(new Error(message), { status });
+export const createHttpError = (status, message, details = {}) => {
+  return Object.assign(new Error(message, { cause: details.cause }), { status, ...details });
 };
 
 export const throwDatabaseError = (error, fallbackMessage = 'Database request failed') => {
@@ -19,5 +19,10 @@ export const throwDatabaseError = (error, fallbackMessage = 'Database request fa
     throw createHttpError(404, 'Record not found');
   }
 
-  throw createHttpError(500, fallbackMessage);
+  throw createHttpError(500, fallbackMessage, {
+    cause: error,
+    databaseCode: error.code,
+    databaseDetails: error.details,
+    databaseHint: error.hint,
+  });
 };

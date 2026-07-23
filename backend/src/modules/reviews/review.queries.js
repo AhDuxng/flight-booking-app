@@ -1,7 +1,36 @@
 import { supabase } from '../../config/supabase.js';
 import { throwDatabaseError } from '../../utils/error.js';
 
-const REVIEW_COLUMNS = 'id, user_id, booking_id, flight_id, rating, comment, is_visible, created_at, updated_at, user:users!reviews_user_id_fkey(full_name, avatar_url)';
+const REVIEW_COLUMNS = 'id, user_id, booking_id, flight_id, rating, comment, is_visible, created_at, updated_at';
+
+const attachUserProfiles = async (reviews = []) => {
+  const userIds = [...new Set(reviews.map((review) => review.user_id).filter(Boolean))];
+  if (userIds.length === 0) {
+    return reviews;
+  }
+
+  const { data: users, error } = await supabase
+    .from('users')
+    .select('id, full_name, avatar_url')
+    .in('id', userIds);
+
+  throwDatabaseError(error, 'Unable to load reviewer profiles');
+  const usersById = new Map((users ?? []).map((user) => [user.id, user]));
+
+  return reviews.map((review) => ({
+    ...review,
+    user: usersById.get(review.user_id) ?? null,
+  }));
+};
+
+const attachUserProfile = async (review) => {
+  if (!review) {
+    return review;
+  }
+
+  const [result] = await attachUserProfiles([review]);
+  return result;
+};
 
 export const findByFlightId = async (flightId, from, to) => {
   const { data, error, count } = await supabase
@@ -13,7 +42,7 @@ export const findByFlightId = async (flightId, from, to) => {
     .order('created_at', { ascending: false });
 
   throwDatabaseError(error, 'Unable to load reviews');
-  return { data, count };
+  return { data: await attachUserProfiles(data ?? []), count };
 };
 
 export const findBookingForUser = async (bookingId, userId) => {
@@ -36,7 +65,7 @@ export const insert = async (payload) => {
     .single();
 
   throwDatabaseError(error, 'Unable to create review');
-  return data;
+  return attachUserProfile(data);
 };
 
 export const findOwnedById = async (id, userId) => {
@@ -60,5 +89,5 @@ export const update = async (id, payload) => {
     .single();
 
   throwDatabaseError(error, 'Unable to update review');
-  return data;
+  return attachUserProfile(data);
 };
