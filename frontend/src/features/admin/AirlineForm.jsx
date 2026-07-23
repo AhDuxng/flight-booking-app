@@ -21,7 +21,7 @@ export default function AirlineForm({ initialValues = defaultValues, onSubmit = 
       <Input label="Mã hãng" name="code" onChange={handleChange} placeholder="VF" required value={values.code} />
       <Input label="Tên hãng" name="name" onChange={handleChange} placeholder="VietFly Airlines" required value={values.name} />
       <Input label="Loại hình" name="type" onChange={handleChange} placeholder="Full-service" required value={values.type} />
-      <Button className="justify-self-end" type="submit">
+      <Button className="justify-self-end" type="submit" variant="admin">
         Lưu hãng bay
       </Button>
     </form>

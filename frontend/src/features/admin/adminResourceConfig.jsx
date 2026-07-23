@@ -73,7 +73,7 @@ export const adminResources = {
   },
   flights: {
     action: (
-      <Button as={Link} to="/admin/flights/create">
+      <Button as={Link} to="/admin/flights/create" variant="admin">
         Tạo chuyến bay
       </Button>
     ),
@@ -92,7 +92,7 @@ export const adminResources = {
         key: "actions",
         label: "",
         render: (row) => (
-          <Link className="text-label-md font-label-md text-primary hover:underline" to={`/admin/flights/${row.id}/edit`}>
+          <Link className="inline-flex items-center justify-center rounded-lg bg-emerald-600 px-3 py-1.5 text-label-md font-label-md text-white shadow-sm transition-colors hover:bg-emerald-700" to={`/admin/flights/${row.id}/edit`}>
             Sửa
           </Link>
         ),
@@ -139,7 +139,7 @@ export const adminResources = {
         key: "actions",
         label: "",
         render: (row) => (
-          <Link className="text-label-md font-label-md text-primary hover:underline" to={`/admin/users/${row.id}`}>
+          <Link className="inline-flex items-center justify-center rounded-lg bg-emerald-600 px-3 py-1.5 text-label-md font-label-md text-white shadow-sm transition-colors hover:bg-emerald-700" to={`/admin/users/${row.id}`}>
             Chi tiết
           </Link>
         ),

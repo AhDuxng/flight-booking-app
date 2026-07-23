@@ -23,7 +23,7 @@ export default function AirportForm({ initialValues = defaultValues, onSubmit = 
       <Input label="Tên sân bay" name="name" onChange={handleChange} placeholder="Nội Bài" required value={values.name} />
       <Input label="Thành phố" name="city" onChange={handleChange} placeholder="Hà Nội" required value={values.city} />
       <Input label="Nhà ga" name="terminal" onChange={handleChange} placeholder="T1, T2" value={values.terminal} />
-      <Button className="justify-self-end" type="submit">
+      <Button className="justify-self-end" type="submit" variant="admin">
         Lưu sân bay
       </Button>
     </form>

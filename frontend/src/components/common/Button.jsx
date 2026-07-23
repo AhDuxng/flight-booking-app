@@ -1,6 +1,7 @@
 import { cn } from "@/lib/utils";
 
 const variants = {
+  admin: "bg-emerald-600 text-white shadow-sm hover:bg-emerald-700",
   primary: "bg-primary text-on-primary shadow-sm hover:bg-primary-container",
   secondary: "bg-secondary-container text-on-secondary-container shadow-sm hover:bg-secondary-fixed-dim",
   warning: "bg-[#F97316] text-deep-navy font-bold hover:bg-[#EA580C]",

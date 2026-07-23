@@ -56,7 +56,7 @@ export default function AdminLayout() {
               <p className="text-body-sm font-body-sm text-on-surface-variant">Quản trị lịch bay, đặt chỗ và thanh toán</p>
             </div>
             <Link
-              className="rounded-lg border border-outline-variant px-3 py-2 text-label-md font-label-md text-primary transition-colors hover:bg-surface-container"
+              className="rounded-lg bg-emerald-600 px-3 py-2 text-label-md font-label-md text-white shadow-sm transition-colors hover:bg-emerald-700"
               to="/"
             >
               Xem website
@@ -84,7 +84,7 @@ function AdminNavLink({ compact = false, end = false, icon: Icon, label, to }) {
         cn(
           "flex items-center gap-3 rounded-lg px-3 py-2 text-label-md font-label-md transition-colors",
           compact && "flex-none border border-surface-container-high bg-surface-container-lowest",
-          isActive ? "bg-primary text-on-primary" : "text-on-surface-variant hover:bg-surface-container hover:text-primary",
+          isActive ? "bg-emerald-600 text-white shadow-sm" : "text-on-surface-variant hover:bg-emerald-600 hover:text-white",
         )
       }
       end={end}

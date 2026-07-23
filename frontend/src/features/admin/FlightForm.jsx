@@ -57,7 +57,7 @@ export default function FlightForm({ initialValues, onSubmit, submitLabel = "Lư
         <Input label="Số ghế mở bán" name="seats" onChange={handleChange} required type="number" value={values.seats} />
       </div>
       <div className="mt-stack-md flex justify-end">
-        <Button type="submit">{submitLabel}</Button>
+        <Button type="submit" variant="admin">{submitLabel}</Button>
       </div>
     </form>
   );
