@@ -83,81 +83,97 @@ export default function PassengerForm({ contact, passengers, onContactChange, on
       </section>
 
       {passengers.map((passenger, index) => (
-      <section className="rounded-xl border border-surface-container-high bg-surface-container-lowest p-stack-md shadow-[0_4px_12px_rgba(26,54,93,0.05)] sm:p-stack-lg" key={`${passenger.passengerType}-${index}`}>
-        <SectionHeader icon={UserRound} title={`Hành khách ${index + 1} (${passenger.passengerType === "child" ? "Trẻ em" : "Người lớn"})`} />
-        <div className="mt-stack-md grid grid-cols-1 gap-stack-md sm:grid-cols-12">
-          <div className="sm:col-span-3">
-            <Field label="Danh xưng" required>
-              <select className={selectClass} name="title" onChange={(event) => onPassengerChange(index, event)} value={passenger.title}>
-                <option>Ông</option>
-                <option>Bà</option>
-                <option>Cô</option>
-              </select>
-            </Field>
-          </div>
-          <div className="sm:col-span-5">
-            <Field label="Họ" required>
-              <input
-                className={inputClass}
-                name="lastName"
-                onChange={(event) => onPassengerChange(index, event)}
-                placeholder="VD: NGUYEN"
-                type="text"
-                value={passenger.lastName}
-              />
-            </Field>
-          </div>
-          <div className="sm:col-span-4">
-            <Field label="Tên đệm & tên" required>
-              <input
-                className={inputClass}
-                name="firstName"
-                onChange={(event) => onPassengerChange(index, event)}
-                placeholder="VD: VAN A"
-                type="text"
-                value={passenger.firstName}
-              />
-            </Field>
-          </div>
-          <div className="sm:col-span-4">
-            <Field label="Ngày sinh" required>
-              <div className="relative">
-                <CalendarDays className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-outline" />
-                <input
-                  className={`${inputClass} pl-10`}
-                  max={new Intl.DateTimeFormat("en-CA").format(new Date())}
-                  name="birthDate"
+        <section
+          className="rounded-xl border border-surface-container-high bg-surface-container-lowest p-stack-md shadow-[0_4px_12px_rgba(26,54,93,0.05)] sm:p-stack-lg"
+          key={`${passenger.passengerType}-${index}`}
+        >
+          <SectionHeader
+            icon={UserRound}
+            title={`Hành khách ${index + 1} (${passenger.passengerType === "child" ? "Trẻ em" : "Người lớn"})`}
+          />
+          <div className="mt-stack-md grid grid-cols-1 gap-stack-md sm:grid-cols-12">
+            <div className="sm:col-span-3">
+              <Field label="Danh xưng" required>
+                <select
+                  className={selectClass}
+                  name="title"
                   onChange={(event) => onPassengerChange(index, event)}
-                  type="date"
-                  value={passenger.birthDate}
+                  value={passenger.title}
+                >
+                  <option>Ông</option>
+                  <option>Bà</option>
+                  <option>Cô</option>
+                </select>
+              </Field>
+            </div>
+            <div className="sm:col-span-5">
+              <Field label="Họ" required>
+                <input
+                  className={inputClass}
+                  name="lastName"
+                  onChange={(event) => onPassengerChange(index, event)}
+                  placeholder="VD: NGUYEN"
+                  type="text"
+                  value={passenger.lastName}
                 />
-              </div>
-            </Field>
+              </Field>
+            </div>
+            <div className="sm:col-span-4">
+              <Field label="Tên đệm & tên" required>
+                <input
+                  className={inputClass}
+                  name="firstName"
+                  onChange={(event) => onPassengerChange(index, event)}
+                  placeholder="VD: VAN A"
+                  type="text"
+                  value={passenger.firstName}
+                />
+              </Field>
+            </div>
+            <div className="sm:col-span-4">
+              <Field label="Ngày sinh" required>
+                <div className="relative">
+                  <CalendarDays className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-outline" />
+                  <input
+                    className={`${inputClass} pl-10`}
+                    max={new Intl.DateTimeFormat("en-CA").format(new Date())}
+                    name="birthDate"
+                    onChange={(event) => onPassengerChange(index, event)}
+                    type="date"
+                    value={passenger.birthDate}
+                  />
+                </div>
+              </Field>
+            </div>
+            <div className="sm:col-span-4">
+              <Field label="Quốc tịch" required>
+                <select
+                  className={selectClass}
+                  name="nationality"
+                  onChange={(event) => onPassengerChange(index, event)}
+                  value={passenger.nationality}
+                >
+                  <option>Việt Nam</option>
+                  <option>Singapore</option>
+                  <option>Nhật Bản</option>
+                  <option>Khác</option>
+                </select>
+              </Field>
+            </div>
+            <div className="sm:col-span-4">
+              <Field label="Số hộ chiếu/CCCD" required>
+                <input
+                  className={inputClass}
+                  name="documentNumber"
+                  onChange={(event) => onPassengerChange(index, event)}
+                  placeholder="0123456789"
+                  type="text"
+                  value={passenger.documentNumber}
+                />
+              </Field>
+            </div>
           </div>
-          <div className="sm:col-span-4">
-            <Field label="Quốc tịch" required>
-              <select className={selectClass} name="nationality" onChange={(event) => onPassengerChange(index, event)} value={passenger.nationality}>
-                <option>Việt Nam</option>
-                <option>Singapore</option>
-                <option>Nhật Bản</option>
-                <option>Khác</option>
-              </select>
-            </Field>
-          </div>
-          <div className="sm:col-span-4">
-            <Field label="Số hộ chiếu/CCCD" required>
-              <input
-                className={inputClass}
-                name="documentNumber"
-                onChange={(event) => onPassengerChange(index, event)}
-                placeholder="0123456789"
-                type="text"
-                value={passenger.documentNumber}
-              />
-            </Field>
-          </div>
-        </div>
-      </section>
+        </section>
       ))}
     </div>
   );

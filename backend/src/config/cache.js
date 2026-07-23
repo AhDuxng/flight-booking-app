@@ -166,7 +166,9 @@ export const withRedisLocks = async (keys, task) => {
       const acquired = await withTimeout(redis.set(key, token, { NX: true, PX: 5_000 }));
 
       if (!acquired) {
-        throw Object.assign(new Error('Seat selection is being processed. Please try again'), { status: 409 });
+        throw Object.assign(new Error('Seat selection is being processed. Please try again'), {
+          status: 409,
+        });
       }
 
       acquiredKeys.push(key);

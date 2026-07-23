@@ -24,8 +24,12 @@ export default function RouteCard({ route, onSelect }) {
         </div>
         <div className="flex justify-between items-end">
           <div>
-            <p className="mb-1 text-label-md font-label-md text-on-surface-variant">Khám phá lịch bay</p>
-            <p className="text-title-lg font-title-lg font-bold text-primary">{route.originCode} → {route.destinationCode}</p>
+            <p className="mb-1 text-label-md font-label-md text-on-surface-variant">
+              Khám phá lịch bay
+            </p>
+            <p className="text-title-lg font-title-lg font-bold text-primary">
+              {route.originCode} → {route.destinationCode}
+            </p>
           </div>
           <button
             aria-label={`Xem chuyến bay đến ${route.destination}`}

@@ -46,10 +46,14 @@ export const search = async (filters, from, to) => {
   }
 
   if (filters.departureDate) {
-    const start = dayjs.tz(filters.departureDate, filters.departureTimezone ?? 'UTC').startOf('day');
+    const start = dayjs
+      .tz(filters.departureDate, filters.departureTimezone ?? 'UTC')
+      .startOf('day');
     const end = start.add(1, 'day');
     const lowerBound = start.isAfter(dayjs()) ? start : dayjs();
-    query = query.gte('departure_time', lowerBound.toISOString()).lt('departure_time', end.toISOString());
+    query = query
+      .gte('departure_time', lowerBound.toISOString())
+      .lt('departure_time', end.toISOString());
   } else {
     query = query.gte('departure_time', new Date().toISOString());
   }
@@ -84,7 +88,9 @@ export const findById = async (id) => {
 export const findBasicById = async (id) => {
   const { data, error } = await supabaseRead
     .from('flights')
-    .select('id, airline_id, aircraft_id, origin_airport_id, destination_airport_id, departure_time, arrival_time, status')
+    .select(
+      'id, airline_id, aircraft_id, origin_airport_id, destination_airport_id, departure_time, arrival_time, status',
+    )
     .eq('id', id)
     .maybeSingle();
 

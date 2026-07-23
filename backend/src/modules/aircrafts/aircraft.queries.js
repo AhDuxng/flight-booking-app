@@ -1,7 +1,8 @@
 import { supabase } from '../../config/supabase.js';
 import { throwDatabaseError } from '../../utils/error.js';
 
-const AIRCRAFT_COLUMNS = 'id, airline_id, code, model, total_seats, created_at, updated_at, airline:airlines!aircrafts_airline_id_fkey(id, code, name)';
+const AIRCRAFT_COLUMNS =
+  'id, airline_id, code, model, total_seats, created_at, updated_at, airline:airlines!aircrafts_airline_id_fkey(id, code, name)';
 
 export const findAll = async () => {
   const { data, error } = await supabase

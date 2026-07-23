@@ -13,8 +13,18 @@ import * as airportController from './airport.controller.js';
 const router = Router();
 
 router.get('/', airportController.getAllAirports);
-router.get('/:code', validate({ params: airportCodeParamsSchema }), airportController.findAirportByCode);
-router.post('/', authenticate, requireRole('admin'), validate(createAirportSchema), airportController.createAirport);
+router.get(
+  '/:code',
+  validate({ params: airportCodeParamsSchema }),
+  airportController.findAirportByCode,
+);
+router.post(
+  '/',
+  authenticate,
+  requireRole('admin'),
+  validate(createAirportSchema),
+  airportController.createAirport,
+);
 router.patch(
   '/:airportId',
   authenticate,

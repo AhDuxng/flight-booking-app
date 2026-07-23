@@ -8,7 +8,13 @@ import * as airlineController from './airline.controller.js';
 const router = Router();
 
 router.get('/', airlineController.getAllAirlines);
-router.post('/', authenticate, requireRole('admin'), validate(createAirlineSchema), airlineController.createAirline);
+router.post(
+  '/',
+  authenticate,
+  requireRole('admin'),
+  validate(createAirlineSchema),
+  airlineController.createAirline,
+);
 router.patch(
   '/:airlineId',
   authenticate,

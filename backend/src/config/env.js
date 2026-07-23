@@ -9,7 +9,12 @@ const booleanFromString = z
 const corsOriginsSchema = z
   .string()
   .min(1)
-  .transform((value) => value.split(',').map((origin) => origin.trim()).filter(Boolean))
+  .transform((value) =>
+    value
+      .split(',')
+      .map((origin) => origin.trim())
+      .filter(Boolean),
+  )
   .refine(
     (origins) => origins.every((origin) => URL.canParse(origin)),
     'FRONTEND_URL must contain valid URLs',
@@ -19,7 +24,12 @@ const commaSeparatedListSchema = z
   .string()
   .optional()
   .default('')
-  .transform((value) => value.split(',').map((item) => item.trim()).filter(Boolean));
+  .transform((value) =>
+    value
+      .split(',')
+      .map((item) => item.trim())
+      .filter(Boolean),
+  );
 
 const optionalStringWithDefault = (fallback) =>
   z

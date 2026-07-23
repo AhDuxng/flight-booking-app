@@ -2,8 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import Input from "@/components/common/Input";
 import { useClickOutside } from "@/hooks/useClickOutside";
 
-const getLocationLabel = (location) =>
-  location ? `${location.code} - ${location.name}` : "";
+const getLocationLabel = (location) => (location ? `${location.code} - ${location.name}` : "");
 
 export default function LocationDropdown({ label, icon: Icon, locations, value, onChange }) {
   const [isOpen, setIsOpen] = useState(false);

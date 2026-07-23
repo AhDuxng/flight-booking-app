@@ -12,7 +12,9 @@ export default function PaymentStatus({ status = "pending" }) {
   const Icon = config.icon;
 
   return (
-    <span className={cn("inline-flex items-center gap-2 text-label-md font-label-md", config.className)}>
+    <span
+      className={cn("inline-flex items-center gap-2 text-label-md font-label-md", config.className)}
+    >
       <Icon className="h-4 w-4" />
       {config.label}
     </span>

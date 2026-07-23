@@ -38,8 +38,48 @@ export default function ResetPasswordFeature() {
   };
 
   return (
-    <AuthLayout description="Tạo mật khẩu mới an toàn cho tài khoản VietFly của bạn." title="Bảo vệ hành trình.">
-      <div className="space-y-6"><div><h1 className="text-headline-lg text-on-surface">Mật khẩu mới</h1><p className="mt-2 text-body-md text-on-surface-variant">Mật khẩu cần có ít nhất 8 ký tự.</p></div>{accessToken ? <form className="space-y-5" onSubmit={handleSubmit}><PasswordField autoComplete="new-password" id="new-password" label="Mật khẩu mới" name="password" onToggle={() => setShowPassword((value) => !value)} showPassword={showPassword} /><PasswordField autoComplete="new-password" id="confirm-new-password" label="Xác nhận mật khẩu" name="confirmPassword" onToggle={() => setShowPassword((value) => !value)} showPassword={showPassword} /><Button className="w-full" disabled={isSubmitting} type="submit">{isSubmitting ? "Đang cập nhật..." : "Cập nhật mật khẩu"}</Button></form> : <div className="rounded-lg bg-error-container p-4 text-status-error">Liên kết đặt lại mật khẩu không hợp lệ hoặc đã hết hạn.</div>}<Link className="block text-center text-label-md text-primary hover:underline" to="/login">Quay lại đăng nhập</Link></div>
+    <AuthLayout
+      description="Tạo mật khẩu mới an toàn cho tài khoản VietFly của bạn."
+      title="Bảo vệ hành trình."
+    >
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-headline-lg text-on-surface">Mật khẩu mới</h1>
+          <p className="mt-2 text-body-md text-on-surface-variant">
+            Mật khẩu cần có ít nhất 8 ký tự.
+          </p>
+        </div>
+        {accessToken ? (
+          <form className="space-y-5" onSubmit={handleSubmit}>
+            <PasswordField
+              autoComplete="new-password"
+              id="new-password"
+              label="Mật khẩu mới"
+              name="password"
+              onToggle={() => setShowPassword((value) => !value)}
+              showPassword={showPassword}
+            />
+            <PasswordField
+              autoComplete="new-password"
+              id="confirm-new-password"
+              label="Xác nhận mật khẩu"
+              name="confirmPassword"
+              onToggle={() => setShowPassword((value) => !value)}
+              showPassword={showPassword}
+            />
+            <Button className="w-full" disabled={isSubmitting} type="submit">
+              {isSubmitting ? "Đang cập nhật..." : "Cập nhật mật khẩu"}
+            </Button>
+          </form>
+        ) : (
+          <div className="rounded-lg bg-error-container p-4 text-status-error">
+            Liên kết đặt lại mật khẩu không hợp lệ hoặc đã hết hạn.
+          </div>
+        )}
+        <Link className="block text-center text-label-md text-primary hover:underline" to="/login">
+          Quay lại đăng nhập
+        </Link>
+      </div>
     </AuthLayout>
   );
 }

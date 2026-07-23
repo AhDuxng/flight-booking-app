@@ -44,7 +44,11 @@ export const getUserById = async (req, res, next) => {
 
 export const moderateReview = async (req, res, next) => {
   try {
-    const data = await adminService.moderateReview(req.user.id, req.params.reviewId, req.body.isVisible);
+    const data = await adminService.moderateReview(
+      req.user.id,
+      req.params.reviewId,
+      req.body.isVisible,
+    );
     return res.json({ data });
   } catch (error) {
     return next(error);
@@ -53,7 +57,11 @@ export const moderateReview = async (req, res, next) => {
 
 export const processCashPayment = async (req, res, next) => {
   try {
-    const data = await adminService.processCashPayment(req.user.id, req.params.paymentId, req.body.status);
+    const data = await adminService.processCashPayment(
+      req.user.id,
+      req.params.paymentId,
+      req.body.status,
+    );
     return res.json({ data });
   } catch (error) {
     return next(error);

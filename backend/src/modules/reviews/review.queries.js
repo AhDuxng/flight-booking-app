@@ -1,7 +1,8 @@
 import { supabase } from '../../config/supabase.js';
 import { throwDatabaseError } from '../../utils/error.js';
 
-const REVIEW_COLUMNS = 'id, user_id, booking_id, flight_id, rating, comment, is_visible, created_at, updated_at';
+const REVIEW_COLUMNS =
+  'id, user_id, booking_id, flight_id, rating, comment, is_visible, created_at, updated_at';
 
 const attachUserProfiles = async (reviews = []) => {
   const userIds = [...new Set(reviews.map((review) => review.user_id).filter(Boolean))];

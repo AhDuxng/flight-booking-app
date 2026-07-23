@@ -1,7 +1,8 @@
 import { supabase } from '../../config/supabase.js';
 import { createHttpError, throwDatabaseError } from '../../utils/error.js';
 
-const PAYMENT_COLUMNS = 'id, booking_id, amount, currency, provider, transaction_ref, status, paid_at, created_at, updated_at';
+const PAYMENT_COLUMNS =
+  'id, booking_id, amount, currency, provider, transaction_ref, status, paid_at, created_at, updated_at';
 
 export const findPendingByBookingId = async (bookingId) => {
   const { data, error } = await supabase

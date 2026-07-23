@@ -1,7 +1,12 @@
 import * as flightQueries from './flight.queries.js';
 import { createHttpError } from '../../utils/error.js';
 import { createPagination, getPagination } from '../../utils/pagination.js';
-import { bumpCacheVersion, getCachedJson, getCacheVersion, setCachedJson } from '../../config/cache.js';
+import {
+  bumpCacheVersion,
+  getCachedJson,
+  getCacheVersion,
+  setCachedJson,
+} from '../../config/cache.js';
 import { env } from '../../config/env.js';
 
 const getDynamicPriceMultiplier = (availableSeats, totalSeats) => {
@@ -66,7 +71,9 @@ const toFlightPayload = (payload) => {
     ...(payload.airlineId !== undefined && { airline_id: payload.airlineId }),
     ...(payload.aircraftId !== undefined && { aircraft_id: payload.aircraftId }),
     ...(payload.originAirportId !== undefined && { origin_airport_id: payload.originAirportId }),
-    ...(payload.destinationAirportId !== undefined && { destination_airport_id: payload.destinationAirportId }),
+    ...(payload.destinationAirportId !== undefined && {
+      destination_airport_id: payload.destinationAirportId,
+    }),
     ...(payload.flightNumber !== undefined && { flight_number: payload.flightNumber }),
     ...(payload.departureTime !== undefined && { departure_time: payload.departureTime }),
     ...(payload.arrivalTime !== undefined && { arrival_time: payload.arrivalTime }),

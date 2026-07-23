@@ -13,7 +13,10 @@ export default function MobileChatNavigation() {
     <nav className="fixed inset-x-0 bottom-0 z-30 flex h-16 items-center justify-around border-t border-outline-variant bg-surface px-4 shadow-[0_-4px_10px_rgba(0,0,0,0.05)] md:hidden">
       {items.map((item) => (
         <Link
-          className={cn("flex min-w-16 flex-col items-center gap-1 text-xs", item.active ? "font-semibold text-primary" : "text-on-surface-variant")}
+          className={cn(
+            "flex min-w-16 flex-col items-center gap-1 text-xs",
+            item.active ? "font-semibold text-primary" : "text-on-surface-variant",
+          )}
           key={item.to}
           to={item.to}
         >

@@ -14,9 +14,7 @@ export default function FlightCard({ flight, onSelect }) {
             <div className="font-headline-md text-headline-md text-on-surface">
               {formatTime(flight.departureTime)}
             </div>
-            <div className="font-body-sm text-body-sm text-on-surface-variant">
-              {flight.origin}
-            </div>
+            <div className="font-body-sm text-body-sm text-on-surface-variant">{flight.origin}</div>
           </div>
           <div className="flex flex-col items-center px-4">
             <div className="font-body-sm text-body-sm text-on-surface-variant mb-1">
@@ -26,9 +24,7 @@ export default function FlightCard({ flight, onSelect }) {
               <div className="w-full h-px bg-outline-variant absolute"></div>
               <Plane className="relative h-4 w-4 rotate-90 bg-surface-container-lowest px-1 text-outline" />
             </div>
-            <div className="font-body-sm text-body-sm text-primary mt-1">
-              {flight.flightNumber}
-            </div>
+            <div className="font-body-sm text-body-sm text-primary mt-1">{flight.flightNumber}</div>
           </div>
           <div>
             <div className="font-headline-md text-headline-md text-on-surface">

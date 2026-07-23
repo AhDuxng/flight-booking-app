@@ -5,7 +5,11 @@ import * as notificationController from './notification.controller.js';
 
 const router = Router();
 
-router.get('/', validate({ query: notificationQuerySchema }), notificationController.getNotifications);
+router.get(
+  '/',
+  validate({ query: notificationQuerySchema }),
+  notificationController.getNotifications,
+);
 router.patch('/read-all', notificationController.markAllNotificationsRead);
 router.patch(
   '/:notificationId/read',

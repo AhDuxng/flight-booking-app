@@ -1,7 +1,11 @@
 import { CalendarDays } from "lucide-react";
 import Input from "@/components/common/Input";
 
-const today = new Intl.DateTimeFormat("en-CA", { year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
+const today = new Intl.DateTimeFormat("en-CA", {
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+}).format(new Date());
 
 export default function DateDropdown({ label, value, onChange, disabled }) {
   return (

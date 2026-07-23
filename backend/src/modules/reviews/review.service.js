@@ -11,8 +11,9 @@ export const getReviews = async (query) => {
 export const createReview = async (userId, payload) => {
   const booking = await reviewQueries.findBookingForUser(payload.bookingId, userId);
 
-  const flightCompleted = booking?.flight?.status === 'arrived'
-    || (booking?.flight?.arrival_time && new Date(booking.flight.arrival_time) <= new Date());
+  const flightCompleted =
+    booking?.flight?.status === 'arrived' ||
+    (booking?.flight?.arrival_time && new Date(booking.flight.arrival_time) <= new Date());
 
   if (!booking || booking.status !== 'confirmed' || !flightCompleted) {
     throw createHttpError(400, 'Only completed flights with confirmed bookings can be reviewed');

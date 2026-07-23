@@ -52,7 +52,9 @@ export default function Footer() {
         </div>
         {footerGroups.map((group) => (
           <div className="flex flex-col gap-3" key={group.title}>
-            <h2 className="text-label-md font-semibold text-on-primary dark:text-primary">{group.title}</h2>
+            <h2 className="text-label-md font-semibold text-on-primary dark:text-primary">
+              {group.title}
+            </h2>
             {group.links.map((link) => (
               <Link
                 className="text-label-md text-on-primary-container transition-colors hover:text-secondary-fixed-dim dark:text-on-surface-variant dark:hover:text-secondary"

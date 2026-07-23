@@ -25,9 +25,15 @@ api.interceptors.response.use(
   async (error) => {
     const request = error.config;
     const refreshToken = authStore.getState().refreshToken;
-    const isAuthRequest = request?.url?.startsWith('/auth/');
+    const isAuthRequest = request?.url?.startsWith("/auth/");
 
-    if (error.response?.status === 401 && request && !request._retry && !isAuthRequest && refreshToken) {
+    if (
+      error.response?.status === 401 &&
+      request &&
+      !request._retry &&
+      !isAuthRequest &&
+      refreshToken
+    ) {
       request._retry = true;
 
       try {
@@ -38,7 +44,13 @@ api.interceptors.response.use(
             refreshRequest = null;
           });
         const session = await refreshRequest;
-        authStore.setAuth(session.user, session.token, session.refreshToken, session.expiresAt, authStore.getState().rememberMe);
+        authStore.setAuth(
+          session.user,
+          session.token,
+          session.refreshToken,
+          session.expiresAt,
+          authStore.getState().rememberMe,
+        );
         request.headers.Authorization = `Bearer ${session.token}`;
         return api(request);
       } catch {

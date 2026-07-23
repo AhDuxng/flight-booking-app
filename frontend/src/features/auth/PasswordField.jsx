@@ -3,7 +3,9 @@ import { Eye, EyeOff, LockKeyhole } from "lucide-react";
 export default function PasswordField({ autoComplete, id, label, name, onToggle, showPassword }) {
   return (
     <label className="block">
-      {label ? <span className="mb-2 block text-label-md font-label-md text-on-surface">{label}</span> : null}
+      {label ? (
+        <span className="mb-2 block text-label-md font-label-md text-on-surface">{label}</span>
+      ) : null}
       <div className="relative">
         <LockKeyhole className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-on-surface-variant" />
         <input

@@ -145,13 +145,31 @@ export default function TopNavBar() {
           {isAuthenticated ? (
             <>
               <Link
-              aria-label={`Hồ sơ của ${user?.fullName || "bạn"}`}
-              className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full border border-outline-variant bg-primary-container"
-              to="/profile"
-            >
-                {user?.avatarUrl ? <img alt="Ảnh đại diện người dùng" className="h-full w-full object-cover" height="36" src={user.avatarUrl} width="36" /> : <User className="h-4 w-4 text-primary" />}
+                aria-label={`Hồ sơ của ${user?.fullName || "bạn"}`}
+                className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full border border-outline-variant bg-primary-container"
+                to="/profile"
+              >
+                {user?.avatarUrl ? (
+                  <img
+                    alt="Ảnh đại diện người dùng"
+                    className="h-full w-full object-cover"
+                    height="36"
+                    src={user.avatarUrl}
+                    width="36"
+                  />
+                ) : (
+                  <User className="h-4 w-4 text-primary" />
+                )}
               </Link>
-              <button aria-label="Đăng xuất" className="hidden h-10 items-center justify-center rounded-lg px-2 text-status-error transition-colors hover:bg-error-container/30 sm:flex" onClick={handleLogout} title="Đăng xuất" type="button"><LogOut className="h-4 w-4" /></button>
+              <button
+                aria-label="Đăng xuất"
+                className="hidden h-10 items-center justify-center rounded-lg px-2 text-status-error transition-colors hover:bg-error-container/30 sm:flex"
+                onClick={handleLogout}
+                title="Đăng xuất"
+                type="button"
+              >
+                <LogOut className="h-4 w-4" />
+              </button>
             </>
           ) : (
             <Link
@@ -173,27 +191,40 @@ export default function TopNavBar() {
             {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
 
-          {isNotificationsOpen ? <NotificationPanel notifications={notifications} onClose={notificationStore.close} onMarkRead={async (notification) => {
-            if (!notification.read_at) {
-              try {
-                const response = await notificationService.markRead(notification.id);
-                setNotifications((items) => items.map((item) => item.id === notification.id ? response.data : item));
-                notificationStore.setUnreadCount(Math.max(0, notificationStore.getState().unreadCount - 1));
-              } catch {
-                return;
-              }
-            }
-            notificationStore.close();
-          }} onMarkAllRead={async () => {
-            try {
-              await notificationService.markAllRead();
-              const readAt = new Date().toISOString();
-              setNotifications((items) => items.map((item) => ({ ...item, read_at: item.read_at ?? readAt })));
-              notificationStore.markAllRead();
-            } catch {
-              return;
-            }
-          }} /> : null}
+          {isNotificationsOpen ? (
+            <NotificationPanel
+              notifications={notifications}
+              onClose={notificationStore.close}
+              onMarkRead={async (notification) => {
+                if (!notification.read_at) {
+                  try {
+                    const response = await notificationService.markRead(notification.id);
+                    setNotifications((items) =>
+                      items.map((item) => (item.id === notification.id ? response.data : item)),
+                    );
+                    notificationStore.setUnreadCount(
+                      Math.max(0, notificationStore.getState().unreadCount - 1),
+                    );
+                  } catch {
+                    return;
+                  }
+                }
+                notificationStore.close();
+              }}
+              onMarkAllRead={async () => {
+                try {
+                  await notificationService.markAllRead();
+                  const readAt = new Date().toISOString();
+                  setNotifications((items) =>
+                    items.map((item) => ({ ...item, read_at: item.read_at ?? readAt })),
+                  );
+                  notificationStore.markAllRead();
+                } catch {
+                  return;
+                }
+              }}
+            />
+          ) : null}
         </div>
       </div>
 
@@ -214,7 +245,11 @@ export default function TopNavBar() {
                 key={item.to}
                 to={item.to}
               >
-                {item.to === "/chatbot" ? <Bot className="h-4 w-4" /> : <span className="h-4 w-4" />}
+                {item.to === "/chatbot" ? (
+                  <Bot className="h-4 w-4" />
+                ) : (
+                  <span className="h-4 w-4" />
+                )}
                 {item.label}
               </NavLink>
             ))}
@@ -228,7 +263,10 @@ export default function TopNavBar() {
                 Đăng xuất
               </button>
             ) : (
-              <Link className="flex min-h-11 items-center gap-3 rounded-lg px-3 text-label-md font-medium text-primary hover:bg-primary-fixed sm:hidden" to="/login">
+              <Link
+                className="flex min-h-11 items-center gap-3 rounded-lg px-3 text-label-md font-medium text-primary hover:bg-primary-fixed sm:hidden"
+                to="/login"
+              >
                 <LogIn className="h-4 w-4" />
                 Đăng nhập
               </Link>
@@ -258,9 +296,29 @@ function NotificationPanel({ notifications, onClose, onMarkAllRead, onMarkRead }
         </button>
       </div>
       <div className="divide-y divide-outline-variant">
-        {notifications.length > 0 ? notifications.map((notification) => <NotificationItem key={notification.id} notification={notification} onOpen={onMarkRead} time={new Intl.DateTimeFormat("vi-VN", { dateStyle: "short", timeStyle: "short" }).format(new Date(notification.created_at))} />) : <div className="px-4 py-6 text-center text-body-sm text-on-surface-variant">Chưa có thông báo.</div>}
+        {notifications.length > 0 ? (
+          notifications.map((notification) => (
+            <NotificationItem
+              key={notification.id}
+              notification={notification}
+              onOpen={onMarkRead}
+              time={new Intl.DateTimeFormat("vi-VN", {
+                dateStyle: "short",
+                timeStyle: "short",
+              }).format(new Date(notification.created_at))}
+            />
+          ))
+        ) : (
+          <div className="px-4 py-6 text-center text-body-sm text-on-surface-variant">
+            Chưa có thông báo.
+          </div>
+        )}
       </div>
-      <Link className="block px-4 py-3 text-center text-body-sm font-semibold text-primary hover:bg-surface-container" onClick={onClose} to="/my-bookings">
+      <Link
+        className="block px-4 py-3 text-center text-body-sm font-semibold text-primary hover:bg-surface-container"
+        onClick={onClose}
+        to="/my-bookings"
+      >
         Xem đặt chỗ của tôi
       </Link>
     </div>
@@ -275,8 +333,17 @@ function NotificationItem({ notification, time, onOpen }) {
       : "/my-bookings";
 
   return (
-    <Link className="flex gap-3 px-4 py-3 hover:bg-surface-container" onClick={() => onOpen(notification)} to={target}>
-      <span className={cn("mt-1.5 h-2 w-2 shrink-0 rounded-full", !notification.read_at ? "bg-status-info" : "bg-outline-variant")} />
+    <Link
+      className="flex gap-3 px-4 py-3 hover:bg-surface-container"
+      onClick={() => onOpen(notification)}
+      to={target}
+    >
+      <span
+        className={cn(
+          "mt-1.5 h-2 w-2 shrink-0 rounded-full",
+          !notification.read_at ? "bg-status-info" : "bg-outline-variant",
+        )}
+      />
       <div className="min-w-0">
         <p className="text-label-md text-on-surface">{notification.title}</p>
         <p className="mt-0.5 text-body-sm text-on-surface-variant">{notification.body}</p>

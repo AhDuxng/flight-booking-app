@@ -28,12 +28,39 @@ export default function ForgotPasswordFeature() {
   };
 
   return (
-    <AuthLayout description="Khôi phục quyền truy cập tài khoản VietFly bằng email đã đăng ký." title="Đặt lại mật khẩu.">
+    <AuthLayout
+      description="Khôi phục quyền truy cập tài khoản VietFly bằng email đã đăng ký."
+      title="Đặt lại mật khẩu."
+    >
       <div className="space-y-6">
-        <div><h1 className="text-headline-lg text-on-surface">Quên mật khẩu</h1><p className="mt-2 text-body-md text-on-surface-variant">Nhập email để nhận liên kết khôi phục tài khoản.</p></div>
-        {isSent ? <div className="rounded-lg bg-primary-fixed p-4 text-body-md text-on-primary-fixed">Hãy kiểm tra hộp thư và thư rác. Liên kết khôi phục chỉ có hiệu lực trong thời gian giới hạn.</div> : null}
-        <form className="space-y-5" onSubmit={handleSubmit}><Input autoComplete="email" icon={Mail} label="Địa chỉ Email" name="email" required type="email" /><Button className="w-full" disabled={isSubmitting} type="submit">{isSubmitting ? "Đang gửi..." : "Gửi liên kết khôi phục"}</Button></form>
-        <Link className="block text-center text-label-md text-primary hover:underline" to="/login">Quay lại đăng nhập</Link>
+        <div>
+          <h1 className="text-headline-lg text-on-surface">Quên mật khẩu</h1>
+          <p className="mt-2 text-body-md text-on-surface-variant">
+            Nhập email để nhận liên kết khôi phục tài khoản.
+          </p>
+        </div>
+        {isSent ? (
+          <div className="rounded-lg bg-primary-fixed p-4 text-body-md text-on-primary-fixed">
+            Hãy kiểm tra hộp thư và thư rác. Liên kết khôi phục chỉ có hiệu lực trong thời gian giới
+            hạn.
+          </div>
+        ) : null}
+        <form className="space-y-5" onSubmit={handleSubmit}>
+          <Input
+            autoComplete="email"
+            icon={Mail}
+            label="Địa chỉ Email"
+            name="email"
+            required
+            type="email"
+          />
+          <Button className="w-full" disabled={isSubmitting} type="submit">
+            {isSubmitting ? "Đang gửi..." : "Gửi liên kết khôi phục"}
+          </Button>
+        </form>
+        <Link className="block text-center text-label-md text-primary hover:underline" to="/login">
+          Quay lại đăng nhập
+        </Link>
       </div>
     </AuthLayout>
   );

@@ -11,7 +11,10 @@ export const getNotifications = async (req, res, next) => {
 
 export const markNotificationRead = async (req, res, next) => {
   try {
-    const data = await notificationService.markNotificationRead(req.params.notificationId, req.user.id);
+    const data = await notificationService.markNotificationRead(
+      req.params.notificationId,
+      req.user.id,
+    );
     return res.json({ data });
   } catch (error) {
     return next(error);

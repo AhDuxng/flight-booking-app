@@ -5,9 +5,7 @@ export default function TrustSignalCard({ icon: Icon, title, description }) {
         <Icon className="h-8 w-8 text-secondary-container" />
       </div>
       <h3 className="text-title-lg font-title-lg text-primary mb-2">{title}</h3>
-      <p className="text-body-md font-body-md text-on-surface-variant">
-        {description}
-      </p>
+      <p className="text-body-md font-body-md text-on-surface-variant">{description}</p>
     </div>
   );
 }

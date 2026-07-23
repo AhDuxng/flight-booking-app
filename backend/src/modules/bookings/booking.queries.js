@@ -51,7 +51,9 @@ export const findMineById = async (id, userId) => {
 export const findBasicMineById = async (id, userId) => {
   const { data, error } = await supabase
     .from('bookings')
-    .select('id, user_id, flight_id, status, total_price, hold_expires_at, flight:flights!bookings_flight_id_fkey(id, departure_time, status)')
+    .select(
+      'id, user_id, flight_id, status, total_price, hold_expires_at, flight:flights!bookings_flight_id_fkey(id, departure_time, status)',
+    )
     .eq('id', id)
     .eq('user_id', userId)
     .maybeSingle();
@@ -76,7 +78,12 @@ export const createAtomically = async (userId, payload) => {
 
   if (error) {
     const status = error.code === 'P0001' ? 409 : 400;
-    throw createHttpError(status, error.code === 'P0001' ? 'One or more seats are no longer available' : 'Unable to create booking');
+    throw createHttpError(
+      status,
+      error.code === 'P0001'
+        ? 'One or more seats are no longer available'
+        : 'Unable to create booking',
+    );
   }
 
   return data;

@@ -30,10 +30,8 @@ export default function FlightFilter({ airlines, filters, onFilterChange }) {
   return (
     <aside className="lg:col-span-3 flex flex-col gap-stack-lg">
       <div className="bg-surface-container-lowest rounded-lg p-stack-md flight-card-shadow border border-surface-container-highest">
-        <h2 className="font-title-lg text-title-lg text-on-surface mb-stack-md">
-          Bộ lọc
-        </h2>
-        
+        <h2 className="font-title-lg text-title-lg text-on-surface mb-stack-md">Bộ lọc</h2>
+
         <div className="mb-stack-lg border-b border-outline-variant pb-stack-md">
           <h3 className="font-label-md text-label-md text-on-surface-variant mb-stack-sm uppercase tracking-wider">
             Hãng hàng không
@@ -52,7 +50,7 @@ export default function FlightFilter({ airlines, filters, onFilterChange }) {
             ))}
           </div>
         </div>
-        
+
         <div className="mb-stack-lg border-b border-outline-variant pb-stack-md">
           <h3 className="font-label-md text-label-md text-on-surface-variant mb-stack-sm uppercase tracking-wider">
             Mức giá
@@ -73,7 +71,7 @@ export default function FlightFilter({ airlines, filters, onFilterChange }) {
             </div>
           </div>
         </div>
-        
+
         <div className="mb-stack-lg border-b border-outline-variant pb-stack-md">
           <h3 className="font-label-md text-label-md text-on-surface-variant mb-stack-sm uppercase tracking-wider">
             Giờ khởi hành
@@ -89,14 +87,16 @@ export default function FlightFilter({ airlines, filters, onFilterChange }) {
                   onClick={() => handleTimeChange(timeOption.id)}
                   className={cn(
                     "rounded border p-stack-sm text-center transition-colors",
-                    isActive ? "border-primary bg-primary-fixed" : "border-outline-variant hover:border-primary hover:bg-primary-fixed",
+                    isActive
+                      ? "border-primary bg-primary-fixed"
+                      : "border-outline-variant hover:border-primary hover:bg-primary-fixed",
                   )}
                   type="button"
                 >
-                  <Icon className={cn("mx-auto h-5 w-5", isActive ? "text-primary" : "text-outline")} />
-                  <span className="block font-body-sm text-body-sm mt-1">
-                    {timeOption.label}
-                  </span>
+                  <Icon
+                    className={cn("mx-auto h-5 w-5", isActive ? "text-primary" : "text-outline")}
+                  />
+                  <span className="block font-body-sm text-body-sm mt-1">{timeOption.label}</span>
                   <span className="block font-body-sm text-body-sm text-on-surface-variant text-xs">
                     {timeOption.time}
                   </span>

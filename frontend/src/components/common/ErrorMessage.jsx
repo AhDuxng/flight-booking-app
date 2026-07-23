@@ -10,7 +10,14 @@ export default function ErrorMessage({ message = "Đã có lỗi xảy ra. Vui l
           <p className="text-title-lg font-title-lg">Không thể tải dữ liệu</p>
           <p className="mt-1 text-body-md font-body-md">{message}</p>
           {onRetry ? (
-            <Button className="mt-4" icon={RotateCcw} onClick={onRetry} size="sm" type="button" variant="outline">
+            <Button
+              className="mt-4"
+              icon={RotateCcw}
+              onClick={onRetry}
+              size="sm"
+              type="button"
+              variant="outline"
+            >
               Thử lại
             </Button>
           ) : null}

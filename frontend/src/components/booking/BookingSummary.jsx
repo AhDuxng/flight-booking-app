@@ -25,7 +25,9 @@ export default function BookingSummary({ flight, selectedSeat, baggage, meal, di
         <div className="flex items-center justify-between gap-3">
           <div className="text-center">
             <div className="text-headline-md font-headline-md text-on-surface">{flight.origin}</div>
-            <div className="text-body-sm font-body-sm text-on-surface-variant">{flight.departureTime}</div>
+            <div className="text-body-sm font-body-sm text-on-surface-variant">
+              {flight.departureTime}
+            </div>
           </div>
           <div className="flex flex-1 flex-col items-center">
             <div className="mb-1 flex items-center gap-1 text-body-sm font-body-sm text-outline">
@@ -42,8 +44,12 @@ export default function BookingSummary({ flight, selectedSeat, baggage, meal, di
             <div className="mt-1 text-body-sm font-body-sm text-outline">{flight.type}</div>
           </div>
           <div className="text-center">
-            <div className="text-headline-md font-headline-md text-on-surface">{flight.destination}</div>
-            <div className="text-body-sm font-body-sm text-on-surface-variant">{flight.arrivalTime}</div>
+            <div className="text-headline-md font-headline-md text-on-surface">
+              {flight.destination}
+            </div>
+            <div className="text-body-sm font-body-sm text-on-surface-variant">
+              {flight.arrivalTime}
+            </div>
           </div>
         </div>
       </div>
@@ -54,17 +60,23 @@ export default function BookingSummary({ flight, selectedSeat, baggage, meal, di
         <LineItem label={baggage.label} value={baggage.price} />
         <LineItem label={meal.label} value={meal.price} />
         <LineItem label="Thuế & phí" value={taxes} />
-        {discount.applied ? <LineItem isDiscount label="Mã VIFLY150" value={discountAmount} /> : null}
+        {discount.applied ? (
+          <LineItem isDiscount label="Mã VIFLY150" value={discountAmount} />
+        ) : null}
       </div>
 
       <div className="space-y-4 p-stack-md">
         <div className="flex items-start gap-2 rounded-lg bg-primary-fixed p-3 text-on-primary-fixed">
           <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0" />
-          <p className="text-body-sm font-body-sm">Ghế được giữ trong 09:42 sau khi xác nhận thông tin.</p>
+          <p className="text-body-sm font-body-sm">
+            Ghế được giữ trong 09:42 sau khi xác nhận thông tin.
+          </p>
         </div>
         <div className="flex items-end justify-between gap-4">
           <div>
-            <span className="block text-label-md font-label-md text-on-surface-variant">Tổng tiền</span>
+            <span className="block text-label-md font-label-md text-on-surface-variant">
+              Tổng tiền
+            </span>
             <span className="text-body-sm font-body-sm text-outline">Bao gồm VAT</span>
           </div>
           <div className="text-right text-primary">
@@ -81,7 +93,13 @@ function LineItem({ label, value, isDiscount = false }) {
   return (
     <div className="flex items-center justify-between gap-4">
       <span className="text-body-md font-body-md text-on-surface-variant">{label}</span>
-      <span className={isDiscount ? "font-data-mono text-data-mono text-status-success" : "font-data-mono text-data-mono text-on-surface"}>
+      <span
+        className={
+          isDiscount
+            ? "font-data-mono text-data-mono text-status-success"
+            : "font-data-mono text-data-mono text-on-surface"
+        }
+      >
         {isDiscount ? "-" : ""}
         {formatCurrency(value)}
       </span>

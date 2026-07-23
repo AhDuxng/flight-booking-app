@@ -12,7 +12,13 @@ import * as aircraftController from './aircraft.controller.js';
 const router = Router();
 
 router.get('/', aircraftController.getAllAircrafts);
-router.post('/', authenticate, requireRole('admin'), validate(createAircraftSchema), aircraftController.createAircraft);
+router.post(
+  '/',
+  authenticate,
+  requireRole('admin'),
+  validate(createAircraftSchema),
+  aircraftController.createAircraft,
+);
 router.patch(
   '/:aircraftId',
   authenticate,

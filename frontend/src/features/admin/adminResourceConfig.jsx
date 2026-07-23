@@ -15,7 +15,9 @@ import {
 const statusColumn = {
   key: "statusLabel",
   label: "Trạng thái",
-  render: (row) => <StatusBadge status={row.status}>{row.statusLabel ?? "Đang hoạt động"}</StatusBadge>,
+  render: (row) => (
+    <StatusBadge status={row.status}>{row.statusLabel ?? "Đang hoạt động"}</StatusBadge>
+  ),
 };
 
 export const adminResources = {
@@ -92,7 +94,10 @@ export const adminResources = {
         key: "actions",
         label: "",
         render: (row) => (
-          <Link className="inline-flex items-center justify-center rounded-lg bg-emerald-600 px-3 py-1.5 text-label-md font-label-md text-white shadow-sm transition-colors hover:bg-emerald-700" to={`/admin/flights/${row.id}/edit`}>
+          <Link
+            className="inline-flex items-center justify-center rounded-lg bg-primary px-3 py-1.5 text-label-md font-label-md text-on-primary shadow-sm transition-colors hover:bg-primary-container"
+            to={`/admin/flights/${row.id}/edit`}
+          >
             Sửa
           </Link>
         ),
@@ -139,7 +144,10 @@ export const adminResources = {
         key: "actions",
         label: "",
         render: (row) => (
-          <Link className="inline-flex items-center justify-center rounded-lg bg-emerald-600 px-3 py-1.5 text-label-md font-label-md text-white shadow-sm transition-colors hover:bg-emerald-700" to={`/admin/users/${row.id}`}>
+          <Link
+            className="inline-flex items-center justify-center rounded-lg bg-primary px-3 py-1.5 text-label-md font-label-md text-on-primary shadow-sm transition-colors hover:bg-primary-container"
+            to={`/admin/users/${row.id}`}
+          >
             Chi tiết
           </Link>
         ),

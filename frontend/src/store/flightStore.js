@@ -31,7 +31,10 @@ export const flightStore = {
   addRecentSearch: (search) => {
     setState({
       ...state,
-      recentSearches: [search, ...state.recentSearches.filter((item) => item.id !== search.id)].slice(0, 5),
+      recentSearches: [
+        search,
+        ...state.recentSearches.filter((item) => item.id !== search.id),
+      ].slice(0, 5),
     });
   },
   getState: () => state,

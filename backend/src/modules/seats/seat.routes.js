@@ -8,6 +8,11 @@ const router = Router();
 
 router.get('/', validate({ query: seatQuerySchema }), seatController.getSeatsByFlight);
 router.post('/hold', authenticate, validate(holdSeatSchema), seatController.holdSeat);
-router.patch('/:seatId/release', authenticate, validate({ params: seatParamsSchema }), seatController.releaseSeat);
+router.patch(
+  '/:seatId/release',
+  authenticate,
+  validate({ params: seatParamsSchema }),
+  seatController.releaseSeat,
+);
 
 export default router;

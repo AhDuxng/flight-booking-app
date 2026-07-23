@@ -28,7 +28,9 @@ function AirportSummary({ align = "left", airport }) {
   return (
     <div className={align === "right" ? "text-right" : "text-left"}>
       <p className="text-headline-md font-headline-md text-primary">{airport?.code ?? "--"}</p>
-      <p className="text-body-sm font-body-sm text-on-surface-variant">{airport?.time ?? "--:--"}</p>
+      <p className="text-body-sm font-body-sm text-on-surface-variant">
+        {airport?.time ?? "--:--"}
+      </p>
     </div>
   );
 }

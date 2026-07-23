@@ -19,11 +19,7 @@ export default function FlightList({ flights, onSelectFlight }) {
   return (
     <div className="flex flex-col gap-stack-md mt-stack-sm">
       {flights.map((flight) => (
-        <FlightCard
-          key={flight.id}
-          flight={flight}
-          onSelect={onSelectFlight}
-        />
+        <FlightCard key={flight.id} flight={flight} onSelect={onSelectFlight} />
       ))}
     </div>
   );

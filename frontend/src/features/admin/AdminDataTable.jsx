@@ -6,7 +6,10 @@ export default function AdminDataTable({ columns, rows }) {
           <thead className="bg-surface-container-low">
             <tr>
               {columns.map((column) => (
-                <th className="px-4 py-3 text-label-md font-label-md uppercase text-on-surface-variant" key={column.key}>
+                <th
+                  className="px-4 py-3 text-label-md font-label-md uppercase text-on-surface-variant"
+                  key={column.key}
+                >
                   {column.label}
                 </th>
               ))}
@@ -16,7 +19,10 @@ export default function AdminDataTable({ columns, rows }) {
             {rows.map((row) => (
               <tr className="transition-colors hover:bg-surface-container-low" key={row.id}>
                 {columns.map((column) => (
-                  <td className="px-4 py-3 text-body-sm font-body-sm text-on-surface" key={column.key}>
+                  <td
+                    className="px-4 py-3 text-body-sm font-body-sm text-on-surface"
+                    key={column.key}
+                  >
                     {column.render ? column.render(row) : row[column.key]}
                   </td>
                 ))}

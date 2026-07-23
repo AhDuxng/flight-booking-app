@@ -159,18 +159,23 @@ export const updateFlight = async (adminId, flightId, payload) => {
   });
 
   const statusChanged = previousFlight.status !== flight.status;
-  const scheduleChanged = previousFlight.departure_time !== flight.departure_time
-    || previousFlight.arrival_time !== flight.arrival_time;
+  const scheduleChanged =
+    previousFlight.departure_time !== flight.departure_time ||
+    previousFlight.arrival_time !== flight.arrival_time;
   if ((statusChanged && ['delayed', 'cancelled'].includes(flight.status)) || scheduleChanged) {
     const isCancelled = flight.status === 'cancelled';
-    await Promise.all(affectedBookings.map((booking) => notificationService.sendNotification(booking.user_id, {
-      type: isCancelled ? 'flight_cancelled' : 'flight_delayed',
-      title: isCancelled ? 'Flight cancelled' : 'Flight schedule updated',
-      body: isCancelled
-        ? `Flight ${flight.flight_number} for booking ${booking.id} has been cancelled. Please contact support for assistance.`
-        : `The schedule for flight ${flight.flight_number} has changed. Please review booking ${booking.id}.`,
-      payload: { bookingId: booking.id, flightId: flight.id },
-    })));
+    await Promise.all(
+      affectedBookings.map((booking) =>
+        notificationService.sendNotification(booking.user_id, {
+          type: isCancelled ? 'flight_cancelled' : 'flight_delayed',
+          title: isCancelled ? 'Flight cancelled' : 'Flight schedule updated',
+          body: isCancelled
+            ? `Flight ${flight.flight_number} for booking ${booking.id} has been cancelled. Please contact support for assistance.`
+            : `The schedule for flight ${flight.flight_number} has changed. Please review booking ${booking.id}.`,
+          payload: { bookingId: booking.id, flightId: flight.id },
+        }),
+      ),
+    );
   }
   return flight;
 };

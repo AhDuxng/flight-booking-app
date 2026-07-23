@@ -50,11 +50,14 @@ export const findFlights = async (from, to) => {
 export const findBookings = async (status, from, to) => {
   let query = supabase
     .from('bookings')
-    .select(`
+    .select(
+      `
       id, user_id, flight_id, price_snapshot, total_price, status, contact_email,
       contact_phone, created_at, updated_at,
       flight:flights!bookings_flight_id_fkey(id, flight_number, departure_time, status)
-    `, { count: 'exact' })
+    `,
+      { count: 'exact' },
+    )
     .range(from, to)
     .order('created_at', { ascending: false });
 
@@ -92,10 +95,13 @@ export const findActiveBookingsByFlightId = async (flightId) => {
 export const findPayments = async (from, to) => {
   const { data, error, count } = await supabase
     .from('payments')
-    .select(`
+    .select(
+      `
       id, booking_id, amount, currency, provider, transaction_ref, status, paid_at, created_at,
       booking:bookings!payments_booking_id_fkey(id, user_id, contact_email)
-    `, { count: 'exact' })
+    `,
+      { count: 'exact' },
+    )
     .range(from, to)
     .order('created_at', { ascending: false });
 
@@ -106,7 +112,9 @@ export const findPayments = async (from, to) => {
 export const findPaymentById = async (paymentId) => {
   const { data, error } = await supabase
     .from('payments')
-    .select('id, booking_id, amount, provider, transaction_ref, status, booking:bookings!payments_booking_id_fkey(id, user_id, status)')
+    .select(
+      'id, booking_id, amount, provider, transaction_ref, status, booking:bookings!payments_booking_id_fkey(id, user_id, status)',
+    )
     .eq('id', paymentId)
     .maybeSingle();
 
@@ -129,10 +137,13 @@ export const refundPayment = async (paymentId) => {
 export const findReviews = async (from, to) => {
   const { data, error, count } = await supabase
     .from('reviews')
-    .select(`
+    .select(
+      `
       id, user_id, booking_id, flight_id, rating, comment, is_visible, created_at,
       flight:flights!reviews_flight_id_fkey(id, flight_number)
-    `, { count: 'exact' })
+    `,
+      { count: 'exact' },
+    )
     .range(from, to)
     .order('created_at', { ascending: false });
 
@@ -143,7 +154,10 @@ export const findReviews = async (from, to) => {
 export const findUsers = async (from, to) => {
   const { data, error, count } = await supabase
     .from('users')
-    .select('id, full_name, phone, avatar_url, date_of_birth, gender, nationality, created_at, updated_at', { count: 'exact' })
+    .select(
+      'id, full_name, phone, avatar_url, date_of_birth, gender, nationality, created_at, updated_at',
+      { count: 'exact' },
+    )
     .range(from, to)
     .order('created_at', { ascending: false });
 
@@ -152,13 +166,37 @@ export const findUsers = async (from, to) => {
 };
 
 export const findUserById = async (userId) => {
-  const [profileResult, bookingsResult, reviewsResult, notificationsResult, authResult] = await Promise.all([
-    supabase.from('users').select('id, full_name, phone, avatar_url, date_of_birth, gender, nationality, passport_number, created_at, updated_at').eq('id', userId).maybeSingle(),
-    supabase.from('bookings').select('id, total_price, status, created_at, flight:flights!bookings_flight_id_fkey(id, flight_number, departure_time)').eq('user_id', userId).order('created_at', { ascending: false }).limit(50),
-    supabase.from('reviews').select('id, booking_id, rating, comment, is_visible, created_at').eq('user_id', userId).order('created_at', { ascending: false }).limit(50),
-    supabase.from('notifications').select('id, type, title, body, read_at, created_at').eq('user_id', userId).order('created_at', { ascending: false }).limit(20),
-    supabase.auth.admin.getUserById(userId),
-  ]);
+  const [profileResult, bookingsResult, reviewsResult, notificationsResult, authResult] =
+    await Promise.all([
+      supabase
+        .from('users')
+        .select(
+          'id, full_name, phone, avatar_url, date_of_birth, gender, nationality, passport_number, created_at, updated_at',
+        )
+        .eq('id', userId)
+        .maybeSingle(),
+      supabase
+        .from('bookings')
+        .select(
+          'id, total_price, status, created_at, flight:flights!bookings_flight_id_fkey(id, flight_number, departure_time)',
+        )
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(50),
+      supabase
+        .from('reviews')
+        .select('id, booking_id, rating, comment, is_visible, created_at')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(50),
+      supabase
+        .from('notifications')
+        .select('id, type, title, body, read_at, created_at')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(20),
+      supabase.auth.admin.getUserById(userId),
+    ]);
 
   throwDatabaseError(profileResult.error, 'Unable to load user');
   throwDatabaseError(bookingsResult.error, 'Unable to load user bookings');
@@ -169,14 +207,16 @@ export const findUserById = async (userId) => {
     throw new Error('Unable to load auth user');
   }
 
-  return profileResult.data ? {
-    ...profileResult.data,
-    email: authResult.data.user?.email ?? null,
-    role: authResult.data.user?.app_metadata?.role ?? 'user',
-    bookings: bookingsResult.data ?? [],
-    reviews: reviewsResult.data ?? [],
-    notifications: notificationsResult.data ?? [],
-  } : null;
+  return profileResult.data
+    ? {
+        ...profileResult.data,
+        email: authResult.data.user?.email ?? null,
+        role: authResult.data.user?.app_metadata?.role ?? 'user',
+        bookings: bookingsResult.data ?? [],
+        reviews: reviewsResult.data ?? [],
+        notifications: notificationsResult.data ?? [],
+      }
+    : null;
 };
 
 export const updateReviewVisibility = async (reviewId, isVisible) => {
@@ -184,7 +224,9 @@ export const updateReviewVisibility = async (reviewId, isVisible) => {
     .from('reviews')
     .update({ is_visible: isVisible, updated_at: new Date().toISOString() })
     .eq('id', reviewId)
-    .select('id, user_id, booking_id, flight_id, rating, comment, is_visible, created_at, updated_at')
+    .select(
+      'id, user_id, booking_id, flight_id, rating, comment, is_visible, created_at, updated_at',
+    )
     .maybeSingle();
 
   throwDatabaseError(error, 'Unable to moderate review');

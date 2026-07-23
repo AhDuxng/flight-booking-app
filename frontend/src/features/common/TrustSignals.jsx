@@ -12,7 +12,8 @@ const TRUST_SIGNALS = [
     id: "ts-2",
     icon: Headphones,
     title: "Hỗ trợ 24/7",
-    description: "Đội ngũ chuyên viên chăm sóc khách hàng luôn sẵn sàng giải đáp mọi thắc mắc của bạn.",
+    description:
+      "Đội ngũ chuyên viên chăm sóc khách hàng luôn sẵn sàng giải đáp mọi thắc mắc của bạn.",
   },
   {
     id: "ts-3",

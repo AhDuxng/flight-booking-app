@@ -1,7 +1,9 @@
 export const toFlightView = (flight) => {
   const departureTime = flight.departure_time;
   const arrivalTime = flight.arrival_time;
-  const duration = Math.round((new Date(arrivalTime).getTime() - new Date(departureTime).getTime()) / 60000);
+  const duration = Math.round(
+    (new Date(arrivalTime).getTime() - new Date(departureTime).getTime()) / 60000,
+  );
 
   return {
     id: flight.id,

@@ -8,10 +8,9 @@ export const createAirlineSchema = z.object({
   isActive: z.boolean().default(true),
 });
 
-export const updateAirlineSchema = createAirlineSchema.partial().refine(
-  (value) => Object.keys(value).length > 0,
-  'At least one field is required',
-);
+export const updateAirlineSchema = createAirlineSchema
+  .partial()
+  .refine((value) => Object.keys(value).length > 0, 'At least one field is required');
 
 export const airlineParamsSchema = z.object({
   airlineId: z.string().uuid(),

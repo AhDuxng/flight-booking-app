@@ -1,7 +1,8 @@
 import { supabase } from '../../config/supabase.js';
 import { throwDatabaseError } from '../../utils/error.js';
 
-const DISCOUNT_COLUMNS = 'id, code, description, discount_type, discount_value, min_order_value, max_discount, max_uses, used_count, start_date, end_date, applicable_to';
+const DISCOUNT_COLUMNS =
+  'id, code, description, discount_type, discount_value, min_order_value, max_discount, max_uses, used_count, start_date, end_date, applicable_to';
 
 export const findActive = async () => {
   const now = new Date().toISOString();

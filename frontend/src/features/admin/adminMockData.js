@@ -81,26 +81,92 @@ export const adminBookings = [
 ];
 
 export const adminUsers = [
-  { id: "USR-1001", email: "nguyenvana@example.com", name: "Nguyễn Văn A", role: "Khách hàng", status: "confirmed" },
-  { id: "USR-1002", email: "minhanh@example.com", name: "Trần Minh Anh", role: "Khách hàng", status: "confirmed" },
-  { id: "USR-1003", email: "ops@vietfly.vn", name: "VietFly Ops", role: "Điều phối", status: "pending" },
+  {
+    id: "USR-1001",
+    email: "nguyenvana@example.com",
+    name: "Nguyễn Văn A",
+    role: "Khách hàng",
+    status: "confirmed",
+  },
+  {
+    id: "USR-1002",
+    email: "minhanh@example.com",
+    name: "Trần Minh Anh",
+    role: "Khách hàng",
+    status: "confirmed",
+  },
+  {
+    id: "USR-1003",
+    email: "ops@vietfly.vn",
+    name: "VietFly Ops",
+    role: "Điều phối",
+    status: "pending",
+  },
 ];
 
 export const adminPayments = [
-  { id: "PAY-8001", booking: "VJA8X9", method: "VNPAY", status: "paid", statusLabel: "Đã thanh toán", total: "3.280.000 VND" },
-  { id: "PAY-8002", booking: "VJB2Y4", method: "Thẻ quốc tế", status: "pending", statusLabel: "Đang xử lý", total: "2.450.000 VND" },
-  { id: "PAY-8003", booking: "VJC7K2", method: "MoMo", status: "failed", statusLabel: "Thất bại", total: "5.760.000 VND" },
+  {
+    id: "PAY-8001",
+    booking: "VJA8X9",
+    method: "VNPAY",
+    status: "paid",
+    statusLabel: "Đã thanh toán",
+    total: "3.280.000 VND",
+  },
+  {
+    id: "PAY-8002",
+    booking: "VJB2Y4",
+    method: "Thẻ quốc tế",
+    status: "pending",
+    statusLabel: "Đang xử lý",
+    total: "2.450.000 VND",
+  },
+  {
+    id: "PAY-8003",
+    booking: "VJC7K2",
+    method: "MoMo",
+    status: "failed",
+    statusLabel: "Thất bại",
+    total: "5.760.000 VND",
+  },
 ];
 
 export const adminReviews = [
-  { id: "REV-01", customer: "Nguyễn Văn A", flight: "VF204", rating: "5/5", status: "published", statusLabel: "Đã hiển thị" },
-  { id: "REV-02", customer: "Trần Minh Anh", flight: "VF118", rating: "4/5", status: "pending", statusLabel: "Chờ duyệt" },
-  { id: "REV-03", customer: "Lê Hoàng Nam", flight: "VF901", rating: "3/5", status: "published", statusLabel: "Đã hiển thị" },
+  {
+    id: "REV-01",
+    customer: "Nguyễn Văn A",
+    flight: "VF204",
+    rating: "5/5",
+    status: "published",
+    statusLabel: "Đã hiển thị",
+  },
+  {
+    id: "REV-02",
+    customer: "Trần Minh Anh",
+    flight: "VF118",
+    rating: "4/5",
+    status: "pending",
+    statusLabel: "Chờ duyệt",
+  },
+  {
+    id: "REV-03",
+    customer: "Lê Hoàng Nam",
+    flight: "VF901",
+    rating: "3/5",
+    status: "published",
+    statusLabel: "Đã hiển thị",
+  },
 ];
 
 export const adminAirports = [
   { id: "HAN", city: "Hà Nội", name: "Nội Bài", status: "published", terminal: "T1, T2" },
-  { id: "SGN", city: "TP. Hồ Chí Minh", name: "Tân Sơn Nhất", status: "published", terminal: "T1, T2" },
+  {
+    id: "SGN",
+    city: "TP. Hồ Chí Minh",
+    name: "Tân Sơn Nhất",
+    status: "published",
+    terminal: "T1, T2",
+  },
   { id: "DAD", city: "Đà Nẵng", name: "Đà Nẵng", status: "published", terminal: "T1" },
 ];
 
@@ -111,7 +177,25 @@ export const adminAirlines = [
 ];
 
 export const adminAircrafts = [
-  { id: "A321-01", model: "Airbus A321neo", registration: "VN-A321", seats: "210", status: "published" },
-  { id: "B789-02", model: "Boeing 787-9", registration: "VN-B789", seats: "294", status: "published" },
-  { id: "A320-03", model: "Airbus A320", registration: "VN-A320", seats: "168", status: "scheduled" },
+  {
+    id: "A321-01",
+    model: "Airbus A321neo",
+    registration: "VN-A321",
+    seats: "210",
+    status: "published",
+  },
+  {
+    id: "B789-02",
+    model: "Boeing 787-9",
+    registration: "VN-B789",
+    seats: "294",
+    status: "published",
+  },
+  {
+    id: "A320-03",
+    model: "Airbus A320",
+    registration: "VN-A320",
+    seats: "168",
+    status: "scheduled",
+  },
 ];

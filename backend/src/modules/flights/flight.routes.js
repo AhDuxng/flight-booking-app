@@ -6,7 +6,11 @@ import * as flightController from './flight.controller.js';
 const router = Router();
 
 router.get('/', validate({ query: flightSearchSchema }), flightController.searchFlights);
-router.get('/:flightId/seats', validate({ params: flightParamsSchema }), flightController.getFlightSeats);
+router.get(
+  '/:flightId/seats',
+  validate({ params: flightParamsSchema }),
+  flightController.getFlightSeats,
+);
 router.get('/:flightId', validate({ params: flightParamsSchema }), flightController.getFlightById);
 
 export default router;

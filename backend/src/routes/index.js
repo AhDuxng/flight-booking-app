@@ -16,7 +16,10 @@ import mealRoutes from '../modules/meals/meal.routes.js';
 import notificationRoutes from '../modules/notifications/notification.routes.js';
 import passengerRoutes from '../modules/passengers/passenger.routes.js';
 import paymentRoutes from '../modules/payments/payment.routes.js';
-import { handlePaymentWebhook, verifyPaymentWebhookSignature } from '../modules/payments/payment.webhook.js';
+import {
+  handlePaymentWebhook,
+  verifyPaymentWebhookSignature,
+} from '../modules/payments/payment.webhook.js';
 import { paymentWebhookSchema } from '../modules/payments/payment.schema.js';
 import reviewRoutes from '../modules/reviews/review.routes.js';
 import seatRoutes from '../modules/seats/seat.routes.js';
@@ -29,7 +32,12 @@ router.use('/auth', authRateLimiter, authRoutes);
 router.post('/payments/webhook', verifyPaymentWebhookSignature, (req, res, next) => {
   const result = paymentWebhookSchema.safeParse(req.body);
   if (!result.success) {
-    return res.status(400).json({ error: result.error.issues.map((issue) => ({ path: issue.path.join('.'), message: issue.message })) });
+    return res.status(400).json({
+      error: result.error.issues.map((issue) => ({
+        path: issue.path.join('.'),
+        message: issue.message,
+      })),
+    });
   }
 
   req.body = result.data;

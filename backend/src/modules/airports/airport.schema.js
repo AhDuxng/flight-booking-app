@@ -8,10 +8,9 @@ export const createAirportSchema = z.object({
   timezone: z.string().trim().min(1).max(100).default('Asia/Ho_Chi_Minh'),
 });
 
-export const updateAirportSchema = createAirportSchema.partial().refine(
-  (value) => Object.keys(value).length > 0,
-  'At least one field is required',
-);
+export const updateAirportSchema = createAirportSchema
+  .partial()
+  .refine((value) => Object.keys(value).length > 0, 'At least one field is required');
 
 export const airportCodeParamsSchema = z.object({
   code: z.string().trim().length(3).toUpperCase(),

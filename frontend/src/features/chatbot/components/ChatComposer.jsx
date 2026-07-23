@@ -47,10 +47,18 @@ export default function ChatComposer({
               rows={1}
               value={inputValue}
             />
-            <label className="mb-1 flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg text-on-surface-variant transition-colors hover:bg-surface-container hover:text-primary" title="Đính kèm tệp">
+            <label
+              className="mb-1 flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg text-on-surface-variant transition-colors hover:bg-surface-container hover:text-primary"
+              title="Đính kèm tệp"
+            >
               <Paperclip className="h-5 w-5" />
               <span className="sr-only">Đính kèm tệp</span>
-              <input accept=".txt,.md,.csv,.json,text/plain,text/markdown,text/csv,application/json" className="sr-only" onChange={onAttachmentChange} type="file" />
+              <input
+                accept=".txt,.md,.csv,.json,text/plain,text/markdown,text/csv,application/json"
+                className="sr-only"
+                onChange={onAttachmentChange}
+                type="file"
+              />
             </label>
             <button
               aria-label="Nhập bằng giọng nói"
@@ -71,7 +79,8 @@ export default function ChatComposer({
           </button>
         </form>
         <p className="mt-2 text-center text-[11px] text-on-surface-variant">
-          VietFly AI có thể đưa ra câu trả lời chưa chính xác. Vui lòng kiểm tra lại thông tin quan trọng.
+          VietFly AI có thể đưa ra câu trả lời chưa chính xác. Vui lòng kiểm tra lại thông tin quan
+          trọng.
         </p>
       </div>
     </footer>

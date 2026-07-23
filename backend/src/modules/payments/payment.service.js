@@ -6,8 +6,9 @@ import { createHttpError } from '../../utils/error.js';
 import { bumpCacheVersion } from '../../config/cache.js';
 import { env } from '../../config/env.js';
 
-const supportedProviders = [...new Set(['cash', ...env.paymentProviders])]
-  .filter((provider) => ['vnpay', 'momo', 'stripe', 'cash'].includes(provider));
+const supportedProviders = [...new Set(['cash', ...env.paymentProviders])].filter((provider) =>
+  ['vnpay', 'momo', 'stripe', 'cash'].includes(provider),
+);
 
 export const getPaymentConfig = () => ({ providers: supportedProviders });
 

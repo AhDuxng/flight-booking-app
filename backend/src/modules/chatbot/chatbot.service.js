@@ -96,11 +96,18 @@ const requestGemini = async (apiKey, payload) => {
 
 const extractText = (body) => {
   const parts = body?.candidates?.[0]?.content?.parts ?? [];
-  const text = parts.map((part) => part.text).filter(Boolean).join('\n').trim();
+  const text = parts
+    .map((part) => part.text)
+    .filter(Boolean)
+    .join('\n')
+    .trim();
 
   if (!text) {
     const blockReason = body?.promptFeedback?.blockReason || body?.candidates?.[0]?.finishReason;
-    throw createHttpError(502, blockReason ? `Gemini returned no text: ${blockReason}` : 'Gemini returned an empty response');
+    throw createHttpError(
+      502,
+      blockReason ? `Gemini returned no text: ${blockReason}` : 'Gemini returned an empty response',
+    );
   }
 
   return text;

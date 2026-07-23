@@ -9,12 +9,9 @@ const clientOptions = {
   },
 };
 
-export const supabase = createClient(
-  env.supabaseUrl,
-  env.supabaseServiceRoleKey,
-  clientOptions,
-);
+export const supabase = createClient(env.supabaseUrl, env.supabaseServiceRoleKey, clientOptions);
 
-export const supabaseRead = env.supabaseReadUrl && env.supabaseReadServiceRoleKey
-  ? createClient(env.supabaseReadUrl, env.supabaseReadServiceRoleKey, clientOptions)
-  : supabase;
+export const supabaseRead =
+  env.supabaseReadUrl && env.supabaseReadServiceRoleKey
+    ? createClient(env.supabaseReadUrl, env.supabaseReadServiceRoleKey, clientOptions)
+    : supabase;

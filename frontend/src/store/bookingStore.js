@@ -45,7 +45,9 @@ const subscribe = (listener) => {
 
 export const bookingStore = {
   addSeat: (seat) => {
-    const seatExists = state.selectedSeats.some((selectedSeat) => selectedSeat.code === seat.code || selectedSeat.id === seat.id);
+    const seatExists = state.selectedSeats.some(
+      (selectedSeat) => selectedSeat.code === seat.code || selectedSeat.id === seat.id,
+    );
     if (seatExists) {
       return;
     }
@@ -59,7 +61,9 @@ export const bookingStore = {
   removeSeat: (seatId) => {
     setState({
       ...state,
-      selectedSeats: state.selectedSeats.filter((seat) => seat.id !== seatId && seat.code !== seatId),
+      selectedSeats: state.selectedSeats.filter(
+        (seat) => seat.id !== seatId && seat.code !== seatId,
+      ),
     });
   },
   reset: () => {

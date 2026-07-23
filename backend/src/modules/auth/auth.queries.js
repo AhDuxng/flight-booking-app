@@ -37,7 +37,11 @@ export const signIn = async ({ email, password }) => {
     const isEmailUnconfirmed = error.code === 'email_not_confirmed';
 
     throw Object.assign(
-      new Error(isEmailUnconfirmed ? 'Vui lòng xác nhận email trước khi đăng nhập.' : 'Invalid email or password'),
+      new Error(
+        isEmailUnconfirmed
+          ? 'Vui lòng xác nhận email trước khi đăng nhập.'
+          : 'Invalid email or password',
+      ),
       { status: isEmailUnconfirmed ? 403 : 401 },
     );
   }
@@ -71,10 +75,14 @@ export const updatePasswordWithRecoveryToken = async (accessToken, password) => 
   const { data, error } = await supabase.auth.getUser(accessToken);
 
   if (error || !data.user) {
-    throw Object.assign(new Error('Password reset link is invalid or has expired'), { status: 401 });
+    throw Object.assign(new Error('Password reset link is invalid or has expired'), {
+      status: 401,
+    });
   }
 
-  const { error: updateError } = await supabase.auth.admin.updateUserById(data.user.id, { password });
+  const { error: updateError } = await supabase.auth.admin.updateUserById(data.user.id, {
+    password,
+  });
 
   if (updateError) {
     throw Object.assign(new Error('Unable to update password'), { status: 400 });

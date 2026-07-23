@@ -22,7 +22,11 @@ test('flight search normalizes numeric fields and accepts an IANA timezone', () 
 });
 
 test('flight search rejects an identical origin and destination', () => {
-  assert.equal(flightSearchSchema.safeParse({ originAirportId: FIRST_UUID, destinationAirportId: FIRST_UUID }).success, false);
+  assert.equal(
+    flightSearchSchema.safeParse({ originAirportId: FIRST_UUID, destinationAirportId: FIRST_UUID })
+      .success,
+    false,
+  );
 });
 
 test('booking validation requires one unique seat per passenger', () => {
@@ -50,14 +54,16 @@ test('booking validation rejects a future passenger date of birth', () => {
   const result = createBookingSchema.safeParse({
     flightId: FIRST_UUID,
     contactEmail: 'an@example.com',
-    passengers: [{
-      firstName: 'An',
-      lastName: 'Nguyen',
-      dateOfBirth: '2999-01-01',
-      gender: 'male',
-      nationality: 'Vietnam',
-      passengerType: 'adult',
-    }],
+    passengers: [
+      {
+        firstName: 'An',
+        lastName: 'Nguyen',
+        dateOfBirth: '2999-01-01',
+        gender: 'male',
+        nationality: 'Vietnam',
+        passengerType: 'adult',
+      },
+    ],
     seatIds: [SECOND_UUID],
     baggage: [],
     meals: [],
@@ -67,7 +73,14 @@ test('booking validation rejects a future passenger date of birth', () => {
 });
 
 test('registration rejects weak passwords', () => {
-  assert.equal(registerSchema.safeParse({ email: 'user@example.com', password: 'short', fullName: 'User Name' }).success, false);
+  assert.equal(
+    registerSchema.safeParse({
+      email: 'user@example.com',
+      password: 'short',
+      fullName: 'User Name',
+    }).success,
+    false,
+  );
 });
 
 test('pagination produces stable database and response ranges', () => {

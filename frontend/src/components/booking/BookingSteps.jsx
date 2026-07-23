@@ -15,7 +15,10 @@ export default function BookingSteps({ currentStep = 2 }) {
       <div className="relative flex items-start justify-between">
         <div className="absolute left-0 right-0 top-4 h-px bg-outline-variant" />
         <div
-          className={cn("absolute left-0 top-4 h-px bg-primary transition-all", progressClasses[currentStep])}
+          className={cn(
+            "absolute left-0 top-4 h-px bg-primary transition-all",
+            progressClasses[currentStep],
+          )}
         />
         {steps.map((step, index) => {
           const stepNumber = index + 1;
@@ -28,8 +31,11 @@ export default function BookingSteps({ currentStep = 2 }) {
                 className={cn(
                   "flex h-8 w-8 items-center justify-center rounded-full border text-label-md font-label-md",
                   isComplete && "border-primary bg-primary text-on-primary",
-                  isCurrent && "border-primary bg-primary text-on-primary ring-4 ring-primary-fixed",
-                  !isComplete && !isCurrent && "border-outline-variant bg-surface-container-highest text-on-surface-variant",
+                  isCurrent &&
+                    "border-primary bg-primary text-on-primary ring-4 ring-primary-fixed",
+                  !isComplete &&
+                    !isCurrent &&
+                    "border-outline-variant bg-surface-container-highest text-on-surface-variant",
                 )}
               >
                 {isComplete ? <Check className="h-4 w-4" /> : stepNumber}

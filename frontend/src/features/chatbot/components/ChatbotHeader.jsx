@@ -2,7 +2,13 @@ import { Link } from "react-router-dom";
 import { Bot, Headphones, Menu, MoreVertical, RefreshCcw, Trash2 } from "lucide-react";
 import IconButton from "./IconButton";
 
-export default function ChatbotHeader({ isMenuOpen, onDeleteConversation, onMenuToggle, onNewConversation, onOpenHistory }) {
+export default function ChatbotHeader({
+  isMenuOpen,
+  onDeleteConversation,
+  onMenuToggle,
+  onNewConversation,
+  onOpenHistory,
+}) {
   return (
     <header className="z-10 flex min-h-20 items-center justify-between border-b border-outline-variant bg-surface/90 px-4 py-3 backdrop-blur md:px-container-padding">
       <div className="flex min-w-0 items-center gap-3">
@@ -24,7 +30,9 @@ export default function ChatbotHeader({ isMenuOpen, onDeleteConversation, onMenu
           </h1>
           <div className="flex items-center gap-2">
             <span className="h-2 w-2 shrink-0 rounded-full bg-status-success" />
-            <span className="truncate text-xs text-on-surface-variant sm:text-body-sm">Trợ lý thông tin chuyến bay</span>
+            <span className="truncate text-xs text-on-surface-variant sm:text-body-sm">
+              Trợ lý thông tin chuyến bay
+            </span>
           </div>
         </div>
       </div>

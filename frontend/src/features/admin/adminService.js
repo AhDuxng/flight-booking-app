@@ -17,7 +17,8 @@ export const adminService = {
   getUsers: (params) => api.get("/admin/users", { params }),
   getUserById: (userId) => api.get(`/admin/users/${userId}`),
   moderateReview: (reviewId, isVisible) => api.patch(`/admin/reviews/${reviewId}`, { isVisible }),
-  processCashPayment: (paymentId, status) => api.post(`/admin/payments/${paymentId}/process`, { status }),
+  processCashPayment: (paymentId, status) =>
+    api.post(`/admin/payments/${paymentId}/process`, { status }),
   refundPayment: (paymentId) => api.post(`/admin/payments/${paymentId}/refund`),
   updateFlight: (flightId, payload) => api.patch(`/admin/flights/${flightId}`, payload),
   updateAircraft: (aircraftId, payload) => api.patch(`/aircrafts/${aircraftId}`, payload),

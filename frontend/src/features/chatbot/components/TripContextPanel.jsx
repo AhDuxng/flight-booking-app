@@ -20,8 +20,13 @@ export default function TripContextPanel() {
             <Headphones className="h-5 w-5 text-secondary" />
             Dữ liệu tài khoản được bảo vệ
           </div>
-          <p className="mt-2 text-body-sm text-on-secondary-container">Không gửi mật khẩu, thông tin thẻ hoặc giấy tờ tùy thân cho chatbot.</p>
-          <Link className="mt-3 inline-flex items-center gap-1 text-body-sm font-semibold text-secondary hover:underline" to="/support">
+          <p className="mt-2 text-body-sm text-on-secondary-container">
+            Không gửi mật khẩu, thông tin thẻ hoặc giấy tờ tùy thân cho chatbot.
+          </p>
+          <Link
+            className="mt-3 inline-flex items-center gap-1 text-body-sm font-semibold text-secondary hover:underline"
+            to="/support"
+          >
             Xem trung tâm hỗ trợ
             <ArrowRight className="h-4 w-4" />
           </Link>
@@ -30,7 +35,9 @@ export default function TripContextPanel() {
 
       <section className="mt-auto rounded-lg bg-surface-container-high p-4">
         <p className="text-body-sm font-semibold text-primary">Cần gặp nhân viên hỗ trợ?</p>
-        <p className="mt-1 text-xs text-on-surface-variant">Mở trung tâm hỗ trợ để xem kênh liên hệ hiện có.</p>
+        <p className="mt-1 text-xs text-on-surface-variant">
+          Mở trung tâm hỗ trợ để xem kênh liên hệ hiện có.
+        </p>
         <Link
           className="mt-4 inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg border border-primary bg-surface-container-lowest text-body-sm font-semibold text-primary transition-colors hover:bg-primary hover:text-on-primary"
           to="/support"
@@ -44,5 +51,14 @@ export default function TripContextPanel() {
 }
 
 function QuickLink({ icon: Icon, label, to }) {
-  return <Link className="flex items-center gap-2 rounded-md px-2 py-2 text-body-sm font-semibold text-primary hover:bg-surface-container-lowest" to={to}><Icon className="h-4 w-4" />{label}<ArrowRight className="ml-auto h-4 w-4" /></Link>;
+  return (
+    <Link
+      className="flex items-center gap-2 rounded-md px-2 py-2 text-body-sm font-semibold text-primary hover:bg-surface-container-lowest"
+      to={to}
+    >
+      <Icon className="h-4 w-4" />
+      {label}
+      <ArrowRight className="ml-auto h-4 w-4" />
+    </Link>
+  );
 }

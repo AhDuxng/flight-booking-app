@@ -73,7 +73,10 @@ export default function LoginForm() {
           <div className="space-y-2">
             <div className="flex items-center justify-between gap-4">
               <span className="text-label-md font-label-md text-on-surface">Mật khẩu</span>
-              <Link className="text-label-md font-label-md text-primary transition-colors hover:text-primary-container" to="/forgot-password">
+              <Link
+                className="text-label-md font-label-md text-primary transition-colors hover:text-primary-container"
+                to="/forgot-password"
+              >
                 Quên mật khẩu?
               </Link>
             </div>
@@ -93,10 +96,18 @@ export default function LoginForm() {
               name="rememberMe"
               type="checkbox"
             />
-            <span className="ml-2 block text-body-sm font-body-sm text-on-surface-variant">Ghi nhớ đăng nhập</span>
+            <span className="ml-2 block text-body-sm font-body-sm text-on-surface-variant">
+              Ghi nhớ đăng nhập
+            </span>
           </label>
 
-          <Button className="w-full" disabled={isSubmitting} size="lg" type="submit" variant="warning">
+          <Button
+            className="w-full"
+            disabled={isSubmitting}
+            size="lg"
+            type="submit"
+            variant="warning"
+          >
             {isSubmitting ? "Đang đăng nhập..." : "Đăng nhập"}
           </Button>
         </form>
@@ -108,7 +119,10 @@ export default function LoginForm() {
 
         <p className="text-center text-body-sm font-body-sm text-on-surface-variant">
           Chưa có tài khoản?{" "}
-          <Link className="text-label-md font-label-md font-semibold text-primary transition-colors hover:text-primary-container" to="/register">
+          <Link
+            className="text-label-md font-label-md font-semibold text-primary transition-colors hover:text-primary-container"
+            to="/register"
+          >
             Đăng ký tài khoản mới
           </Link>
         </p>
@@ -124,7 +138,9 @@ function Divider({ label }) {
         <div className="w-full border-t border-outline-variant" />
       </div>
       <div className="relative flex justify-center">
-        <span className="bg-surface px-2 text-body-sm font-body-sm text-on-surface-variant">{label}</span>
+        <span className="bg-surface px-2 text-body-sm font-body-sm text-on-surface-variant">
+          {label}
+        </span>
       </div>
     </div>
   );

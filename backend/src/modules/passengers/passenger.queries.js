@@ -16,7 +16,9 @@ export const findOwnedBooking = async (bookingId, userId) => {
 export const findByBookingId = async (bookingId) => {
   const { data, error } = await supabase
     .from('passengers')
-    .select('id, booking_id, first_name, last_name, date_of_birth, gender, nationality, passport_number, passenger_type')
+    .select(
+      'id, booking_id, first_name, last_name, date_of_birth, gender, nationality, passport_number, passenger_type',
+    )
     .eq('booking_id', bookingId)
     .order('created_at', { ascending: true });
 

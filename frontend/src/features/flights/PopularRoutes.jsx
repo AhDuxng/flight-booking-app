@@ -39,7 +39,10 @@ export default function PopularRoutes() {
   const [airports, setAirports] = useState([]);
 
   useEffect(() => {
-    airportService.getAll().then((response) => setAirports(response.data ?? [])).catch(() => setAirports([]));
+    airportService
+      .getAll()
+      .then((response) => setAirports(response.data ?? []))
+      .catch(() => setAirports([]));
   }, []);
 
   const openRoute = (route) => {
@@ -60,14 +63,16 @@ export default function PopularRoutes() {
     <section className="py-section-gap px-container-padding max-w-7xl mx-auto mt-16 md:mt-24">
       <div className="flex justify-between items-end mb-stack-lg">
         <div>
-          <h2 className="text-headline-lg font-headline-lg text-primary mb-2">
-            Điểm đến phổ biến
-          </h2>
+          <h2 className="text-headline-lg font-headline-lg text-primary mb-2">Điểm đến phổ biến</h2>
           <p className="text-body-lg font-body-lg text-on-surface-variant">
             Khám phá những điểm đến hấp dẫn nhất cùng VietFly
           </p>
         </div>
-        <button className="hidden items-center gap-1 text-label-md font-label-md text-primary md:flex" onClick={() => navigate("/flights")} type="button">
+        <button
+          className="hidden items-center gap-1 text-label-md font-label-md text-primary md:flex"
+          onClick={() => navigate("/flights")}
+          type="button"
+        >
           Xem tất cả <ArrowRight className="h-[18px] w-[18px]" />
         </button>
       </div>

@@ -10,7 +10,9 @@ export default function SegmentedControl({ options, value, onChange }) {
           <button
             className={cn(
               "h-10 rounded-md px-4 text-label-md font-label-md transition-colors",
-              isActive ? "bg-surface-container-lowest text-primary shadow-sm" : "text-on-surface-variant hover:text-primary",
+              isActive
+                ? "bg-surface-container-lowest text-primary shadow-sm"
+                : "text-on-surface-variant hover:text-primary",
             )}
             key={option.value}
             onClick={() => onChange(option.value)}

@@ -5,6 +5,10 @@ import * as passengerController from './passenger.controller.js';
 
 const router = Router();
 
-router.get('/bookings/:bookingId', validate({ params: passengerBookingParamsSchema }), passengerController.getPassengersByBooking);
+router.get(
+  '/bookings/:bookingId',
+  validate({ params: passengerBookingParamsSchema }),
+  passengerController.getPassengersByBooking,
+);
 
 export default router;

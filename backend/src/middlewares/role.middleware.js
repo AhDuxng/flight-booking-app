@@ -13,17 +13,19 @@ const getUserRoles = (user) => {
   return new Set();
 };
 
-export const requireRole = (...roles) => (req, res, next) => {
-  if (!req.user) {
-    return res.status(401).json({ error: 'Authentication required' });
-  }
+export const requireRole =
+  (...roles) =>
+  (req, res, next) => {
+    if (!req.user) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
 
-  const userRoles = getUserRoles(req.user);
-  const hasRequiredRole = roles.some((role) => userRoles.has(role));
+    const userRoles = getUserRoles(req.user);
+    const hasRequiredRole = roles.some((role) => userRoles.has(role));
 
-  if (!hasRequiredRole) {
-    return res.status(403).json({ error: 'Forbidden' });
-  }
+    if (!hasRequiredRole) {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
 
-  return next();
-};
+    return next();
+  };

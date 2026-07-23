@@ -58,9 +58,12 @@ export default function NotFoundFeature() {
               <TriangleAlert className="mr-1 h-4 w-4" />
               Không tìm thấy chuyến bay
             </div>
-            <h1 className="font-headline-lg text-headline-lg text-primary">Có vẻ chúng ta đã lỡ mất điểm nối.</h1>
+            <h1 className="font-headline-lg text-headline-lg text-primary">
+              Có vẻ chúng ta đã lỡ mất điểm nối.
+            </h1>
             <p className="max-w-md font-body-lg text-body-lg text-on-surface-variant">
-              Trang bạn đang tìm kiếm đã được di chuyển, bị xóa hoặc chưa từng tồn tại trong hành trình của VietFly.
+              Trang bạn đang tìm kiếm đã được di chuyển, bị xóa hoặc chưa từng tồn tại trong hành
+              trình của VietFly.
             </p>
           </div>
 

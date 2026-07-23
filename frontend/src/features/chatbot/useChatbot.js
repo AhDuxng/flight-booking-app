@@ -5,8 +5,10 @@ import { chatbotService } from "./chatbotService";
 import { getErrorMessage } from "@/lib/apiError";
 
 const storageKey = "vietfly-chat-conversations";
-const createId = () => globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(16).slice(2)}`;
-const currentTime = () => new Intl.DateTimeFormat("vi-VN", { hour: "2-digit", minute: "2-digit" }).format(new Date());
+const createId = () =>
+  globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+const currentTime = () =>
+  new Intl.DateTimeFormat("vi-VN", { hour: "2-digit", minute: "2-digit" }).format(new Date());
 const createConversation = () => ({
   id: createId(),
   messages: [{ ...welcomeMessage, id: createId(), time: currentTime() }],
@@ -18,7 +20,9 @@ const loadConversations = () => {
   try {
     const parsed = JSON.parse(window.localStorage.getItem(storageKey) ?? "[]");
     const valid = Array.isArray(parsed)
-      ? parsed.filter((item) => item?.id && Array.isArray(item.messages) && item.messages.length > 0)
+      ? parsed.filter(
+          (item) => item?.id && Array.isArray(item.messages) && item.messages.length > 0,
+        )
       : [];
     return valid.length > 0 ? valid : [createConversation()];
   } catch {
@@ -54,18 +58,22 @@ export const useChatbot = () => {
   }, [conversations]);
 
   useEffect(() => {
-    setConversations((current) => current.map((conversation) => {
-      if (conversation.id !== activeConversation) {
-        return conversation;
-      }
-      const firstQuestion = messages.find((message) => message.role === "user")?.text;
-      return {
-        ...conversation,
-        messages,
-        title: firstQuestion ? firstQuestion.replace(/\s+/g, " ").slice(0, 55) : "Cuộc trò chuyện mới",
-        updatedAt: new Date().toISOString(),
-      };
-    }));
+    setConversations((current) =>
+      current.map((conversation) => {
+        if (conversation.id !== activeConversation) {
+          return conversation;
+        }
+        const firstQuestion = messages.find((message) => message.role === "user")?.text;
+        return {
+          ...conversation,
+          messages,
+          title: firstQuestion
+            ? firstQuestion.replace(/\s+/g, " ").slice(0, 55)
+            : "Cuộc trò chuyện mới",
+          updatedAt: new Date().toISOString(),
+        };
+      }),
+    );
   }, [activeConversation, messages]);
 
   const startNewConversation = () => {
@@ -91,7 +99,9 @@ export const useChatbot = () => {
 
   const deleteCurrentConversation = () => {
     requestRef.current += 1;
-    const remaining = conversations.filter((conversation) => conversation.id !== activeConversation);
+    const remaining = conversations.filter(
+      (conversation) => conversation.id !== activeConversation,
+    );
     const nextConversation = remaining[0] ?? createConversation();
     setConversations(remaining.length > 0 ? remaining : [nextConversation]);
     setActiveConversation(nextConversation.id);
@@ -166,7 +176,10 @@ export const useChatbot = () => {
         return;
       }
 
-      const message = getErrorMessage(error, "Không thể nhận phản hồi từ Gemini. Vui lòng thử lại sau.");
+      const message = getErrorMessage(
+        error,
+        "Không thể nhận phản hồi từ Gemini. Vui lòng thử lại sau.",
+      );
       toast.error(message);
       setMessages((current) => [
         ...current,

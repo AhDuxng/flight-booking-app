@@ -111,7 +111,8 @@ export default function SupportCenterFeature() {
             Trung tâm hỗ trợ
           </h1>
           <p className="mx-auto mt-stack-md max-w-2xl text-body-lg font-body-lg text-primary-fixed-dim">
-            Tìm câu trả lời nhanh về đặt vé, hành lý, đổi chuyến, thanh toán và các yêu cầu sau chuyến bay.
+            Tìm câu trả lời nhanh về đặt vé, hành lý, đổi chuyến, thanh toán và các yêu cầu sau
+            chuyến bay.
           </p>
           <div className="group relative mx-auto mt-stack-lg max-w-2xl">
             <Search className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-outline transition-colors group-focus-within:text-primary" />
@@ -128,7 +129,13 @@ export default function SupportCenterFeature() {
               <button
                 className="rounded-full border border-primary-fixed/30 bg-primary-container/70 px-4 py-2 text-body-sm font-body-sm text-primary-fixed transition-colors hover:bg-primary-container"
                 key={action.label}
-                onClick={() => action.to ? navigate(action.to) : action.href ? window.location.assign(action.href) : openHelpSearch(action.search)}
+                onClick={() =>
+                  action.to
+                    ? navigate(action.to)
+                    : action.href
+                      ? window.location.assign(action.href)
+                      : openHelpSearch(action.search)
+                }
                 type="button"
               >
                 {action.label}
@@ -141,7 +148,9 @@ export default function SupportCenterFeature() {
       <section className="mx-auto max-w-7xl px-container-padding py-section-gap">
         <div className="mb-stack-lg text-center">
           <p className="text-label-md font-label-md text-secondary">Chủ đề phổ biến</p>
-          <h2 className="mt-base text-headline-lg font-headline-lg text-primary">Bạn cần hỗ trợ phần nào?</h2>
+          <h2 className="mt-base text-headline-lg font-headline-lg text-primary">
+            Bạn cần hỗ trợ phần nào?
+          </h2>
         </div>
         <div className="grid grid-cols-1 gap-gutter-md md:grid-cols-2 lg:grid-cols-4">
           {helpTopics.map((topic) => (
@@ -155,16 +164,23 @@ export default function SupportCenterFeature() {
                 <topic.icon className="h-8 w-8" />
               </div>
               <h3 className="mb-base text-title-lg font-title-lg text-primary">{topic.title}</h3>
-              <p className="text-body-sm font-body-sm text-on-surface-variant">{topic.description}</p>
+              <p className="text-body-sm font-body-sm text-on-surface-variant">
+                {topic.description}
+              </p>
             </button>
           ))}
         </div>
       </section>
 
-      <section className="scroll-mt-24 bg-surface-container-low px-container-padding py-section-gap" id="faq">
+      <section
+        className="scroll-mt-24 bg-surface-container-low px-container-padding py-section-gap"
+        id="faq"
+      >
         <div className="mx-auto max-w-3xl">
           <div className="mb-stack-lg text-center">
-            <h2 className="mb-base text-headline-lg font-headline-lg text-primary">Câu hỏi thường gặp</h2>
+            <h2 className="mb-base text-headline-lg font-headline-lg text-primary">
+              Câu hỏi thường gặp
+            </h2>
             <p className="text-body-md font-body-md text-on-surface-variant">
               Các câu trả lời ngắn cho những tình huống hành khách gặp nhiều nhất.
             </p>
@@ -184,12 +200,22 @@ export default function SupportCenterFeature() {
                     onClick={() => handleToggleFaq(index)}
                     type="button"
                   >
-                    <span className="text-title-lg font-title-lg text-primary">{item.question}</span>
+                    <span className="text-title-lg font-title-lg text-primary">
+                      {item.question}
+                    </span>
                     <ChevronDown
-                      className={cn("h-5 w-5 shrink-0 text-outline-variant transition-transform", isOpen && "rotate-180")}
+                      className={cn(
+                        "h-5 w-5 shrink-0 text-outline-variant transition-transform",
+                        isOpen && "rotate-180",
+                      )}
                     />
                   </button>
-                  <div className={cn("grid transition-all duration-300", isOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]")}>
+                  <div
+                    className={cn(
+                      "grid transition-all duration-300",
+                      isOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
+                    )}
+                  >
                     <div className="overflow-hidden">
                       <p className="px-stack-md pb-stack-md pt-base text-body-md font-body-md text-on-surface-variant">
                         {item.answer}
@@ -201,7 +227,9 @@ export default function SupportCenterFeature() {
             })}
             {filteredFaqs.length === 0 ? (
               <div className="rounded-lg border border-dashed border-outline-variant bg-surface-container-lowest p-stack-lg text-center">
-                <p className="text-title-lg font-title-lg text-primary">Chưa tìm thấy câu hỏi phù hợp</p>
+                <p className="text-title-lg font-title-lg text-primary">
+                  Chưa tìm thấy câu hỏi phù hợp
+                </p>
                 <p className="mt-base text-body-md font-body-md text-on-surface-variant">
                   Hãy thử từ khóa khác hoặc gửi yêu cầu để đội hỗ trợ kiểm tra chi tiết.
                 </p>
@@ -220,7 +248,8 @@ export default function SupportCenterFeature() {
               </div>
               <h2 className="text-headline-lg font-headline-lg text-on-primary">Vẫn cần hỗ trợ?</h2>
               <p className="mt-stack-sm max-w-2xl text-body-md font-body-md text-primary-fixed">
-                Đội ngũ VietFly trực 24/7 để hỗ trợ đặt vé, thanh toán, thay đổi lịch bay và các trường hợp khẩn cấp.
+                Đội ngũ VietFly trực 24/7 để hỗ trợ đặt vé, thanh toán, thay đổi lịch bay và các
+                trường hợp khẩn cấp.
               </p>
               <div className="mt-stack-md grid grid-cols-1 gap-stack-sm sm:grid-cols-2">
                 <ContactLine icon={Phone} text="1900 1234" />

@@ -23,7 +23,12 @@ export default function OAuthCallbackFeature() {
       authStore.setAuth(null, accessToken, refreshToken, expiresAt ? Number(expiresAt) : null);
       try {
         const response = await authService.getSession();
-        authStore.setAuth(response.data.user, accessToken, refreshToken, expiresAt ? Number(expiresAt) : null);
+        authStore.setAuth(
+          response.data.user,
+          accessToken,
+          refreshToken,
+          expiresAt ? Number(expiresAt) : null,
+        );
         navigate("/profile", { replace: true });
       } catch (requestError) {
         authStore.clearAuth();
@@ -33,5 +38,11 @@ export default function OAuthCallbackFeature() {
     finishOAuth();
   }, [navigate]);
 
-  return error ? <div className="mx-auto max-w-xl p-section-gap"><ErrorMessage message={error} /></div> : <Loading label="Đang hoàn tất đăng nhập" />;
+  return error ? (
+    <div className="mx-auto max-w-xl p-section-gap">
+      <ErrorMessage message={error} />
+    </div>
+  ) : (
+    <Loading label="Đang hoàn tất đăng nhập" />
+  );
 }

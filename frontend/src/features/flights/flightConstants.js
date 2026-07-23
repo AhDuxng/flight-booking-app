@@ -3,9 +3,7 @@ export const FLIGHT_SCOPES = [
   { label: "Ngoài nước", value: "international" },
 ];
 
-export const FLIGHT_TYPES = [
-  { label: "Một chiều", value: "one-way" },
-];
+export const FLIGHT_TYPES = [{ label: "Một chiều", value: "one-way" }];
 
 export const PASSENGER_OPTIONS = [
   { label: "1 Người lớn, 0 Trẻ em", value: "1-0" },

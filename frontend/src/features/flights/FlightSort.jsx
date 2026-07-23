@@ -31,9 +31,7 @@ export default function FlightSort({ currentSort, onSortChange }) {
                 : "text-on-surface border-transparent hover:bg-surface-container"
             }`}
           >
-            <span className={isActive ? "block font-bold" : "block"}>
-              {option.label}
-            </span>
+            <span className={isActive ? "block font-bold" : "block"}>{option.label}</span>
             <span className="block font-body-sm text-body-sm text-on-surface-variant">
               {option.subtitle}
             </span>

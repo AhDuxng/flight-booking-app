@@ -105,17 +105,30 @@ export default function RegisterForm() {
           />
 
           <label className="flex items-start gap-2 text-body-sm font-body-sm text-on-surface-variant">
-            <input className="mt-1 h-4 w-4 rounded border-outline-variant text-primary focus:ring-primary/20" required type="checkbox" />
+            <input
+              className="mt-1 h-4 w-4 rounded border-outline-variant text-primary focus:ring-primary/20"
+              required
+              type="checkbox"
+            />
             <span>
               Tôi đồng ý với{" "}
-              <Link className="text-label-md font-label-md font-semibold text-primary transition-colors hover:text-primary-container" to="/support">
+              <Link
+                className="text-label-md font-label-md font-semibold text-primary transition-colors hover:text-primary-container"
+                to="/support"
+              >
                 Điều khoản & Điều kiện
               </Link>{" "}
               của VietFly.
             </span>
           </label>
 
-          <Button className="w-full" disabled={isSubmitting} size="lg" type="submit" variant="warning">
+          <Button
+            className="w-full"
+            disabled={isSubmitting}
+            size="lg"
+            type="submit"
+            variant="warning"
+          >
             {isSubmitting ? "Đang tạo tài khoản..." : "Tạo tài khoản"}
           </Button>
         </form>
@@ -127,7 +140,10 @@ export default function RegisterForm() {
 
         <p className="text-center text-body-sm font-body-sm text-on-surface-variant">
           Đã có tài khoản?{" "}
-          <Link className="text-label-md font-label-md font-semibold text-primary transition-colors hover:text-primary-container" to="/login">
+          <Link
+            className="text-label-md font-label-md font-semibold text-primary transition-colors hover:text-primary-container"
+            to="/login"
+          >
             Đăng nhập
           </Link>
         </p>
@@ -143,7 +159,9 @@ function Divider({ label }) {
         <div className="w-full border-t border-outline-variant" />
       </div>
       <div className="relative flex justify-center">
-        <span className="bg-surface px-2 text-body-sm font-body-sm text-on-surface-variant">{label}</span>
+        <span className="bg-surface px-2 text-body-sm font-body-sm text-on-surface-variant">
+          {label}
+        </span>
       </div>
     </div>
   );
