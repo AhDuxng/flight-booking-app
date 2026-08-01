@@ -252,22 +252,6 @@ export default function AdminResourcePage({ resource }) {
       toast.error(getErrorMessage(requestError, "Không thể xử lý thanh toán."));
     }
   };
-  const handleRefund = async (row) => {
-    if (
-      !window.confirm(
-        `Xác nhận đã hoàn tiền cho giao dịch ${row.reference}? Thao tác này không thể đảo ngược.`,
-      )
-    ) {
-      return;
-    }
-    try {
-      await adminService.refundPayment(row.id);
-      toast.success("Đã ghi nhận hoàn tiền thành công.");
-      await loadRows();
-    } catch (requestError) {
-      toast.error(getErrorMessage(requestError, "Không thể hoàn tiền giao dịch."));
-    }
-  };
   const handleCancelBooking = async (row) => {
     if (
       !window.confirm(
@@ -349,13 +333,12 @@ export default function AdminResourcePage({ resource }) {
             label: "",
             render: (row) =>
               row.status === "refund_pending" ? (
-                <button
+                <Link
                   className={adminActionClass}
-                  onClick={() => handleRefund(row)}
-                  type="button"
+                  to="/admin/operations"
                 >
-                  Hoàn tiền
-                </button>
+                  Duyệt hoàn tiền
+                </Link>
               ) : row.provider === "cash" && row.status === "pending" ? (
                 <div className="flex gap-2">
                   <button

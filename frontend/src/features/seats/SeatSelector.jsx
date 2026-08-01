@@ -74,11 +74,12 @@ export default function SeatSelector() {
 
   const totalPrice = useMemo(() => {
     const seatTotal = selectedSeats.reduce((total, seat) => total + Number(seat.price ?? 0), 0);
+    const fareMultiplier = Number(passengerInfo?.fareMultiplier ?? 1);
     const baggageItems = Array.isArray(passengerInfo?.baggage) ? passengerInfo.baggage : [];
     const mealItems = Array.isArray(passengerInfo?.meal) ? passengerInfo.meal : [];
     const baggageTotal = baggageItems.reduce((total, item) => total + Number(item?.price ?? 0), 0);
     const mealTotal = mealItems.reduce((total, item) => total + Number(item?.price ?? 0), 0);
-    return seatTotal + baggageTotal + mealTotal;
+    return seatTotal * fareMultiplier + baggageTotal + mealTotal;
   }, [passengerInfo, selectedSeats]);
 
   const passengerCount = passengerInfo?.passengers?.length ?? 0;
@@ -122,6 +123,7 @@ export default function SeatSelector() {
           )
           .filter(Boolean),
         discountCode: passengerInfo.discountCode,
+        fareId: passengerInfo.fareId,
       });
       selectedSeats.forEach(bookingStore.addSeat);
       toast.success("Đã giữ chỗ. Hãy hoàn tất thanh toán trước khi hết hạn.");
@@ -170,6 +172,7 @@ export default function SeatSelector() {
               isSubmitting={isSubmitting}
               onContinue={handleContinue}
               passengerCount={passengerCount}
+              fareMultiplier={Number(passengerInfo?.fareMultiplier ?? 1)}
               selectedSeats={selectedSeats}
               totalPrice={totalPrice}
             />
@@ -241,11 +244,13 @@ function SeatSummary({
   flight,
   selectedSeats,
   passengerCount,
+  fareMultiplier,
   totalPrice,
   onContinue,
   isSubmitting,
 }) {
   const seatTotal = selectedSeats.reduce((total, seat) => total + Number(seat.price ?? 0), 0);
+  const fareSeatTotal = seatTotal * fareMultiplier;
   const isComplete = selectedSeats.length === passengerCount;
   return (
     <aside className="relative flex flex-col gap-stack-md overflow-hidden rounded-xl border border-surface-variant bg-surface-container-lowest p-container-padding shadow-md">
@@ -266,8 +271,8 @@ function SeatSummary({
       </div>
       <SelectedSeatPanel selectedSeats={selectedSeats} />
       <div className="flex flex-col gap-2 border-t border-outline-variant pt-4">
-        <PriceLine label="Ghế đã chọn" value={seatTotal} />
-        <PriceLine label="Dịch vụ bổ sung" value={totalPrice - seatTotal} />
+        <PriceLine label="Vé và hạng giá" value={fareSeatTotal} />
+        <PriceLine label="Dịch vụ bổ sung" value={totalPrice - fareSeatTotal} />
       </div>
       <div className="flex items-end justify-between border-t border-outline-variant pt-4">
         <span className="text-title-lg font-title-lg text-primary">Tạm tính</span>

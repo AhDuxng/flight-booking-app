@@ -4,7 +4,7 @@
   publish = "dist"
 
 [build.environment]
-  NODE_VERSION = "20"
+  NODE_VERSION = "20.19.0"
   VITE_API_URL = "https://flight-booking-app-sjmo.onrender.com/api"
 
 # Local frontend dev uses frontend/.env. Netlify production builds use the Render URL above.

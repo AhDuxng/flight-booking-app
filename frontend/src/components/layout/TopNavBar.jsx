@@ -12,6 +12,7 @@ import { notificationStore, useNotificationStore } from "@/store/notificationSto
 const navItems = [
   { to: "/", label: "Chuyến bay" },
   { to: "/promotions", label: "Khuyến mãi" },
+  { to: "/flight-status", label: "Trạng thái bay" },
   { to: "/my-bookings", label: "Đặt chỗ của tôi" },
   { to: "/support", label: "Hỗ trợ" },
   { to: "/chatbot", label: "Trợ lý AI" },

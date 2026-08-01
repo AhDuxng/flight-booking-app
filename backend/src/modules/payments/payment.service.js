@@ -5,12 +5,38 @@ import * as paymentQueries from './payment.queries.js';
 import { createHttpError } from '../../utils/error.js';
 import { bumpCacheVersion } from '../../config/cache.js';
 import { env } from '../../config/env.js';
+import * as operationQueries from '../operations/operation.queries.js';
+import { createETicketPdf } from '../operations/document.service.js';
+import { sendTicketEmail } from '../operations/mail.service.js';
 
-const supportedProviders = [...new Set(['cash', ...env.paymentProviders])].filter((provider) =>
+const supportedProviders = [...new Set(['cash', ...(env.paymentCheckoutApiUrl && env.paymentSecretKey ? env.paymentProviders : [])])].filter((provider) =>
   ['vnpay', 'momo', 'stripe', 'cash'].includes(provider),
 );
 
 export const getPaymentConfig = () => ({ providers: supportedProviders });
+
+export const attachOnlineCheckout = async (payment, booking) => {
+  if (payment.provider === 'cash') return payment;
+  const response = await fetch(env.paymentCheckoutApiUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${env.paymentSecretKey}` },
+    body: JSON.stringify({
+      provider: payment.provider,
+      bookingId: booking.id,
+      transactionRef: payment.transaction_ref,
+      amount: Number(payment.amount),
+      currency: payment.currency,
+      returnUrl: env.paymentReturnUrl,
+      cancelUrl: env.paymentCancelUrl,
+      webhookUrl: env.backendPublicUrl ? `${env.backendPublicUrl.replace(/\/$/, '')}/api/payments/webhook` : undefined,
+    }),
+  });
+  if (!response.ok) throw createHttpError(502, 'Unable to create provider checkout');
+  const data = await response.json();
+  const checkoutUrl = data.checkoutUrl ?? data.checkout_url ?? data.payUrl;
+  if (!checkoutUrl || !URL.canParse(checkoutUrl)) throw createHttpError(502, 'Payment provider returned an invalid checkout URL');
+  return paymentQueries.attachCheckout(payment.id, checkoutUrl, data);
+};
 
 export const createPaymentIntent = async (userId, payload) => {
   if (!supportedProviders.includes(payload.provider)) {
@@ -36,13 +62,19 @@ export const createPaymentIntent = async (userId, payload) => {
     return existingIntent;
   }
 
-  return paymentQueries.insertIntent({
+  const payment = await paymentQueries.insertIntent({
     booking_id: booking.id,
     amount: booking.total_price,
     provider: payload.provider,
     transaction_ref: `payment_${randomUUID()}`,
     status: 'pending',
   });
+  try {
+    return await attachOnlineCheckout(payment, booking);
+  } catch (error) {
+    await paymentQueries.failIntent(payment.id, error.message).catch(() => {});
+    throw error;
+  }
 };
 
 export const getPaymentsByBooking = async (userId, bookingId) => {
@@ -78,7 +110,10 @@ export const handleWebhook = async (payload) => {
   let result;
 
   try {
-    result = await paymentQueries.processWebhook(payload);
+    const intent = await paymentQueries.findByTransactionReference(payload.transactionRef);
+    result = intent?.purpose === 'flight_change'
+      ? await paymentQueries.processChangeWebhook(payload)
+      : await paymentQueries.processWebhook(payload);
     await paymentQueries.updateWebhookLog(webhookLog.id, result);
   } catch (error) {
     await paymentQueries.updateWebhookLog(webhookLog.id, null, error.message).catch(() => {});
@@ -91,10 +126,23 @@ export const handleWebhook = async (payload) => {
   if (result?.processed && result.payment_status === 'success') {
     await notificationService.sendNotification(result.user_id, {
       type: 'payment_success',
-      title: 'Payment successful',
-      body: `Your booking ${result.booking_id} has been confirmed`,
-      payload: { bookingId: result.booking_id, paymentId: result.payment_id },
+      title: result.purpose === 'flight_change' ? 'Flight changed successfully' : 'Payment successful',
+      body: result.purpose === 'flight_change'
+        ? `Your new itinerary for booking ${result.booking_id} is confirmed`
+        : `Your booking ${result.booking_id} has been confirmed and tickets are ready`,
+      payload: { bookingId: result.booking_id, paymentId: result.payment_id, purpose: result.purpose ?? 'booking' },
     });
+
+    // Payment/change confirmation is already committed. Email delivery is deliberately
+    // best-effort so an SMTP outage never rolls back a paid booking.
+    try {
+      const booking = await operationQueries.findBooking(result.booking_id, result.user_id);
+      if (booking?.tickets?.length) {
+        await sendTicketEmail({ booking, pdf: await createETicketPdf(booking) });
+      }
+    } catch (error) {
+      if (env.nodeEnv !== 'test') console.error('Unable to send e-ticket email', error);
+    }
   }
 
   if (result?.processed && result.payment_status === 'failed') {

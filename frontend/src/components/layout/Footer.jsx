@@ -16,6 +16,7 @@ const footerGroups = [
       { label: "Trung tâm hỗ trợ", to: "/support" },
       { label: "Câu hỏi thường gặp", to: "/support#faq" },
       { label: "Trợ lý VietFly AI", to: "/chatbot" },
+      { label: "Chính sách đổi/hoàn", to: "/content/change-refund-policy" },
     ],
   },
   {

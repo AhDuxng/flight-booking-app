@@ -1,5 +1,6 @@
 import { env } from '../../config/env.js';
 import { createHttpError } from '../../utils/error.js';
+import { loadFlightPromptContext } from './chatbot.flight-context.js';
 
 const GEMINI_API_BASE_URL = 'https://generativelanguage.googleapis.com/v1beta';
 
@@ -27,9 +28,9 @@ const selectNextGeminiApiKey = () => {
 
 const toGeminiRole = (role) => (role === 'assistant' ? 'model' : 'user');
 
-const buildGeminiPayload = ({ message, history }) => ({
+const buildGeminiPayload = ({ message, history, flightPrompt }) => ({
   systemInstruction: {
-    parts: [{ text: SYSTEM_INSTRUCTION }],
+    parts: [{ text: [SYSTEM_INSTRUCTION, flightPrompt].filter(Boolean).join('\n\n') }],
   },
   contents: [
     ...history.slice(-8).map((item) => ({
@@ -114,7 +115,11 @@ const extractText = (body) => {
 };
 
 export const sendMessage = async (payload) => {
-  const geminiPayload = buildGeminiPayload(payload);
+  const flightContext = await loadFlightPromptContext(payload);
+  const geminiPayload = buildGeminiPayload({
+    ...payload,
+    flightPrompt: flightContext?.prompt,
+  });
   const attempts = Math.max(env.geminiApiKeys.length, 1);
   let lastError;
 
@@ -126,6 +131,7 @@ export const sendMessage = async (payload) => {
       return {
         text: extractText(body),
         model: env.geminiModel,
+        grounding: flightContext?.metadata ?? null,
       };
     } catch (error) {
       lastError = error;

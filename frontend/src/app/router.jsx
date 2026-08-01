@@ -17,6 +17,8 @@ const OAuthCallbackPage = lazy(() => import("@/pages/public/OAuthCallbackPage"))
 const SupportPage = lazy(() => import("@/pages/public/SupportPage"));
 const PromotionsPage = lazy(() => import("@/pages/public/PromotionsPage"));
 const ChatbotPage = lazy(() => import("@/pages/public/ChatbotPage"));
+const FlightStatusPage = lazy(() => import("@/pages/public/FlightStatusPage"));
+const ContentPage = lazy(() => import("@/pages/public/ContentPage"));
 const BookingPage = lazy(() => import("@/pages/user/BookingPage"));
 const SeatSelectionPage = lazy(() => import("@/pages/user/SeatSelectionPage"));
 const PaymentPage = lazy(() => import("@/pages/user/PaymentPage"));
@@ -36,6 +38,7 @@ const AdminUserDetailPage = lazy(() => import("@/pages/admin/AdminUserDetailPage
 const AdminAirportPage = lazy(() => import("@/pages/admin/AdminAirportPage"));
 const AdminAirlinePage = lazy(() => import("@/pages/admin/AdminAirlinePage"));
 const AdminAircraftPage = lazy(() => import("@/pages/admin/AdminAircraftPage"));
+const AdminOperationsPage = lazy(() => import("@/pages/admin/AdminOperationsPage"));
 const ForbiddenPage = lazy(() => import("@/pages/error/ForbiddenPage"));
 const ServerErrorPage = lazy(() => import("@/pages/error/ServerErrorPage"));
 const NotFoundPage = lazy(() => import("@/pages/error/NotFoundPage"));
@@ -53,6 +56,8 @@ const router = createBrowserRouter([
       { path: "/", element: withSuspense(HomePage) },
       { path: "/flights", element: withSuspense(FlightListPage) },
       { path: "/flights/:flightId", element: withSuspense(FlightDetailPage) },
+      { path: "/flight-status", element: withSuspense(FlightStatusPage) },
+      { path: "/content/:slug", element: withSuspense(ContentPage) },
       {
         path: "/booking/:flightId",
         element: <PrivateRoute>{withSuspense(BookingPage)}</PrivateRoute>,
@@ -114,6 +119,7 @@ const router = createBrowserRouter([
       { path: "airports", element: withSuspense(AdminAirportPage) },
       { path: "airlines", element: withSuspense(AdminAirlinePage) },
       { path: "aircrafts", element: withSuspense(AdminAircraftPage) },
+      { path: "operations", element: withSuspense(AdminOperationsPage) },
     ],
   },
   { path: "/403", element: withSuspense(ForbiddenPage) },

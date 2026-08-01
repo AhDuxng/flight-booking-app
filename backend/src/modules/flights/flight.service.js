@@ -47,6 +47,7 @@ const buildSearchCacheKey = (filters, version) => {
     departureDate: filters.departureDate ?? null,
     departureTimezone: filters.departureTimezone ?? null,
     destinationAirportId: filters.destinationAirportId ?? null,
+    flightNumber: filters.flightNumber ?? null,
     limit: filters.limit,
     originAirportId: filters.originAirportId ?? null,
     passengerCount: filters.passengerCount,
@@ -69,14 +70,24 @@ const assertFlightTimes = (payload, currentFlight = null) => {
 const toFlightPayload = (payload) => {
   return {
     ...(payload.airlineId !== undefined && { airline_id: payload.airlineId }),
-    ...(payload.aircraftId !== undefined && { aircraft_id: payload.aircraftId }),
-    ...(payload.originAirportId !== undefined && { origin_airport_id: payload.originAirportId }),
+    ...(payload.aircraftId !== undefined && {
+      aircraft_id: payload.aircraftId,
+    }),
+    ...(payload.originAirportId !== undefined && {
+      origin_airport_id: payload.originAirportId,
+    }),
     ...(payload.destinationAirportId !== undefined && {
       destination_airport_id: payload.destinationAirportId,
     }),
-    ...(payload.flightNumber !== undefined && { flight_number: payload.flightNumber }),
-    ...(payload.departureTime !== undefined && { departure_time: payload.departureTime }),
-    ...(payload.arrivalTime !== undefined && { arrival_time: payload.arrivalTime }),
+    ...(payload.flightNumber !== undefined && {
+      flight_number: payload.flightNumber,
+    }),
+    ...(payload.departureTime !== undefined && {
+      departure_time: payload.departureTime,
+    }),
+    ...(payload.arrivalTime !== undefined && {
+      arrival_time: payload.arrivalTime,
+    }),
     ...(payload.basePrice !== undefined && { base_price: payload.basePrice }),
     ...(payload.status !== undefined && { status: payload.status }),
   };

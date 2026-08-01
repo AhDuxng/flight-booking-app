@@ -2,13 +2,14 @@ import { supabase } from '../../config/supabase.js';
 import { createHttpError, throwDatabaseError } from '../../utils/error.js';
 
 const PAYMENT_COLUMNS =
-  'id, booking_id, amount, currency, provider, transaction_ref, status, paid_at, created_at, updated_at';
+  'id, booking_id, amount, currency, provider, transaction_ref, status, purpose, change_request_id, checkout_url, paid_at, created_at, updated_at';
 
 export const findPendingByBookingId = async (bookingId) => {
   const { data, error } = await supabase
     .from('payments')
     .select(PAYMENT_COLUMNS)
     .eq('booking_id', bookingId)
+    .eq('purpose', 'booking')
     .eq('status', 'pending')
     .order('created_at', { ascending: false })
     .limit(1)
@@ -27,6 +28,24 @@ export const insertIntent = async (payload) => {
 
   throwDatabaseError(error, 'Unable to create payment');
   return data;
+};
+
+export const attachCheckout = async (paymentId, checkoutUrl, rawPayload) => {
+  const { data, error } = await supabase
+    .from('payments')
+    .update({ checkout_url: checkoutUrl, raw_payload: rawPayload, updated_at: new Date().toISOString() })
+    .eq('id', paymentId)
+    .select(PAYMENT_COLUMNS)
+    .single();
+  throwDatabaseError(error, 'Unable to store checkout session');
+  return data;
+};
+
+export const failIntent = async (paymentId, reason) => {
+  const { error } = await supabase.from('payments').update({
+    status: 'failed', raw_payload: { checkoutError: reason }, updated_at: new Date().toISOString(),
+  }).eq('id', paymentId).eq('status', 'pending');
+  throwDatabaseError(error, 'Unable to close failed payment intent');
 };
 
 export const findByBookingId = async (bookingId) => {
@@ -66,6 +85,26 @@ export const processWebhook = async (payload) => {
     throw createHttpError(400, 'Unable to process payment webhook');
   }
 
+  return data;
+};
+
+export const findByTransactionReference = async (transactionRef) => {
+  const { data, error } = await supabase
+    .from('payments')
+    .select(PAYMENT_COLUMNS)
+    .eq('transaction_ref', transactionRef)
+    .maybeSingle();
+  throwDatabaseError(error, 'Unable to load payment');
+  return data;
+};
+
+export const processChangeWebhook = async (payload) => {
+  const { data, error } = await supabase.rpc('process_change_payment_webhook', {
+    p_transaction_ref: payload.transactionRef,
+    p_status: payload.status,
+    p_raw_payload: payload.rawPayload,
+  });
+  if (error) throw createHttpError(400, error.message || 'Unable to process flight change payment');
   return data;
 };
 

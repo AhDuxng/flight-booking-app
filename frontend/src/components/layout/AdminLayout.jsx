@@ -8,6 +8,7 @@ import {
   MessageSquareText,
   Plane,
   PlaneTakeoff,
+  Settings2,
   Users,
 } from "lucide-react";
 import logo from "@/assets/images/logo.png";
@@ -23,6 +24,7 @@ const navItems = [
   { label: "Sân bay", to: "/admin/airports", icon: MapPin },
   { label: "Hãng bay", to: "/admin/airlines", icon: Building2 },
   { label: "Tàu bay", to: "/admin/aircrafts", icon: Plane },
+  { label: "Vận hành MVP", to: "/admin/operations", icon: Settings2 },
 ];
 
 export default function AdminLayout() {

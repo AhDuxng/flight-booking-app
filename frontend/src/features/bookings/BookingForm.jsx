@@ -22,6 +22,7 @@ import { mealService } from "@/features/meals/mealService";
 import { getErrorMessage } from "@/lib/apiError";
 import { cn } from "@/lib/utils";
 import { bookingStore } from "@/store/bookingStore";
+import { operationService } from "@/features/operations/operationService";
 
 export default function BookingForm() {
   const { flightId } = useParams();
@@ -38,6 +39,8 @@ export default function BookingForm() {
   const [flight, setFlight] = useState(null);
   const [baggageOptions, setBaggageOptions] = useState([]);
   const [mealOptions, setMealOptions] = useState([]);
+  const [fares, setFares] = useState([]);
+  const [selectedFare, setSelectedFare] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [contact, setContact] = useState({ email: "", countryCode: "+84", phone: "" });
@@ -55,14 +58,17 @@ export default function BookingForm() {
       setError("");
 
       try {
-        const [flightResponse, baggageResponse, mealResponse] = await Promise.all([
+        const [flightResponse, baggageResponse, mealResponse, fareResponse] = await Promise.all([
           flightService.getById(flightId),
           baggageService.getOptions({ flightId }),
           mealService.getOptions({ flightId }),
+          operationService.getFares(flightId),
         ]);
         setFlight(toFlightView(flightResponse.data));
         setBaggageOptions(baggageResponse.data ?? []);
         setMealOptions(mealResponse.data ?? []);
+        setFares(fareResponse.data ?? []);
+        setSelectedFare((fareResponse.data ?? [])[0] ?? null);
       } catch (requestError) {
         setError(getErrorMessage(requestError, "Không thể tải dữ liệu đặt vé."));
       } finally {
@@ -76,8 +82,8 @@ export default function BookingForm() {
   const estimatedTotal = useMemo(() => {
     const baggageTotal = baggage.reduce((total, item) => total + Number(item?.price ?? 0), 0);
     const mealTotal = meal.reduce((total, item) => total + Number(item?.price ?? 0), 0);
-    return (flight?.price ?? 0) * passengers.length + baggageTotal + mealTotal;
-  }, [baggage, flight, meal, passengers.length]);
+    return (flight?.price ?? 0) * Number(selectedFare?.price_multiplier ?? 1) * passengers.length + baggageTotal + mealTotal;
+  }, [baggage, flight, meal, passengers.length, selectedFare]);
 
   const handleContinue = () => {
     const hasIncompletePassenger = passengers.some(
@@ -108,6 +114,8 @@ export default function BookingForm() {
       baggage,
       meal,
       discountCode: isDiscountApplied ? discountCode.trim().toUpperCase() : null,
+      fareId: selectedFare?.id ?? null,
+      fareMultiplier: Number(selectedFare?.price_multiplier ?? 1),
     });
     navigate(`/booking/${flight.id}/seats${window.location.search}`);
   };
@@ -198,6 +206,8 @@ export default function BookingForm() {
               isDiscountApplied={isDiscountApplied}
               meal={meal}
               mealOptions={mealOptions}
+              fares={fares}
+              selectedFare={selectedFare}
               onApplyDiscount={handleApplyDiscount}
               onBaggageChange={(index, value) =>
                 setBaggage((current) =>
@@ -213,6 +223,7 @@ export default function BookingForm() {
                   current.map((item, itemIndex) => (itemIndex === index ? value : item)),
                 )
               }
+              onFareChange={setSelectedFare}
               passengerCount={passengers.length}
             />
             <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
@@ -234,7 +245,13 @@ export default function BookingForm() {
               </button>
             </div>
           </div>
-          <BookingEstimate baggage={baggage} flight={flight} meal={meal} total={estimatedTotal} />
+          <BookingEstimate
+            baggage={baggage}
+            fare={selectedFare}
+            flight={flight}
+            meal={meal}
+            total={estimatedTotal}
+          />
         </div>
       </div>
     </div>
@@ -282,16 +299,39 @@ function BookingOptions({
   baggageOptions,
   meal,
   mealOptions,
+  fares,
+  selectedFare,
   passengerCount,
   discountCode,
   isDiscountApplied,
   onBaggageChange,
   onMealChange,
+  onFareChange,
   onDiscountCodeChange,
   onApplyDiscount,
 }) {
   return (
     <div className="grid grid-cols-1 gap-stack-lg xl:grid-cols-2">
+      <OptionPanel icon={Plane} title="Hạng giá vé">
+        <div className="space-y-3">
+          {fares.map((fare) => (
+            <button
+              className={cn(
+                "w-full rounded-lg border p-3 text-left transition-colors",
+                selectedFare?.id === fare.id
+                  ? "border-primary bg-primary-fixed text-on-primary-fixed"
+                  : "border-outline-variant hover:border-primary",
+              )}
+              key={fare.id}
+              onClick={() => onFareChange(fare)}
+              type="button"
+            >
+              <span className="flex justify-between gap-2"><strong>{fare.name}</strong><span>×{Number(fare.price_multiplier).toFixed(2)}</span></span>
+              <small className="mt-1 block text-on-surface-variant">Hành lý {fare.checked_baggage_kg}kg · {fare.refundable ? "Được hoàn" : "Không hoàn"} · Phí đổi {formatCurrency(fare.change_fee)}</small>
+            </button>
+          ))}
+        </div>
+      </OptionPanel>
       {Array.from({ length: passengerCount }, (_, index) => (
         <OptionPanel
           icon={Briefcase}
@@ -405,7 +445,7 @@ function RadioList({ items, selectedItem, onChange, itemLabel, emptyLabel }) {
   );
 }
 
-function BookingEstimate({ flight, baggage, meal, total }) {
+function BookingEstimate({ flight, baggage, meal, fare, total }) {
   const passengerCount = baggage.length;
   const baggageTotal = baggage.reduce((sum, item) => sum + Number(item?.price ?? 0), 0);
   const mealTotal = meal.reduce((sum, item) => sum + Number(item?.price ?? 0), 0);
@@ -415,7 +455,7 @@ function BookingEstimate({ flight, baggage, meal, total }) {
       <div className="mt-4 space-y-3 border-y border-surface-container-high py-4 text-body-sm">
         <PriceLine
           label={`Vé ${flight.origin} - ${flight.destination} · ${passengerCount} người`}
-          value={flight.price * passengerCount}
+          value={flight.price * Number(fare?.price_multiplier ?? 1) * passengerCount}
         />
         <PriceLine label="Hành lý" value={baggageTotal} />
         <PriceLine label="Suất ăn" value={mealTotal} />

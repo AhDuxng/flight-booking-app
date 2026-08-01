@@ -19,6 +19,11 @@ Xây dựng một nền tảng đặt vé máy bay có trải nghiệm rõ ràng
 7. Quản trị chuyến bay, sân bay, hãng bay, tàu bay, người dùng, đặt chỗ, thanh toán và đánh giá.
 8. Thông báo thay đổi chuyến bay/thanh toán, đánh giá sau chuyến và chatbot Gemini.
 9. Quên mật khẩu, OAuth Google/GitHub, tự làm mới phiên và upload avatar riêng tư.
+10. Phát hành vé PDF/email, online check-in và boarding pass QR.
+11. Đổi chuyến có quote giá, phí đổi, thanh toán chênh lệch và phát hành lại vé.
+12. Refund request có quy trình duyệt, adapter hoàn tiền và lịch sử trạng thái.
+13. Tuyến bay, lịch định kỳ tự sinh flight instance, hạng giá/fare rules và flight status.
+14. CMS, support ticket theo SLA và dịch vụ bảo hiểm/đưa đón/nâng hạng/thú cưng.
 
 ## Công nghệ sử dụng
 
@@ -117,9 +122,20 @@ JWT_SECRET
 FRONTEND_URL
 PAYMENT_PROVIDER
 PAYMENT_SECRET_KEY
+PAYMENT_CHECKOUT_API_URL
+PAYMENT_REFUND_API_URL
 PAYMENT_WEBHOOK_SECRET
 PAYMENT_RETURN_URL
 PAYMENT_CANCEL_URL
+BACKEND_PUBLIC_URL
+SMTP_HOST
+SMTP_PORT
+SMTP_SECURE
+SMTP_USER
+SMTP_PASSWORD
+SMTP_FROM
+SCHEDULE_GENERATION_HORIZON_DAYS
+SCHEDULE_GENERATION_INTERVAL_MS
 ```
 
 Frontend cần biến cấu hình sau:
@@ -177,6 +193,15 @@ PAYMENT_SECRET_KEY
 PAYMENT_WEBHOOK_SECRET
 PAYMENT_RETURN_URL
 PAYMENT_CANCEL_URL
+PAYMENT_CHECKOUT_API_URL
+PAYMENT_REFUND_API_URL
+BACKEND_PUBLIC_URL
+SMTP_HOST
+SMTP_PORT
+SMTP_SECURE
+SMTP_USER
+SMTP_PASSWORD
+SMTP_FROM
 SUPABASE_READ_URL
 SUPABASE_READ_SERVICE_ROLE_KEY
 GEMINI_MODEL
@@ -210,4 +235,4 @@ File `netlify.toml` cũng đã cấu hình redirect `/* -> /index.html` để Re
 
 ## Trạng thái hiện tại
 
-Dự án đã có các luồng người dùng và quản trị chính hoạt động xuyên suốt. Trước khi chạy trên một Supabase mới, cần áp dụng `schema.sql`, `seed.sql` và toàn bộ migration theo đúng thứ tự trong [backend/README.md](backend/README.md). Các dịch vụ ngoài vẫn cần cấu hình thật: Supabase OAuth/email, Gemini và adapter của từng cổng thanh toán trực tuyến.
+Dự án đã có đầy đủ các luồng MVP trong `MISSING_MVP_FEATURES.md`. Trước khi chạy trên một Supabase mới, áp dụng `schema.sql`, `seed.sql` và toàn bộ migration theo đúng thứ tự trong [backend/README.md](backend/README.md). Sau đó chỉ cần điền credentials cho Supabase; SMTP, Gemini và payment adapter là cấu hình tùy theo dịch vụ muốn bật. `cash`, tải PDF/QR, CMS, support, lịch bay và toàn bộ nghiệp vụ nội bộ không phụ thuộc dịch vụ ngoài.

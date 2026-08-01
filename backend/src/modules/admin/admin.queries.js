@@ -97,7 +97,7 @@ export const findPayments = async (from, to) => {
     .from('payments')
     .select(
       `
-      id, booking_id, amount, currency, provider, transaction_ref, status, paid_at, created_at,
+      id, booking_id, amount, currency, provider, transaction_ref, status, purpose, change_request_id, paid_at, created_at,
       booking:bookings!payments_booking_id_fkey(id, user_id, contact_email)
     `,
       { count: 'exact' },
@@ -113,7 +113,7 @@ export const findPaymentById = async (paymentId) => {
   const { data, error } = await supabase
     .from('payments')
     .select(
-      'id, booking_id, amount, provider, transaction_ref, status, booking:bookings!payments_booking_id_fkey(id, user_id, status)',
+      'id, booking_id, amount, currency, provider, transaction_ref, status, purpose, change_request_id, booking:bookings!payments_booking_id_fkey(id, user_id, status)',
     )
     .eq('id', paymentId)
     .maybeSingle();

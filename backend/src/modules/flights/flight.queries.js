@@ -23,7 +23,7 @@ export const search = async (filters, from, to) => {
     : FLIGHT_COLUMNS;
   let query = supabaseRead
     .from('flights')
-    .select(searchColumns, { count: 'planned' })
+    .select(searchColumns, { count: 'exact' })
     .range(from, to)
     .order('departure_time', { ascending: true });
 
@@ -37,6 +37,10 @@ export const search = async (filters, from, to) => {
 
   if (filters.airlineId) {
     query = query.eq('airline_id', filters.airlineId);
+  }
+
+  if (filters.flightNumber) {
+    query = query.eq('flight_number', filters.flightNumber);
   }
 
   if (filters.status) {

@@ -15,6 +15,7 @@ import {
   Undo2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import SupportRequestPanel from "@/features/operations/SupportRequestPanel";
 
 const helpTopics = [
   {
@@ -275,6 +276,7 @@ export default function SupportCenterFeature() {
           </div>
         </div>
       </section>
+      <SupportRequestPanel />
     </div>
   );
 }

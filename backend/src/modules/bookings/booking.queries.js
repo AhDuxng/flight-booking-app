@@ -2,7 +2,7 @@ import { supabase } from '../../config/supabase.js';
 import { createHttpError, throwDatabaseError } from '../../utils/error.js';
 
 const BOOKING_COLUMNS = `
-  id, user_id, flight_id, price_snapshot, total_price, status, hold_expires_at, contact_email,
+  id, booking_reference, user_id, flight_id, fare_id, price_snapshot, total_price, status, hold_expires_at, contact_email,
   contact_phone, notes, created_at, updated_at,
   flight:flights!bookings_flight_id_fkey(
     id, flight_number, departure_time, arrival_time, status,
@@ -17,6 +17,12 @@ const BOOKING_COLUMNS = `
   booking_discounts(id, discount_id, discount_amount, applied_at),
   payments(id, amount, currency, provider, transaction_ref, status, paid_at, created_at),
   reviews(id, rating, comment, is_visible, created_at, updated_at)
+  ,fare:fare_classes(id, code, name, cabin_class, price_multiplier, change_allowed, change_fee, refundable, cancellation_fee, checked_baggage_kg, cabin_baggage_kg, priority_boarding)
+  ,tickets(id, ticket_number, passenger_id, flight_id, status, issued_at)
+  ,check_ins(id, passenger_id, ticket_id, seat_id, boarding_sequence, boarding_pass_number, status, checked_in_at)
+  ,refund_requests(id, payment_id, reason, requested_amount, approved_amount, status, failure_reason, created_at, updated_at)
+  ,flight_change_requests(id, old_flight_id, new_flight_id, fare_difference, change_fee, additional_amount, refund_amount, status, quote_expires_at, created_at)
+  ,booking_ancillaries(id, passenger_id, ancillary_service_id, quantity, price_snapshot, status, details, service:ancillary_services!booking_ancillaries_ancillary_service_id_fkey(id, code, type, name))
 `;
 
 export const findMine = async (userId, status, from, to) => {
@@ -84,6 +90,18 @@ export const createAtomically = async (userId, payload) => {
         ? 'One or more seats are no longer available'
         : 'Unable to create booking',
     );
+  }
+
+  if (payload.fareId) {
+    const { error: fareError } = await supabase.rpc('set_booking_fare', {
+      p_booking_id: data,
+      p_user_id: userId,
+      p_fare_id: payload.fareId,
+    });
+    if (fareError) {
+      await supabase.rpc('cancel_booking', { p_booking_id: data, p_user_id: userId });
+      throw createHttpError(400, 'Selected fare is no longer available');
+    }
   }
 
   return data;

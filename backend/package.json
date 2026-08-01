@@ -19,6 +19,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@fontsource/noto-sans": "^5.3.0",
     "@supabase/supabase-js": "^2.45.0",
     "bcryptjs": "^2.4.3",
     "compression": "^1.7.4",
@@ -34,6 +35,8 @@
     "morgan": "^1.10.0",
     "multer": "^2.2.0",
     "nodemailer": "^9.0.1",
+    "pdfkit": "^0.19.1",
+    "qrcode": "^1.5.4",
     "redis": "^4.7.1",
     "uuid": "^14.0.0",
     "zod": "^3.23.8"

@@ -14,6 +14,7 @@ import discountRoutes from '../modules/discounts/discount.routes.js';
 import flightRoutes from '../modules/flights/flight.routes.js';
 import mealRoutes from '../modules/meals/meal.routes.js';
 import notificationRoutes from '../modules/notifications/notification.routes.js';
+import operationRoutes from '../modules/operations/operation.routes.js';
 import passengerRoutes from '../modules/passengers/passenger.routes.js';
 import paymentRoutes from '../modules/payments/payment.routes.js';
 import {
@@ -52,6 +53,7 @@ router.use('/chatbot', chatbotRoutes);
 router.use('/discounts', discountRoutes);
 router.use('/flights', flightRoutes);
 router.use('/meals', mealRoutes);
+router.use('/operations', operationRoutes);
 router.use('/reviews', reviewRoutes);
 router.use('/seats', seatRoutes);
 

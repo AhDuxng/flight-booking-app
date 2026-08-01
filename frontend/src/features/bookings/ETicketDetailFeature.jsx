@@ -20,6 +20,7 @@ import { bookingService } from "@/features/bookings/bookingService";
 import { formatCurrency, formatDateTime, formatTime } from "@/features/flights/flightView";
 import { getErrorMessage } from "@/lib/apiError";
 import { reviewService } from "@/features/reviews/reviewService";
+import BookingOperationsPanel from "@/features/operations/BookingOperationsPanel";
 
 const statusLabels = {
   confirmed: "Đặt chỗ đã xác nhận",
@@ -221,6 +222,7 @@ export default function ETicketDetailFeature({ bookingId }) {
             </Link>
           </section>
         </section>
+        <BookingOperationsPanel booking={booking} onRefresh={loadBooking} />
       </div>
     </div>
   );

@@ -75,9 +75,20 @@ TRUST_PROXY
 BODY_LIMIT
 PAYMENT_PROVIDER
 PAYMENT_SECRET_KEY
+PAYMENT_CHECKOUT_API_URL
+PAYMENT_REFUND_API_URL
 PAYMENT_WEBHOOK_SECRET
 PAYMENT_RETURN_URL
 PAYMENT_CANCEL_URL
+BACKEND_PUBLIC_URL
+SMTP_HOST
+SMTP_PORT
+SMTP_SECURE
+SMTP_USER
+SMTP_PASSWORD
+SMTP_FROM
+SCHEDULE_GENERATION_HORIZON_DAYS
+SCHEDULE_GENERATION_INTERVAL_MS
 REDIS_URL
 SUPABASE_READ_URL
 SUPABASE_READ_SERVICE_ROLE_KEY
@@ -100,6 +111,7 @@ psql $DATABASE_URL -f database/migrations/20260715140000_add_international_fligh
 psql $DATABASE_URL -f database/migrations/20260715230000_harden_inventory_search_and_saga.sql
 psql $DATABASE_URL -f database/migrations/20260716000000_add_private_avatar_storage.sql
 psql $DATABASE_URL -f database/migrations/20260721000000_harden_cancellation_and_refunds.sql
+psql $DATABASE_URL -f database/migrations/20260725000000_complete_mvp_operations.sql
 ```
 
 Migration phải được chạy trước khi gọi các endpoint tạo chuyến bay, giữ ghế, đặt chỗ, thanh toán hoặc dashboard quản trị.
@@ -111,7 +123,9 @@ Migration avatar tạo bucket `avatars` ở chế độ private. API chỉ nhậ
 - Ghế được khoá bằng transaction Postgres (`SELECT ... FOR UPDATE`), có TTL 10 phút và job backend dọn ghế hết hạn mỗi phút. Redis chỉ là soft lock, nên không thể tạo overbooking khi Redis mất kết nối.
 - Tìm kiếm dùng index theo chặng/ngày, read client tùy chọn (`SUPABASE_READ_*`) và Redis cache 15 giây. Không cần Elasticsearch ở quy mô hiện tại; có thể thay query layer sau này nếu cần full-text search.
 - Webhook thanh toán được ghi raw payload vào `payment_webhook_logs` trước khi xử lý. RPC idempotent chuyển booking theo state machine; callback thành công đến sau TTL sẽ thành `refund_pending` để xử lý bù trừ.
-- `cash` hoạt động đầy đủ: người dùng tạo yêu cầu, admin xác nhận/từ chối. Các giá trị `vnpay,momo,stripe` trong `PAYMENT_PROVIDER` chỉ nên bật sau khi đã nối adapter tạo checkout URL/callback của nhà cung cấp; backend đã có intent, kiểm tra chữ ký webhook, idempotency và state machine dùng chung.
+- `cash` hoạt động đầy đủ: người dùng tạo yêu cầu, admin xác nhận/từ chối.
+- Thanh toán online dùng adapter chuẩn hóa cấu hình qua `PAYMENT_CHECKOUT_API_URL`. Adapter nhận `provider`, `bookingId`, `transactionRef`, `amount`, `currency`, `returnUrl`, `cancelUrl`, `webhookUrl` và trả `{ "checkoutUrl": "https://..." }`. Callback về webhook phải dùng payload chuẩn của API và chữ ký HMAC `x-payment-signature` từ `PAYMENT_WEBHOOK_SECRET`.
+- Hoàn tiền online dùng `PAYMENT_REFUND_API_URL`; Stripe được gọi theo form API, VNPAY/MoMo dùng JSON chuẩn hóa. Nếu không cấu hình online provider, API chỉ công bố phương thức `cash`.
 - Hủy booking chưa thanh toán chuyển sang `cancelled`; booking đã thanh toán chuyển sang `refund_pending` và admin hoàn tất ở màn hình thanh toán. Hủy cả chuyến bay tự động bù trừ mọi booking liên quan trong cùng transaction.
 
 ## Xác thực và dịch vụ ngoài
@@ -119,3 +133,11 @@ Migration avatar tạo bucket `avatars` ở chế độ private. API chỉ nhậ
 - Password reset và OAuth dùng cấu hình Email/Google/GitHub trong Supabase Auth. Redirect URL cần cho phép `/reset-password` và `/auth/callback` của frontend.
 - `GEMINI_API_KEYS` nhận một hoặc nhiều key phân tách bằng dấu phẩy. Khi bỏ trống, endpoint chatbot trả `503` rõ ràng.
 - Không commit `.env`, service-role key, Gemini key hoặc webhook secret vào repository.
+
+## Module MVP mở rộng
+
+- `operations/cms`, `operations/flight-status`, `operations/fares`, `operations/ancillaries` là API public.
+- Vé điện tử, check-in, boarding pass, đổi chuyến, ancillary booking và support ticket yêu cầu đăng nhập.
+- `/api/operations/admin/*` cung cấp network schedule, fare, live status, refund approval, CMS, support SLA và ancillary catalog cho admin.
+- Job lịch bay chạy khi server khởi động và theo `SCHEDULE_GENERATION_INTERVAL_MS`, tự sinh flight/seat trong số ngày `SCHEDULE_GENERATION_HORIZON_DAYS`.
+- Email vé là best-effort: khi chưa cấu hình SMTP, thanh toán vẫn xác nhận và PDF vẫn tải được trong chi tiết booking.

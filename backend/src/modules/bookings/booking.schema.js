@@ -38,6 +38,7 @@ export const createBookingSchema = z
     baggage: z.array(baggageSelectionSchema).max(20).default([]),
     meals: z.array(mealSelectionSchema).max(30).default([]),
     discountCode: z.string().trim().min(2).max(30).toUpperCase().nullable().optional(),
+    fareId: z.string().uuid().nullable().optional(),
   })
   .superRefine((value, context) => {
     if (value.passengers.length !== value.seatIds.length) {

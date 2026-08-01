@@ -105,6 +105,9 @@ export default function PaymentCheckoutFeature({ bookingId }) {
     try {
       const response = await paymentService.createIntent({ bookingId, provider: selectedMethod });
       setPayment(response.data);
+      if (response.data.checkout_url) {
+        window.location.assign(response.data.checkout_url);
+      }
     } catch (requestError) {
       setError(getErrorMessage(requestError, "Không thể tạo yêu cầu thanh toán."));
     } finally {
@@ -290,6 +293,7 @@ function PaymentStatus({ payment, onRefresh }) {
         </span>
       </div>
       <p className="mt-3 text-body-sm text-on-surface-variant">{instruction}</p>
+      {payment.checkout_url ? <a className="mt-3 inline-flex rounded-lg bg-primary px-4 py-2 text-label-md font-semibold text-on-primary" href={payment.checkout_url}>Tiếp tục thanh toán</a> : null}
       <button
         className="mt-3 text-label-md text-primary hover:underline"
         onClick={onRefresh}
