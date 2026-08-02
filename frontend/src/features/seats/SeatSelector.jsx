@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowRight, ChevronRight, Plane, ShieldCheck, UserRound } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
@@ -15,6 +15,7 @@ import { cn } from "@/lib/utils";
 import { bookingStore, useBookingStore } from "@/store/bookingStore";
 
 export default function SeatSelector() {
+  const bookingIdempotencyKey = useRef(crypto.randomUUID());
   const { flightId } = useParams();
   const navigate = useNavigate();
   const passengerInfo = useBookingStore((state) => state.passengerInfo);
@@ -124,7 +125,7 @@ export default function SeatSelector() {
           .filter(Boolean),
         discountCode: passengerInfo.discountCode,
         fareId: passengerInfo.fareId,
-      });
+      }, bookingIdempotencyKey.current);
       selectedSeats.forEach(bookingStore.addSeat);
       toast.success("Đã giữ chỗ. Hãy hoàn tất thanh toán trước khi hết hạn.");
       navigate(`/payment/${response.data.id}`);

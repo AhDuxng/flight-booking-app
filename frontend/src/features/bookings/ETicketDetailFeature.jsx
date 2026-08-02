@@ -24,7 +24,6 @@ import BookingOperationsPanel from "@/features/operations/BookingOperationsPanel
 
 const statusLabels = {
   confirmed: "Đặt chỗ đã xác nhận",
-  paid: "Đã thanh toán",
   pending: "Chờ thanh toán",
   cancelled: "Đã hủy",
   refunded: "Đã hoàn tiền",
@@ -93,7 +92,7 @@ export default function ETicketDetailFeature({ bookingId }) {
   const departureIsFuture = new Date(flight?.departure_time).getTime() > Date.now();
   const flightCanBeCancelled = ["scheduled", "delayed"].includes(flight?.status);
   const canCancel =
-    ["pending", "paid", "confirmed"].includes(booking.status) &&
+    ["pending", "confirmed"].includes(booking.status) &&
     departureIsFuture &&
     flightCanBeCancelled;
 

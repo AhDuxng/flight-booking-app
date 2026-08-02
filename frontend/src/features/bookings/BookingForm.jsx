@@ -93,7 +93,7 @@ export default function BookingForm() {
         !passenger.birthDate ||
         !passenger.documentNumber,
     );
-    if (!contact.email || !contact.phone || hasIncompletePassenger) {
+    if (!contact.email || !contact.phone || hasIncompletePassenger || !selectedFare) {
       toast.error("Vui lòng điền đầy đủ thông tin liên hệ và hành khách.");
       return;
     }

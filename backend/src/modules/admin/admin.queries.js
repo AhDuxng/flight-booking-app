@@ -1,5 +1,5 @@
 import { supabase } from '../../config/supabase.js';
-import { createHttpError, throwDatabaseError } from '../../utils/error.js';
+import { throwDatabaseError } from '../../utils/error.js';
 
 const ADMIN_FLIGHT_COLUMNS = `
   id, airline_id, aircraft_id, origin_airport_id, destination_airport_id,
@@ -86,9 +86,16 @@ export const findActiveBookingsByFlightId = async (flightId) => {
     .from('bookings')
     .select('id, user_id, status')
     .eq('flight_id', flightId)
-    .in('status', ['pending', 'paid', 'confirmed']);
+    .in('status', ['pending', 'confirmed']);
 
   throwDatabaseError(error, 'Unable to load affected bookings');
+  return data ?? [];
+};
+
+export const findBookingsByFlightId = async (flightId) => {
+  const { data, error } = await supabase.from('bookings').select('id,user_id,status')
+    .eq('flight_id', flightId);
+  throwDatabaseError(error, 'Unable to load flight bookings');
   return data ?? [];
 };
 
@@ -122,15 +129,43 @@ export const findPaymentById = async (paymentId) => {
   return data;
 };
 
-export const refundPayment = async (paymentId) => {
-  const { data, error } = await supabase.rpc('process_payment_refund', {
-    p_payment_id: paymentId,
+export const findOpenRefundByPaymentId = async (paymentId) => {
+  const { data, error } = await supabase.from('refund_requests').select('*')
+    .eq('payment_id', paymentId).in('status', ['pending', 'approved', 'processing', 'requires_review'])
+    .order('created_at').limit(1).maybeSingle();
+  throwDatabaseError(error, 'Unable to load refund request');
+  return data;
+};
+
+export const completeCashRefund = async (refundId) => {
+  const { data, error } = await supabase.rpc('complete_refund_v2', {
+    p_refund_id: refundId,
+    p_provider_refund_id: `cash_refund_${refundId}`,
+    p_provider_response: { status: 'succeeded', source: 'admin_cash_refund' },
   });
+  throwDatabaseError(error, 'Unable to complete cash refund');
+  return data;
+};
 
-  if (error) {
-    throw createHttpError(409, 'Payment is not awaiting refund');
-  }
+export const cancelFlight = async (flightId, adminId, reason) => {
+  const { data, error } = await supabase.rpc('cancel_flight_v2', {
+    p_flight_id: flightId,
+    p_admin_id: adminId,
+    p_reason: reason ?? null,
+  });
+  throwDatabaseError(error, 'Unable to cancel flight');
+  return data;
+};
 
+export const approveCashRefund = async (refundId, adminId, amount) => {
+  const { data, error } = await supabase.rpc('review_refund_request_v2', {
+    p_refund_id: refundId,
+    p_admin_id: adminId,
+    p_action: 'approve',
+    p_approved_amount: amount,
+    p_reason: 'Cash refund approved',
+  });
+  throwDatabaseError(error, 'Unable to approve cash refund');
   return data;
 };
 

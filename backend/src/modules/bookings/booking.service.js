@@ -1,8 +1,9 @@
 import * as bookingQueries from './booking.queries.js';
-import * as notificationService from '../notifications/notification.service.js';
 import { createHttpError } from '../../utils/error.js';
 import { createPagination, getPagination } from '../../utils/pagination.js';
 import { bumpCacheVersion, withRedisLocks } from '../../config/cache.js';
+import { hashRequest, normalizeIdempotencyKey } from '../../utils/idempotency.js';
+import { logger } from '../../utils/logger.js';
 
 export const getMyBookings = async (userId, query) => {
   const { page, limit, from, to } = getPagination(query);
@@ -20,22 +21,21 @@ export const getMyBookingById = async (bookingId, userId) => {
   return booking;
 };
 
-export const createBooking = async (userId, payload) => {
+export const createBooking = async (userId, payload, rawIdempotencyKey) => {
+  const idempotencyKey = normalizeIdempotencyKey(rawIdempotencyKey);
+  const requestHash = hashRequest(payload);
   return withRedisLocks(payload.seatIds, async () => {
-    const bookingId = await bookingQueries.createAtomically(userId, payload);
-    const booking = await getMyBookingById(bookingId, userId);
+    try {
+      const bookingId = await bookingQueries.createAtomically(userId, payload, idempotencyKey, requestHash);
+      const booking = await getMyBookingById(bookingId, userId);
 
-    // Bài toán 1 - Seat Inventory & Concurrency: booking transaction đã giữ ghế thành công, nên vô hiệu cache tìm kiếm ngay sau commit.
-    await bumpCacheVersion('flight-search');
-
-    await notificationService.sendNotification(userId, {
-      type: 'general',
-      title: 'Booking created',
-      body: `Your booking ${booking.id} is awaiting payment`,
-      payload: { bookingId: booking.id },
-    });
-
-    return booking;
+      await bumpCacheVersion('flight-search');
+      logger.info('booking_created', { booking_id: booking.id, user_id: userId });
+      return booking;
+    } catch (error) {
+      logger.warn('booking_creation_failed', { user_id: userId, error_code: error.code, error: error.message });
+      throw error;
+    }
   });
 };
 
@@ -45,7 +45,7 @@ export const cancelBooking = async (bookingId, userId) => {
   if (!booking) {
     throw createHttpError(404, 'Booking not found');
   }
-  if (!['pending', 'paid', 'confirmed'].includes(booking.status)) {
+  if (!['pending', 'confirmed'].includes(booking.status)) {
     throw createHttpError(409, 'Booking cannot be cancelled in its current status');
   }
   if (
@@ -61,16 +61,6 @@ export const cancelBooking = async (bookingId, userId) => {
 
   // Bài toán 3 - Distributed Transaction: huỷ booking là bước bù trừ, trả lại tồn ghế và làm mới dữ liệu tìm kiếm.
   await bumpCacheVersion('flight-search');
-
-  await notificationService.sendNotification(userId, {
-    type: cancelledBooking.status === 'refund_pending' ? 'general' : 'booking_cancelled',
-    title: cancelledBooking.status === 'refund_pending' ? 'Refund requested' : 'Booking cancelled',
-    body:
-      cancelledBooking.status === 'refund_pending'
-        ? `Your booking ${bookingId} was cancelled and is awaiting a refund`
-        : `Your booking ${bookingId} has been cancelled`,
-    payload: { bookingId },
-  });
 
   return cancelledBooking;
 };

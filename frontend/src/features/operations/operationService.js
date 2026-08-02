@@ -17,7 +17,14 @@ export const operationService = {
   addSupportMessage: (ticketId, body) => api.post(`/operations/support-tickets/${ticketId}/messages`, { body }),
   addAdminSupportMessage: (ticketId, body, isInternal = false) => api.post(`/operations/admin/support/${ticketId}/messages`, { body, isInternal }),
   checkIn: (bookingId, passengerIds, seatAssignments = []) => api.post(`/operations/bookings/${bookingId}/check-in`, { passengerIds, documentConfirmed: true, seatAssignments }),
-  confirmChange: (requestId, provider = "cash") => api.post(`/operations/change-quotes/${requestId}/confirm`, { provider }),
+  confirmChange: (requestId, provider = "cash") => {
+    const storageKey = `change-payment:${requestId}:${provider}`;
+    const idempotencyKey = window.sessionStorage.getItem(storageKey) || crypto.randomUUID();
+    window.sessionStorage.setItem(storageKey, idempotencyKey);
+    return api.post(`/operations/change-quotes/${requestId}/confirm`, { provider }, {
+      headers: { "Idempotency-Key": idempotencyKey },
+    });
+  },
   createAdminResource: (resource, payload) => api.post(`/operations/admin/${resource}`, payload),
   createSupportTicket: (payload) => api.post("/operations/support-tickets", payload),
   decideRefund: (refundId, payload) => api.post(`/operations/admin/refunds/${refundId}/decision`, payload),

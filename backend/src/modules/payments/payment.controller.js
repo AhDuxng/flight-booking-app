@@ -10,8 +10,21 @@ export const getPaymentConfig = async (req, res, next) => {
 
 export const createPaymentIntent = async (req, res, next) => {
   try {
-    const data = await paymentService.createPaymentIntent(req.user.id, req.body);
+    const data = await paymentService.createPaymentIntent(
+      req.user.id,
+      req.body,
+      req.get('idempotency-key'),
+    );
     return res.status(201).json({ data });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+export const expirePaymentIntent = async (req, res, next) => {
+  try {
+    const data = await paymentService.expirePaymentIntent(req.user.id, req.params.paymentId);
+    return res.json({ data });
   } catch (error) {
     return next(error);
   }

@@ -27,6 +27,13 @@ const mealSelectionSchema = z.object({
   quantity: z.number().int().min(1).max(10).default(1),
 });
 
+const ancillarySelectionSchema = z.object({
+  passengerIndex: z.number().int().min(0).nullable().optional(),
+  ancillaryServiceId: z.string().uuid(),
+  quantity: z.number().int().min(1).max(10).default(1),
+  details: z.record(z.unknown()).default({}),
+});
+
 export const createBookingSchema = z
   .object({
     flightId: z.string().uuid(),
@@ -37,8 +44,9 @@ export const createBookingSchema = z
     seatIds: z.array(z.string().uuid()).min(1).max(9),
     baggage: z.array(baggageSelectionSchema).max(20).default([]),
     meals: z.array(mealSelectionSchema).max(30).default([]),
+    ancillaries: z.array(ancillarySelectionSchema).max(30).default([]),
     discountCode: z.string().trim().min(2).max(30).toUpperCase().nullable().optional(),
-    fareId: z.string().uuid().nullable().optional(),
+    fareId: z.string().uuid(),
   })
   .superRefine((value, context) => {
     if (value.passengers.length !== value.seatIds.length) {
@@ -57,8 +65,8 @@ export const createBookingSchema = z
       });
     }
 
-    for (const [index, item] of [...value.baggage, ...value.meals].entries()) {
-      if (item.passengerIndex >= value.passengers.length) {
+    for (const [index, item] of [...value.baggage, ...value.meals, ...value.ancillaries].entries()) {
+      if (item.passengerIndex != null && item.passengerIndex >= value.passengers.length) {
         context.addIssue({
           code: z.ZodIssueCode.custom,
           path: [index],
@@ -70,7 +78,7 @@ export const createBookingSchema = z
 
 export const bookingQuerySchema = z.object({
   status: z
-    .enum(['pending', 'paid', 'confirmed', 'cancelled', 'refund_pending', 'refunded'])
+    .enum(['pending', 'confirmed', 'cancelled', 'refund_pending', 'refunded'])
     .optional(),
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(100).default(20),

@@ -1,5 +1,5 @@
 import { supabase } from '../../config/supabase.js';
-import { createHttpError, throwDatabaseError } from '../../utils/error.js';
+import { throwDatabaseError } from '../../utils/error.js';
 
 const BOOKING_COLUMNS = `
   id, booking_reference, user_id, flight_id, fare_id, price_snapshot, total_price, status, hold_expires_at, contact_email,
@@ -68,8 +68,8 @@ export const findBasicMineById = async (id, userId) => {
   return data;
 };
 
-export const createAtomically = async (userId, payload) => {
-  const { data, error } = await supabase.rpc('create_booking', {
+export const createAtomically = async (userId, payload, idempotencyKey, requestHash) => {
+  const { data, error } = await supabase.rpc('create_booking_v2', {
     p_user_id: userId,
     p_flight_id: payload.flightId,
     p_contact_email: payload.contactEmail,
@@ -77,45 +77,30 @@ export const createAtomically = async (userId, payload) => {
     p_notes: payload.notes ?? null,
     p_passengers: payload.passengers,
     p_seat_ids: payload.seatIds,
+    p_fare_id: payload.fareId,
     p_baggage: payload.baggage,
     p_meals: payload.meals,
+    p_ancillaries: payload.ancillaries,
     p_discount_code: payload.discountCode ?? null,
+    p_idempotency_key: idempotencyKey,
+    p_request_hash: requestHash,
   });
 
   if (error) {
-    const status = error.code === 'P0001' ? 409 : 400;
-    throw createHttpError(
-      status,
-      error.code === 'P0001'
-        ? 'One or more seats are no longer available'
-        : 'Unable to create booking',
-    );
-  }
-
-  if (payload.fareId) {
-    const { error: fareError } = await supabase.rpc('set_booking_fare', {
-      p_booking_id: data,
-      p_user_id: userId,
-      p_fare_id: payload.fareId,
-    });
-    if (fareError) {
-      await supabase.rpc('cancel_booking', { p_booking_id: data, p_user_id: userId });
-      throw createHttpError(400, 'Selected fare is no longer available');
-    }
+    throwDatabaseError(error, 'Unable to create booking');
   }
 
   return data;
 };
 
 export const cancelAtomically = async (bookingId, userId) => {
-  const { data, error } = await supabase.rpc('cancel_booking', {
+  const { data, error } = await supabase.rpc('cancel_booking_v2', {
     p_booking_id: bookingId,
     p_user_id: userId,
+    p_involuntary: false,
   });
 
-  if (error) {
-    throw createHttpError(409, error.code === 'P0002' ? error.message : 'Unable to cancel booking');
-  }
+  if (error) throwDatabaseError(error, 'Unable to cancel booking');
 
   return data;
 };

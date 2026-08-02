@@ -4,10 +4,12 @@ import helmet from 'helmet';
 import compression from 'compression';
 import morgan from 'morgan';
 import cookieParser from 'cookie-parser';
+import { randomUUID } from 'node:crypto';
 import 'express-async-errors';
 import router from './routes/index.js';
 import { env } from './config/env.js';
 import { publicRateLimiter } from './middlewares/rateLimiter.middleware.js';
+import { logger } from './utils/logger.js';
 
 const isAllowedOrigin = (origin) => {
   if (!origin) {
@@ -39,7 +41,19 @@ export const createApp = () => {
   );
   app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
   app.use(compression());
-  app.use(express.json({ limit: env.bodyLimit }));
+  app.use((req, res, next) => {
+    req.requestId = req.get('x-request-id')?.slice(0, 100) || randomUUID();
+    res.set('x-request-id', req.requestId);
+    next();
+  });
+  app.use(
+    express.json({
+      limit: env.bodyLimit,
+      verify: (req, res, buffer) => {
+        req.rawBody = Buffer.from(buffer);
+      },
+    }),
+  );
   app.use(express.urlencoded({ extended: true, limit: env.bodyLimit, parameterLimit: 50 }));
   app.use(cookieParser());
 
@@ -61,11 +75,16 @@ export const createApp = () => {
     const status = err.status || 500;
     const message = status < 500 ? err.message : 'Internal server error';
 
-    if (env.nodeEnv !== 'test') {
-      console.error(err);
-    }
+    if (env.nodeEnv !== 'test') logger.error('request_failed', {
+      request_id: req.requestId,
+      method: req.method,
+      path: req.originalUrl,
+      status,
+      error_code: err.code,
+      error: err.message,
+    });
 
-    res.status(status).json({ error: message });
+    res.status(status).json({ error: message, code: err.code, requestId: req.requestId });
   });
 
   return app;

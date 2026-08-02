@@ -3,7 +3,6 @@ import * as adminQueries from './admin.queries.js';
 import { createPagination, getPagination } from '../../utils/pagination.js';
 import { createHttpError } from '../../utils/error.js';
 import * as paymentService from '../payments/payment.service.js';
-import * as notificationService from '../notifications/notification.service.js';
 import * as bookingService from '../bookings/booking.service.js';
 
 const getList = async (query, finder) => {
@@ -94,7 +93,13 @@ export const processCashPayment = async (adminId, paymentId, status) => {
     transactionRef: payment.transaction_ref,
     provider: payment.provider,
     amount: Number(payment.amount),
+    currency: payment.currency,
     status,
+    eventType: status === 'success' ? 'payment.succeeded' : 'payment.failed',
+    eventCreatedAt: new Date().toISOString(),
+    providerEventId: `cash:${paymentId}:${status}`,
+    signature: 'internal',
+    rawBody: JSON.stringify({ source: 'admin_cash_confirmation', paymentId, status }),
     rawPayload: { source: 'admin_cash_confirmation', adminId, paymentId },
   });
 
@@ -117,13 +122,15 @@ export const refundPayment = async (adminId, paymentId) => {
     throw createHttpError(409, 'Payment is not awaiting refund');
   }
 
-  const result = await adminQueries.refundPayment(paymentId);
-  await notificationService.sendNotification(result.user_id, {
-    type: 'refund_processed',
-    title: 'Refund completed',
-    body: `Your payment for booking ${result.booking_id} has been refunded`,
-    payload: { bookingId: result.booking_id, paymentId: result.payment_id },
-  });
+  if (payment.provider !== 'cash') {
+    throw createHttpError(405, 'Online refunds must use the refund request workflow');
+  }
+  const refund = await adminQueries.findOpenRefundByPaymentId(paymentId);
+  if (!refund) throw createHttpError(404, 'Refund request not found');
+  if (refund.status === 'pending') {
+    await adminQueries.approveCashRefund(refund.id, adminId, refund.requested_amount);
+  }
+  const result = await adminQueries.completeCashRefund(refund.id);
   await adminQueries.logAction({
     admin_id: adminId,
     action: 'complete_payment_refund',
@@ -147,8 +154,18 @@ export const createFlight = async (adminId, payload) => {
 };
 
 export const updateFlight = async (adminId, flightId, payload) => {
-  const previousFlight = await flightService.getFlightById(flightId);
-  const affectedBookings = await adminQueries.findActiveBookingsByFlightId(flightId);
+  if (payload.status === 'cancelled') {
+    await adminQueries.cancelFlight(flightId, adminId, payload.delayReason ?? payload.notes);
+    const cancelledFlight = await flightService.getFlightById(flightId);
+    await adminQueries.logAction({
+      admin_id: adminId,
+      action: 'cancel_flight',
+      target_id: flightId,
+      target_type: 'flight',
+      metadata: { fields: Object.keys(payload) },
+    });
+    return cancelledFlight;
+  }
   const flight = await flightService.updateFlight(flightId, payload);
   await adminQueries.logAction({
     admin_id: adminId,
@@ -157,25 +174,5 @@ export const updateFlight = async (adminId, flightId, payload) => {
     target_type: 'flight',
     metadata: { fields: Object.keys(payload) },
   });
-
-  const statusChanged = previousFlight.status !== flight.status;
-  const scheduleChanged =
-    previousFlight.departure_time !== flight.departure_time ||
-    previousFlight.arrival_time !== flight.arrival_time;
-  if ((statusChanged && ['delayed', 'cancelled'].includes(flight.status)) || scheduleChanged) {
-    const isCancelled = flight.status === 'cancelled';
-    await Promise.all(
-      affectedBookings.map((booking) =>
-        notificationService.sendNotification(booking.user_id, {
-          type: isCancelled ? 'flight_cancelled' : 'flight_delayed',
-          title: isCancelled ? 'Flight cancelled' : 'Flight schedule updated',
-          body: isCancelled
-            ? `Flight ${flight.flight_number} for booking ${booking.id} has been cancelled. Please contact support for assistance.`
-            : `The schedule for flight ${flight.flight_number} has changed. Please review booking ${booking.id}.`,
-          payload: { bookingId: booking.id, flightId: flight.id },
-        }),
-      ),
-    );
-  }
   return flight;
 };

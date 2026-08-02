@@ -7,7 +7,7 @@ export const adminListQuerySchema = z.object({
 
 export const adminBookingQuerySchema = adminListQuerySchema.extend({
   status: z
-    .enum(['pending', 'paid', 'confirmed', 'cancelled', 'refund_pending', 'refunded'])
+    .enum(['pending', 'confirmed', 'cancelled', 'refund_pending', 'refunded'])
     .optional(),
 });
 

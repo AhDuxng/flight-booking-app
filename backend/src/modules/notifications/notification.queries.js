@@ -26,6 +26,16 @@ export const insert = async (payload) => {
   return data;
 };
 
+export const insertOnce = async (payload) => {
+  const { data, error } = await supabase
+    .from('notifications')
+    .upsert(payload, { onConflict: 'outbox_event_id,user_id', ignoreDuplicates: true })
+    .select(NOTIFICATION_COLUMNS)
+    .maybeSingle();
+  throwDatabaseError(error, 'Unable to create notification');
+  return data;
+};
+
 export const markRead = async (notificationId, userId) => {
   const { data, error } = await supabase
     .from('notifications')

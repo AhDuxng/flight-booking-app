@@ -15,7 +15,8 @@ export const findBooking = async (bookingId, userId) => {
   const { data, error } = await supabase
     .from('bookings')
     .select(`
-      id, booking_reference, user_id, flight_id, fare_id, price_snapshot, total_price, status,
+      id, booking_reference, user_id, flight_id, fare_id, price_snapshot, total_price, currency,
+      price_version, payment_started_at, price_locked_at, status,
       contact_email, contact_phone, created_at, updated_at,
       flight:flights!bookings_flight_id_fkey(${FLIGHT_RELATIONS}),
       fare:fare_classes(id, code, name, cabin_class, change_allowed, change_fee, refundable,
@@ -125,12 +126,22 @@ export const findChangeOptions = async (booking, from, to) => {
   return data ?? [];
 };
 
-export const insertChangeRequest = async (payload) => {
-  const { data, error } = await supabase
-    .from('flight_change_requests')
-    .insert(payload)
-    .select('*')
-    .single();
+export const calculateFarePrice = async (flightId, cabinClass, fareId) => {
+  const { data, error } = await supabase.rpc('calculate_flight_price', {
+    p_flight_id: flightId,
+    p_cabin_class: cabinClass,
+    p_fare_id: fareId,
+  });
+  throwDatabaseError(error, 'Unable to calculate flight fare');
+  return Number(data);
+};
+
+export const createChangeQuote = async (bookingId, userId, newFlightId) => {
+  const { data, error } = await supabase.rpc('create_flight_change_quote_v2', {
+    p_booking_id: bookingId,
+    p_user_id: userId,
+    p_new_flight_id: newFlightId,
+  });
   throwDatabaseError(error, 'Unable to create flight change quote');
   return data;
 };
@@ -146,20 +157,8 @@ export const findChangeRequest = async (requestId, userId) => {
   return data;
 };
 
-export const updateChangeRequest = async (requestId, userId, payload) => {
-  const { data, error } = await supabase
-    .from('flight_change_requests')
-    .update({ ...payload, updated_at: new Date().toISOString() })
-    .eq('id', requestId)
-    .eq('user_id', userId)
-    .select('*')
-    .single();
-  throwDatabaseError(error, 'Unable to update flight change quote');
-  return data;
-};
-
 export const applyFlightChange = async (requestId, userId) => {
-  const { data, error } = await supabase.rpc('apply_flight_change', {
+  const { data, error } = await supabase.rpc('apply_flight_change_v2', {
     p_request_id: requestId,
     p_user_id: userId,
   });
@@ -256,27 +255,19 @@ export const insertAdminResource = async (resource, payload) => {
   return data;
 };
 
+export const recordFlightStatusEvent = async (adminId, payload) => {
+  const { data, error } = await supabase.rpc('record_flight_status_event_v2', {
+    p_admin_id: adminId,
+    p_payload: payload,
+  });
+  throwDatabaseError(error, 'Unable to record flight status');
+  return data;
+};
+
 export const updateAdminResource = async (resource, id, payload) => {
   const { data, error } = await supabase.from(resource).update({ ...payload, updated_at: new Date().toISOString() }).eq('id', id).select('*').single();
   throwDatabaseError(error, 'Unable to update operations resource');
   return data;
-};
-
-export const syncFlightStatus = async (event) => {
-  const payload = {
-    status: event.status,
-    gate: event.gate ?? null,
-    terminal: event.terminal ?? null,
-    baggage_carousel: event.baggage_carousel ?? null,
-    delay_reason: event.status === 'delayed' ? event.message ?? null : null,
-    ...(event.estimated_departure_time && { departure_time: event.estimated_departure_time }),
-    ...(event.estimated_arrival_time && { arrival_time: event.estimated_arrival_time }),
-    ...(event.status === 'departed' && { actual_departure_time: new Date().toISOString() }),
-    ...(event.status === 'arrived' && { actual_arrival_time: new Date().toISOString() }),
-    updated_at: new Date().toISOString(),
-  };
-  const { error } = await supabase.from('flights').update(payload).eq('id', event.flight_id);
-  throwDatabaseError(error, 'Unable to synchronize flight status');
 };
 
 export const findRefundRequest = async (id) => {
@@ -285,28 +276,37 @@ export const findRefundRequest = async (id) => {
   return data;
 };
 
-export const updateRefundRequest = async (id, payload) => updateAdminResource('refund_requests', id, payload);
+export const reconcileRefund = async (refundId, payload) => {
+  const { data, error } = await supabase.rpc('update_refund_reconciliation_v2', {
+    p_refund_id: refundId,
+    p_status: payload.status ?? 'processing',
+    p_provider_refund_id: payload.providerRefundId ?? null,
+    p_provider_status: payload.providerStatus ?? null,
+    p_provider_response: payload.providerResponse ?? null,
+    p_failure_reason: payload.failureReason ?? null,
+  });
+  throwDatabaseError(error, 'Unable to update refund reconciliation');
+  return data;
+};
 
-export const completeRefund = async (paymentId) => {
-  const { data, error } = await supabase.rpc('process_payment_refund', { p_payment_id: paymentId });
+export const reviewRefundRequest = async (refundId, adminId, action, approvedAmount, reason) => {
+  const { data, error } = await supabase.rpc('review_refund_request_v2', {
+    p_refund_id: refundId,
+    p_admin_id: adminId,
+    p_action: action,
+    p_approved_amount: approvedAmount ?? null,
+    p_reason: reason ?? null,
+  });
+  throwDatabaseError(error, 'Unable to review refund');
+  return data;
+};
+
+export const completeRefundV2 = async (refundId, providerRefundId, providerResponse) => {
+  const { data, error } = await supabase.rpc('complete_refund_v2', {
+    p_refund_id: refundId,
+    p_provider_refund_id: providerRefundId ?? null,
+    p_provider_response: providerResponse ?? {},
+  });
   throwDatabaseError(error, 'Unable to complete refund');
-  return data;
-};
-
-export const completeStandaloneRefund = async (paymentId) => {
-  const { data, error } = await supabase.from('payments').update({ status: 'refunded', updated_at: new Date().toISOString() }).eq('id', paymentId).eq('status', 'refund_pending').select('id, status').maybeSingle();
-  throwDatabaseError(error, 'Unable to complete standalone refund');
-  return data;
-};
-
-export const findPaymentIntentByReference = async (reference) => {
-  const { data, error } = await supabase.from('payments').select('*').eq('transaction_ref', reference).maybeSingle();
-  throwDatabaseError(error, 'Unable to load payment');
-  return data;
-};
-
-export const processChangeWebhook = async (reference, status, rawPayload) => {
-  const { data, error } = await supabase.rpc('process_change_payment_webhook', { p_transaction_ref: reference, p_status: status, p_raw_payload: rawPayload });
-  throwDatabaseError(error, 'Unable to process change payment');
   return data;
 };

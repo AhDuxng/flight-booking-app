@@ -8,7 +8,7 @@ import * as queries from './operation.queries.js';
 import { createBoardingPassPdf, createETicketPdf } from './document.service.js';
 import { sendTicketEmail } from './mail.service.js';
 import { generateScheduledFlights } from '../../jobs/scheduleGeneration.job.js';
-import * as adminQueries from '../admin/admin.queries.js';
+import { hashRequest, normalizeIdempotencyKey } from '../../utils/idempotency.js';
 
 const requireBooking = async (bookingId, userId) => {
   const booking = await queries.findBooking(bookingId, userId);
@@ -61,11 +61,6 @@ export const checkIn = async (bookingId, userId, payload) => {
     ids.push(await queries.checkInPassenger(bookingId, passengerId, userId, payload.documentConfirmed, seatId));
   }
   const updated = await requireBooking(bookingId, userId);
-  await notificationService.sendNotification(userId, {
-    type: 'general', title: 'Online check-in completed',
-    body: `Boarding pass is ready for booking ${updated.booking_reference ?? bookingId}`,
-    payload: { bookingId, checkInIds: ids },
-  });
   return updated.check_ins;
 };
 
@@ -81,55 +76,47 @@ export const getChangeOptions = async (bookingId, userId, query) => {
   if (!booking.fare?.change_allowed) throw createHttpError(409, 'Selected fare does not allow flight changes');
   const from = (query.page - 1) * query.limit;
   const data = await queries.findChangeOptions(booking, from, from + query.limit - 1);
-  return data.map((flight) => ({
+  return Promise.all(data.map(async (flight) => ({
     ...flight,
-    quoted_fare_total: Math.round(Number(flight.base_price) * Number(booking.fare?.price_multiplier ?? 1) * booking.passengers.length),
-  }));
+    quoted_fare_total: (await queries.calculateFarePrice(
+      flight.id,
+      booking.fare.cabin_class,
+      booking.fare.id,
+    )) * booking.passengers.length,
+  })));
 };
 
 export const quoteFlightChange = async (bookingId, userId, newFlightId) => {
   const booking = await requireBooking(bookingId, userId);
   if (booking.status !== 'confirmed') throw createHttpError(409, 'Only confirmed bookings can be changed');
   if (!booking.fare?.change_allowed) throw createHttpError(409, 'Selected fare does not allow flight changes');
-  const options = await queries.findChangeOptions(booking, 0, 499);
-  const newFlight = options.find((flight) => flight.id === newFlightId);
-  if (!newFlight) throw createHttpError(409, 'New flight is not available for this itinerary');
-  const newFareTotal = Math.round(Number(newFlight.base_price) * Number(booking.fare?.price_multiplier ?? 1) * booking.passengers.length);
-  const fareDifference = newFareTotal - Number(booking.price_snapshot);
-  const changeFee = Number(booking.fare?.change_fee ?? 0) * booking.passengers.length;
-  const net = fareDifference + changeFee;
-  return queries.insertChangeRequest({
-    booking_id: booking.id, user_id: userId, old_flight_id: booking.flight_id,
-    new_flight_id: newFlight.id, fare_id: booking.fare_id, old_total: booking.total_price,
-    new_fare_total: newFareTotal, fare_difference: fareDifference, change_fee: changeFee,
-    additional_amount: Math.max(0, net), refund_amount: Math.max(0, -net), status: 'quoted',
-  });
+  return queries.createChangeQuote(booking.id, userId, newFlightId);
 };
 
-export const confirmFlightChange = async (requestId, userId, provider) => {
+export const confirmFlightChange = async (requestId, userId, provider, rawIdempotencyKey) => {
   const request = await queries.findChangeRequest(requestId, userId);
   if (!request) throw createHttpError(404, 'Flight change quote not found');
-  if (request.quote_expires_at <= new Date().toISOString() || request.status !== 'quoted') throw createHttpError(409, 'Flight change quote has expired');
+  if (request.status === 'completed') return { change: request, payment: null };
+  if (request.quote_expires_at <= new Date().toISOString() || !['quoted', 'pending_payment'].includes(request.status)) throw createHttpError(409, 'Flight change quote has expired');
   if (Number(request.additional_amount) === 0) {
     const result = await queries.applyFlightChange(request.id, userId);
-    await notificationService.sendNotification(userId, { type: 'booking_confirmed', title: 'Flight changed', body: 'Your new itinerary and reissued ticket are ready.', payload: { bookingId: request.booking_id, changeRequestId: request.id } });
-    await sendIssuedTicketEmail(request.booking_id, userId);
     return { change: result, payment: null };
   }
   if (!['cash', ...env.paymentProviders].includes(provider)) throw createHttpError(400, 'Payment provider is not configured');
-  const payment = await paymentQueries.insertIntent({
-    booking_id: request.booking_id, amount: request.additional_amount, provider,
-    transaction_ref: `change_${randomUUID()}`, status: 'pending', purpose: 'flight_change', change_request_id: request.id,
+  const idempotencyKey = normalizeIdempotencyKey(rawIdempotencyKey, { required: true });
+  const payment = await paymentQueries.getOrCreateIntent({
+    userId,
+    bookingId: request.booking_id,
+    purpose: 'flight_change',
+    provider,
+    idempotencyKey,
+    requestHash: hashRequest({ requestId, provider }),
+    transactionRef: `change_${randomUUID()}`,
+    changeRequestId: request.id,
   });
-  await queries.updateChangeRequest(request.id, userId, { status: 'pending_payment' });
   const booking = await requireBooking(request.booking_id, userId);
-  try {
-    return { change: { ...request, status: 'pending_payment' }, payment: await attachOnlineCheckout(payment, booking) };
-  } catch (error) {
-    await paymentQueries.failIntent(payment.id, error.message).catch(() => {});
-    await queries.updateChangeRequest(request.id, userId, { status: 'quoted' }).catch(() => {});
-    throw error;
-  }
+  const checkout = payment.checkout_url ? payment : await attachOnlineCheckout(payment, booking);
+  return { change: { ...request, status: 'pending_payment' }, payment: checkout };
 };
 
 export const getContent = (query) => queries.findPublishedContent(query);
@@ -182,26 +169,18 @@ export const createAdminResource = async (resource, payload, adminId) => {
   if (['refund_requests', 'support_tickets'].includes(resource)) {
     throw createHttpError(405, 'This resource must be created by its business workflow');
   }
-  const normalized = ['flight_status_events', 'cms_contents'].includes(resource)
+  if (resource === 'flight_status_events') {
+    return queries.recordFlightStatusEvent(adminId, payload);
+  }
+  const normalized = ['cms_contents'].includes(resource)
     ? { ...payload, created_by: adminId }
     : payload;
   const data = await queries.insertAdminResource(resource, normalized);
-  if (resource === 'flight_status_events') {
-    await queries.syncFlightStatus(data);
-    if (['delayed', 'cancelled'].includes(data.status)) {
-      const bookings = await adminQueries.findActiveBookingsByFlightId(data.flight_id);
-      await Promise.all(bookings.map((booking) => notificationService.sendNotification(booking.user_id, {
-        type: data.status === 'cancelled' ? 'flight_cancelled' : 'flight_delayed',
-        title: data.status === 'cancelled' ? 'Flight cancelled' : 'Flight delayed',
-        body: data.message ?? `The status of your flight has changed to ${data.status}.`,
-        payload: { bookingId: booking.id, flightId: data.flight_id },
-      })));
-    }
-  }
   return data;
 };
 export const updateAdminResource = async (resource, id, payload) => {
   if (resource === 'refund_requests') throw createHttpError(405, 'Use the refund decision workflow');
+  if (resource === 'flight_status_events') throw createHttpError(405, 'Flight status events are immutable; create a new event');
   const normalized = resource === 'support_tickets' && ['resolved', 'closed'].includes(payload.status)
     ? { ...payload, resolved_at: payload.resolved_at ?? new Date().toISOString() }
     : payload;
@@ -216,11 +195,11 @@ const callRefundProvider = async (refund) => {
     const zeroDecimal = ['VND', 'JPY', 'KRW'].includes(String(refund.payment.currency).toUpperCase());
     const amount = Math.round(Number(refund.approved_amount) * (zeroDecimal ? 1 : 100));
     const body = new URLSearchParams({ payment_intent: refund.payment.transaction_ref, amount: String(amount), 'metadata[refundRequestId]': refund.id });
-    const response = await fetch(env.paymentRefundApiUrl, { method: 'POST', headers: { Authorization: `Bearer ${env.paymentSecretKey}`, 'Content-Type': 'application/x-www-form-urlencoded' }, body });
+    const response = await fetch(env.paymentRefundApiUrl, { method: 'POST', headers: { Authorization: `Bearer ${env.paymentSecretKey}`, 'Content-Type': 'application/x-www-form-urlencoded', 'Idempotency-Key': refund.idempotency_key }, body, signal: AbortSignal.timeout(env.paymentRequestTimeoutMs) });
     if (!response.ok) throw createHttpError(502, 'Stripe refund request failed');
     return response.json();
   }
-  const response = await fetch(env.paymentRefundApiUrl, { method: 'POST', headers: { Authorization: `Bearer ${env.paymentSecretKey}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ refundRequestId: refund.id, transactionRef: refund.payment.transaction_ref, amount: Number(refund.approved_amount), currency: refund.payment.currency, provider: refund.payment.provider }) });
+  const response = await fetch(env.paymentRefundApiUrl, { method: 'POST', headers: { Authorization: `Bearer ${env.paymentSecretKey}`, 'Content-Type': 'application/json', 'Idempotency-Key': refund.idempotency_key }, body: JSON.stringify({ refundRequestId: refund.id, transactionRef: refund.payment.transaction_ref, amount: Number(refund.approved_amount), currency: refund.payment.currency, provider: refund.payment.provider }), signal: AbortSignal.timeout(env.paymentRequestTimeoutMs) });
   if (!response.ok) throw createHttpError(502, 'Refund provider request failed');
   return response.json();
 };
@@ -228,20 +207,29 @@ const callRefundProvider = async (refund) => {
 export const decideRefund = async (refundId, adminId, payload) => {
   const refund = await queries.findRefundRequest(refundId);
   if (!refund) throw createHttpError(404, 'Refund request not found');
-  if (refund.status !== 'pending') throw createHttpError(409, 'Refund request has already been reviewed');
-  if (payload.action === 'reject') return queries.updateRefundRequest(refundId, { status: 'rejected', reviewed_by: adminId, reviewed_at: new Date().toISOString(), failure_reason: payload.reason ?? 'Rejected by reviewer' });
+  if (refund.status === 'processing') return refund;
+  if (!['pending', 'approved', 'requires_review'].includes(refund.status)) throw createHttpError(409, 'Refund request has already been reviewed');
+  if (payload.action === 'reject') return queries.reviewRefundRequest(refundId, adminId, 'reject', null, payload.reason);
   const approvedAmount = payload.approvedAmount ?? Number(refund.requested_amount);
   if (approvedAmount > Number(refund.requested_amount)) throw createHttpError(400, 'Approved amount exceeds requested amount');
-  let approved = await queries.updateRefundRequest(refundId, { status: 'processing', approved_amount: approvedAmount, reviewed_by: adminId, reviewed_at: new Date().toISOString() });
+  await queries.reviewRefundRequest(refundId, adminId, 'approve', approvedAmount, payload.reason);
   try {
     const providerResult = await callRefundProvider({ ...refund, approved_amount: approvedAmount });
-    if (refund.booking?.status === 'refund_pending') await queries.completeRefund(refund.payment_id);
-    else if (refund.payment?.status === 'refund_pending') await queries.completeStandaloneRefund(refund.payment_id);
-    approved = await queries.updateRefundRequest(refundId, { status: 'completed', provider_refund_id: providerResult.id ?? providerResult.refundId ?? null, completed_at: new Date().toISOString(), metadata: providerResult });
-    await notificationService.sendNotification(refund.user_id, { type: 'refund_processed', title: 'Refund completed', body: `Refund for booking ${refund.booking?.booking_reference ?? refund.booking_id} has been completed.`, payload: { bookingId: refund.booking_id, refundId } });
-    return approved;
+    const providerStatus = String(providerResult.status ?? 'succeeded').toLowerCase();
+    if (['succeeded', 'success', 'completed'].includes(providerStatus)) {
+      return queries.completeRefundV2(refundId, providerResult.id ?? providerResult.refundId, providerResult);
+    }
+    return queries.reconcileRefund(refundId, {
+      status: 'processing',
+      providerRefundId: providerResult.id ?? providerResult.refundId ?? null,
+      providerStatus,
+      providerResponse: providerResult,
+    });
   } catch (error) {
-    await queries.updateRefundRequest(refundId, { status: 'failed', failure_reason: error.message });
+    await queries.reconcileRefund(refundId, {
+      status: error.status ? 'requires_review' : 'processing',
+      failureReason: error.message,
+    });
     throw error;
   }
 };

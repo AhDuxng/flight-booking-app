@@ -1,32 +1,30 @@
 import { supabase } from '../../config/supabase.js';
-import { createHttpError, throwDatabaseError } from '../../utils/error.js';
+import { throwDatabaseError } from '../../utils/error.js';
 
 const PAYMENT_COLUMNS =
-  'id, booking_id, amount, currency, provider, transaction_ref, status, purpose, change_request_id, checkout_url, paid_at, created_at, updated_at';
+  'id, booking_id, user_id, amount, currency, provider, transaction_ref, status, purpose, change_request_id, checkout_url, idempotency_key, booking_price_version, amount_snapshot, currency_snapshot, expires_at, paid_at, created_at, updated_at';
 
-export const findPendingByBookingId = async (bookingId) => {
-  const { data, error } = await supabase
-    .from('payments')
-    .select(PAYMENT_COLUMNS)
-    .eq('booking_id', bookingId)
-    .eq('purpose', 'booking')
-    .eq('status', 'pending')
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  throwDatabaseError(error, 'Unable to load payment');
+export const getOrCreateIntent = async (payload) => {
+  const { data, error } = await supabase.rpc('get_or_create_payment_intent', {
+    p_user_id: payload.userId,
+    p_booking_id: payload.bookingId,
+    p_purpose: payload.purpose,
+    p_provider: payload.provider,
+    p_idempotency_key: payload.idempotencyKey,
+    p_request_hash: payload.requestHash,
+    p_transaction_ref: payload.transactionRef,
+    p_change_request_id: payload.changeRequestId ?? null,
+  });
+  throwDatabaseError(error, 'Unable to create payment intent');
   return data;
 };
 
-export const insertIntent = async (payload) => {
-  const { data, error } = await supabase
-    .from('payments')
-    .insert(payload)
-    .select(PAYMENT_COLUMNS)
-    .single();
-
-  throwDatabaseError(error, 'Unable to create payment');
+export const expireIntent = async (paymentId, userId) => {
+  const { data, error } = await supabase.rpc('expire_payment_intent', {
+    p_payment_id: paymentId,
+    p_user_id: userId,
+  });
+  throwDatabaseError(error, 'Unable to expire payment intent');
   return data;
 };
 
@@ -39,13 +37,6 @@ export const attachCheckout = async (paymentId, checkoutUrl, rawPayload) => {
     .single();
   throwDatabaseError(error, 'Unable to store checkout session');
   return data;
-};
-
-export const failIntent = async (paymentId, reason) => {
-  const { error } = await supabase.from('payments').update({
-    status: 'failed', raw_payload: { checkoutError: reason }, updated_at: new Date().toISOString(),
-  }).eq('id', paymentId).eq('status', 'pending');
-  throwDatabaseError(error, 'Unable to close failed payment intent');
 };
 
 export const findByBookingId = async (bookingId) => {
@@ -72,69 +63,42 @@ export const findByReference = async (bookingId, transactionRef) => {
 };
 
 export const processWebhook = async (payload) => {
-  const { data, error } = await supabase.rpc('process_payment_webhook', {
+  const { data, error } = await supabase.rpc('process_payment_webhook_v2', {
+    p_provider_event_id: payload.providerEventId,
+    p_event_type: payload.eventType,
+    p_event_created_at: payload.eventCreatedAt,
     p_booking_id: payload.bookingId,
     p_transaction_ref: payload.transactionRef,
     p_provider: payload.provider,
     p_amount: payload.amount,
+    p_currency: payload.currency,
     p_status: payload.status,
-    p_raw_payload: payload.rawPayload,
+    p_raw_body: payload.rawBody,
+    p_signature: payload.signature,
+    p_payload: payload.rawPayload,
   });
 
   if (error) {
-    throw createHttpError(400, 'Unable to process payment webhook');
+    throwDatabaseError(error, 'Unable to process payment webhook');
   }
 
   return data;
 };
 
-export const findByTransactionReference = async (transactionRef) => {
-  const { data, error } = await supabase
-    .from('payments')
-    .select(PAYMENT_COLUMNS)
-    .eq('transaction_ref', transactionRef)
-    .maybeSingle();
-  throwDatabaseError(error, 'Unable to load payment');
-  return data;
-};
-
-export const processChangeWebhook = async (payload) => {
-  const { data, error } = await supabase.rpc('process_change_payment_webhook', {
-    p_transaction_ref: payload.transactionRef,
-    p_status: payload.status,
-    p_raw_payload: payload.rawPayload,
-  });
-  if (error) throw createHttpError(400, error.message || 'Unable to process flight change payment');
-  return data;
-};
-
-// Bài toán 3 - Distributed Transaction: lưu raw webhook trước transaction để còn dữ liệu đối soát khi provider hoặc database lỗi.
-export const insertWebhookLog = async (payload) => {
-  const { data, error } = await supabase
-    .from('payment_webhook_logs')
-    .insert({
-      booking_id: payload.bookingId,
-      provider: payload.provider,
-      transaction_ref: payload.transactionRef,
-      payload: payload.rawPayload,
-    })
-    .select('id')
-    .single();
-
-  throwDatabaseError(error, 'Unable to store payment webhook log');
-  return data;
-};
-
-// Bài toán 3 - Distributed Transaction: đánh dấu kết quả xử lý để worker/nhân viên có thể retry hoặc hoàn tiền bù trừ.
-export const updateWebhookLog = async (logId, result, errorMessage = null) => {
-  const { error } = await supabase
-    .from('payment_webhook_logs')
-    .update({
-      error_message: errorMessage,
-      processed_at: new Date().toISOString(),
-      processing_result: result,
-    })
-    .eq('id', logId);
-
-  throwDatabaseError(error, 'Unable to update payment webhook log');
+export const storeFailedWebhook = async (payload, errorMessage) => {
+  const { error } = await supabase.from('payment_webhook_logs').upsert({
+    booking_id: payload.bookingId,
+    provider: payload.provider,
+    transaction_ref: payload.transactionRef,
+    provider_event_id: payload.providerEventId,
+    event_type: payload.eventType,
+    event_created_at: payload.eventCreatedAt,
+    raw_body: payload.rawBody,
+    signature: payload.signature,
+    payload: payload.rawPayload,
+    processing_status: 'failed',
+    error_message: String(errorMessage).slice(0, 1000),
+    processed_at: new Date().toISOString(),
+  }, { onConflict: 'provider,provider_event_id' });
+  throwDatabaseError(error, 'Unable to store failed payment webhook');
 };

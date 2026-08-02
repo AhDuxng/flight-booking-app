@@ -26,7 +26,12 @@ export const checkIn = sendData((req) => service.checkIn(req.params.bookingId, r
 export const getBoardingPassPdf = sendPdf((req) => service.getBoardingPassPdf(req.params.checkInId, req.user.id));
 export const getChangeOptions = sendData((req) => service.getChangeOptions(req.params.bookingId, req.user.id, req.query));
 export const quoteFlightChange = sendData((req) => service.quoteFlightChange(req.params.bookingId, req.user.id, req.body.newFlightId), 201);
-export const confirmFlightChange = sendData((req) => service.confirmFlightChange(req.params.requestId, req.user.id, req.body.provider));
+export const confirmFlightChange = sendData((req) => service.confirmFlightChange(
+  req.params.requestId,
+  req.user.id,
+  req.body.provider,
+  req.get('idempotency-key'),
+));
 export const addAncillary = sendData((req) => service.addAncillary(req.user.id, req.body), 201);
 export const getSupportTickets = sendData((req) => service.getSupportTickets(req.user.id));
 export const createSupportTicket = sendData((req) => service.createSupportTicket(req.user.id, req.body), 201);

@@ -109,7 +109,7 @@ export const adminPayments = [
     id: "PAY-8001",
     booking: "VJA8X9",
     method: "VNPAY",
-    status: "paid",
+    status: "confirmed",
     statusLabel: "Đã thanh toán",
     total: "3.280.000 VND",
   },

@@ -291,7 +291,7 @@ export default function AdminResourcePage({ resource }) {
             key: "actions",
             label: "",
             render: (row) =>
-              ["pending", "paid", "confirmed"].includes(row.status) &&
+              ["pending", "confirmed"].includes(row.status) &&
               new Date(row.departureTime).getTime() > Date.now() &&
               ["scheduled", "delayed"].includes(row.flightStatus) ? (
                 <button

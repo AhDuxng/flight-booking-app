@@ -9,36 +9,6 @@ import {
 } from '../../config/cache.js';
 import { env } from '../../config/env.js';
 
-const getDynamicPriceMultiplier = (availableSeats, totalSeats) => {
-  if (!totalSeats || availableSeats / totalSeats > 0.5) {
-    return 1;
-  }
-
-  if (availableSeats / totalSeats > 0.25) {
-    return 1.1;
-  }
-
-  if (availableSeats / totalSeats > 0.1) {
-    return 1.2;
-  }
-
-  return 1.35;
-};
-
-// Bài toán 2 - Flight Search & Caching: giá hiển thị thay đổi theo tỷ lệ ghế còn, giá chốt vẫn được tính trong transaction booking.
-const addDynamicPrice = (flight) => {
-  const multiplier = getDynamicPriceMultiplier(
-    Number(flight.available_seats),
-    Number(flight.aircraft?.total_seats),
-  );
-
-  return {
-    ...flight,
-    dynamic_price: Math.round(Number(flight.base_price) * multiplier),
-    dynamic_price_multiplier: multiplier,
-  };
-};
-
 // Bài toán 2 - Flight Search & Caching: dùng versioned cache key để invalidation O(1) khi tồn ghế thay đổi.
 const buildSearchCacheKey = (filters, version) => {
   const normalizedFilters = {
@@ -106,7 +76,7 @@ export const searchFlights = async (filters) => {
   const { data, count } = await flightQueries.search(filters, from, to);
 
   const result = {
-    data: data.map(addDynamicPrice),
+    data,
     pagination: createPagination(page, limit, count),
   };
 
@@ -121,7 +91,12 @@ export const getFlightById = async (flightId) => {
     throw createHttpError(404, 'Flight not found');
   }
 
-  return addDynamicPrice(flight);
+  const dynamicPrice = await flightQueries.findCalculatedPrice(flight.id);
+  return {
+    ...flight,
+    dynamic_price: dynamicPrice,
+    dynamic_price_multiplier: Number(flight.base_price) > 0 ? dynamicPrice / Number(flight.base_price) : 1,
+  };
 };
 
 export const getFlightSeats = async (flightId) => {

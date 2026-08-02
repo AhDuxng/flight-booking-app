@@ -31,6 +31,14 @@ services:
         value: 90
       - key: SCHEDULE_GENERATION_INTERVAL_MS
         value: 86400000
+      - key: OUTBOX_POLL_INTERVAL_MS
+        value: 5000
+      - key: REFUND_RECONCILIATION_INTERVAL_MS
+        value: 60000
+      - key: INVENTORY_RECONCILIATION_INTERVAL_MS
+        value: 300000
+      - key: INVENTORY_RECONCILIATION_AUTO_REPAIR
+        value: false
       - key: GEMINI_MODEL
         value: gemini-flash-lite-latest
       - key: GEMINI_REQUEST_TIMEOUT_MS
@@ -53,6 +61,12 @@ services:
         sync: false
       - key: PAYMENT_REFUND_API_URL
         sync: false
+      - key: PAYMENT_REFUND_STATUS_API_URL
+        sync: false
+      - key: PAYMENT_REQUEST_TIMEOUT_MS
+        value: 10000
+      - key: PAYMENT_WEBHOOK_REPLAY_WINDOW_SECONDS
+        value: 300
       - key: PAYMENT_SECRET_KEY
         sync: false
       - key: PAYMENT_WEBHOOK_SECRET

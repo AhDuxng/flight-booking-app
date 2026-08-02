@@ -103,7 +103,13 @@ export default function PaymentCheckoutFeature({ bookingId }) {
     setIsSubmitting(true);
 
     try {
-      const response = await paymentService.createIntent({ bookingId, provider: selectedMethod });
+      const storageKey = `payment-intent:${bookingId}:${selectedMethod}`;
+      const idempotencyKey = window.sessionStorage.getItem(storageKey) || crypto.randomUUID();
+      window.sessionStorage.setItem(storageKey, idempotencyKey);
+      const response = await paymentService.createIntent(
+        { bookingId, provider: selectedMethod },
+        idempotencyKey,
+      );
       setPayment(response.data);
       if (response.data.checkout_url) {
         window.location.assign(response.data.checkout_url);

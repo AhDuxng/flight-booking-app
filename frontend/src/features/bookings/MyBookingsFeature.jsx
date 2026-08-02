@@ -11,7 +11,6 @@ import { cn } from "@/lib/utils";
 const statusOptions = [
   { value: "all", label: "Tất cả trạng thái" },
   { value: "confirmed", label: "Đã xác nhận" },
-  { value: "paid", label: "Đã thanh toán" },
   { value: "pending", label: "Chờ thanh toán" },
   { value: "cancelled", label: "Đã hủy" },
   { value: "refund_pending", label: "Chờ hoàn tiền" },
@@ -20,7 +19,6 @@ const statusOptions = [
 
 const statusLabels = {
   confirmed: "Đã xác nhận",
-  paid: "Đã thanh toán",
   pending: "Chờ thanh toán",
   cancelled: "Đã hủy",
   refunded: "Đã hoàn tiền",
@@ -28,7 +26,6 @@ const statusLabels = {
 };
 const statusStyles = {
   confirmed: "bg-status-success/10 text-status-success border-status-success/20",
-  paid: "bg-status-success/10 text-status-success border-status-success/20",
   pending: "bg-status-warning/10 text-[#B45309] border-status-warning/30",
   cancelled: "bg-status-error/10 text-status-error border-status-error/20",
   refunded: "bg-surface-variant text-on-surface-variant border-outline-variant",

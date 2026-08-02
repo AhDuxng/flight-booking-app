@@ -18,64 +18,43 @@ const FLIGHT_COLUMNS = `
 `;
 
 export const search = async (filters, from, to) => {
-  const searchColumns = filters.cabinClass
-    ? `${FLIGHT_COLUMNS}, inventory:seats!inner(id, seat_class, status)`
-    : FLIGHT_COLUMNS;
-  let query = supabaseRead
-    .from('flights')
-    .select(searchColumns, { count: 'exact' })
-    .range(from, to)
-    .order('departure_time', { ascending: true });
-
-  if (filters.originAirportId) {
-    query = query.eq('origin_airport_id', filters.originAirportId);
-  }
-
-  if (filters.destinationAirportId) {
-    query = query.eq('destination_airport_id', filters.destinationAirportId);
-  }
-
-  if (filters.airlineId) {
-    query = query.eq('airline_id', filters.airlineId);
-  }
-
-  if (filters.flightNumber) {
-    query = query.eq('flight_number', filters.flightNumber);
-  }
-
-  if (filters.status) {
-    query = query.eq('status', filters.status);
-  } else {
-    query = query.in('status', ['scheduled', 'boarding', 'delayed']);
-  }
-
+  if (filters.status && !['scheduled', 'delayed'].includes(filters.status)) return { data: [], count: 0 };
+  let departureFrom = new Date().toISOString();
+  let departureTo = null;
   if (filters.departureDate) {
     const start = dayjs
       .tz(filters.departureDate, filters.departureTimezone ?? 'UTC')
       .startOf('day');
     const end = start.add(1, 'day');
     const lowerBound = start.isAfter(dayjs()) ? start : dayjs();
-    query = query
-      .gte('departure_time', lowerBound.toISOString())
-      .lt('departure_time', end.toISOString());
-  } else {
-    query = query.gte('departure_time', new Date().toISOString());
+    departureFrom = lowerBound.toISOString();
+    departureTo = end.toISOString();
   }
 
-  query = query.gte('available_seats', filters.passengerCount ?? 1);
-
-  if (filters.cabinClass) {
-    query = query
-      .eq('inventory.seat_class', filters.cabinClass)
-      .eq('inventory.status', 'available');
-  }
-
-  const { data, error, count } = await query;
+  const { data, error } = await supabaseRead.rpc('search_flights_v2', {
+    p_origin_airport_id: filters.originAirportId ?? null,
+    p_destination_airport_id: filters.destinationAirportId ?? null,
+    p_airline_id: filters.airlineId ?? null,
+    p_departure_from: departureFrom,
+    p_departure_to: departureTo,
+    p_cabin_class: filters.cabinClass ?? null,
+    p_passenger_count: filters.passengerCount ?? 1,
+    p_flight_number: filters.flightNumber ?? null,
+    p_offset: from,
+    p_limit: to - from + 1,
+  });
   throwDatabaseError(error, 'Unable to load flights');
-  return {
-    data: data.map(({ inventory, ...flight }) => flight),
-    count,
-  };
+  return { data: data?.data ?? [], count: Number(data?.count ?? 0) };
+};
+
+export const findCalculatedPrice = async (flightId) => {
+  const { data, error } = await supabaseRead.rpc('calculate_flight_price', {
+    p_flight_id: flightId,
+    p_cabin_class: null,
+    p_fare_id: null,
+  });
+  throwDatabaseError(error, 'Unable to calculate flight price');
+  return Number(data);
 };
 
 export const findById = async (id) => {

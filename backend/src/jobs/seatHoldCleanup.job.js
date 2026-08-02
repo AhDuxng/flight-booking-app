@@ -1,6 +1,7 @@
 import { supabase } from '../config/supabase.js';
 import { env } from '../config/env.js';
 import { bumpCacheVersion } from '../config/cache.js';
+import { logger } from '../utils/logger.js';
 
 let cleanupTimer;
 
@@ -9,11 +10,12 @@ const releaseExpiredSeatHolds = async () => {
   const { data, error } = await supabase.rpc('release_expired_held_seats');
 
   if (error) {
-    console.error('Unable to release expired seat holds', error.message);
+    logger.error('seat_hold_cleanup_failed', { error: error.message });
     return;
   }
 
   if (Number(data) > 0) {
+    logger.info('seat_holds_expired', { released_seats: Number(data) });
     await bumpCacheVersion('flight-search');
   }
 };

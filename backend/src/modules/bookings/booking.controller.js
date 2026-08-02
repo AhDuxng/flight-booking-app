@@ -20,7 +20,11 @@ export const getMyBookingById = async (req, res, next) => {
 
 export const createBooking = async (req, res, next) => {
   try {
-    const data = await bookingService.createBooking(req.user.id, req.body);
+    const data = await bookingService.createBooking(
+      req.user.id,
+      req.body,
+      req.get('idempotency-key'),
+    );
     return res.status(201).json({ data });
   } catch (error) {
     return next(error);

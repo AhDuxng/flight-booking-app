@@ -124,6 +124,9 @@ PAYMENT_PROVIDER
 PAYMENT_SECRET_KEY
 PAYMENT_CHECKOUT_API_URL
 PAYMENT_REFUND_API_URL
+PAYMENT_REFUND_STATUS_API_URL
+PAYMENT_REQUEST_TIMEOUT_MS
+PAYMENT_WEBHOOK_REPLAY_WINDOW_SECONDS
 PAYMENT_WEBHOOK_SECRET
 PAYMENT_RETURN_URL
 PAYMENT_CANCEL_URL
@@ -134,6 +137,10 @@ SMTP_SECURE
 SMTP_USER
 SMTP_PASSWORD
 SMTP_FROM
+OUTBOX_POLL_INTERVAL_MS
+REFUND_RECONCILIATION_INTERVAL_MS
+INVENTORY_RECONCILIATION_INTERVAL_MS
+INVENTORY_RECONCILIATION_AUTO_REPAIR
 SCHEDULE_GENERATION_HORIZON_DAYS
 SCHEDULE_GENERATION_INTERVAL_MS
 ```
@@ -236,3 +243,5 @@ File `netlify.toml` cũng đã cấu hình redirect `/* -> /index.html` để Re
 ## Trạng thái hiện tại
 
 Dự án đã có đầy đủ các luồng MVP trong `MISSING_MVP_FEATURES.md`. Trước khi chạy trên một Supabase mới, áp dụng `schema.sql`, `seed.sql` và toàn bộ migration theo đúng thứ tự trong [backend/README.md](backend/README.md). Sau đó chỉ cần điền credentials cho Supabase; SMTP, Gemini và payment adapter là cấu hình tùy theo dịch vụ muốn bật. `cash`, tải PDF/QR, CMS, support, lịch bay và toàn bộ nghiệp vụ nội bộ không phụ thuộc dịch vụ ngoài.
+
+Bản hardening concurrency, idempotency, outbox, webhook, refund và inventory được mô tả trong [CORE_HARDENING_REPORT.md](CORE_HARDENING_REPORT.md). Migration cuối cùng bắt buộc là `20260802000000_harden_core_transactions.sql`.
