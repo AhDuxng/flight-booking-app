@@ -1,0 +1,16 @@
+[build]
+  base = "frontend"
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "20.19.0"
+  VITE_API_URL = "https://flight-booking-app-sjmo.onrender.com/api"
+
+# Local frontend dev uses frontend/.env. Netlify production builds use the Render URL above.
+# If VITE_API_URL is also set in the Netlify UI, keep it identical to the value above.
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
