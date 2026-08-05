@@ -73,6 +73,7 @@ export const addSupportMessage = sendData(
   201,
 );
 export const getAdminResource = sendData((req) => service.getAdminResource(req.params.resource));
+export const getAdminFormOptions = sendData(() => service.getAdminFormOptions());
 export const createAdminResource = sendData(
   (req) => service.createAdminResource(req.params.resource, req.body, req.user.id),
   201,

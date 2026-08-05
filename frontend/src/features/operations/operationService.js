@@ -47,6 +47,7 @@ export const operationService = {
   emailETicket: (bookingId) => api.post(`/operations/bookings/${bookingId}/e-ticket/email`),
   generateSchedules: () => api.post("/operations/admin/schedules/generate"),
   getAdminResource: (resource) => api.get(`/operations/admin/${resource}`),
+  getAdminFormOptions: () => api.get("/operations/admin/form-options"),
   getAncillaries: () => api.get("/operations/ancillaries"),
   getChangeOptions: (bookingId) => api.get(`/operations/bookings/${bookingId}/change-options`),
   getContent: (params) => api.get("/operations/cms", { params }),

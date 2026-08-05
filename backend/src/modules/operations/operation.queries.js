@@ -299,6 +299,47 @@ export const getAdminResource = async (resource) => {
   return data ?? [];
 };
 
+export const getAdminFormOptions = async () => {
+  const [airportsResult, airlinesResult, aircraftsResult, routesResult, flightsResult] =
+    await Promise.all([
+      supabase.from('airports').select('id, code, city, name').order('code').limit(500),
+      supabase.from('airlines').select('id, code, name').order('code').limit(500),
+      supabase.from('aircrafts').select('id, airline_id, code, model').order('code').limit(500),
+      supabase
+        .from('routes')
+        .select(
+          'id, code, origin_airport_id, destination_airport_id, origin_airport:airports!routes_origin_airport_id_fkey(code, city), destination_airport:airports!routes_destination_airport_id_fkey(code, city)',
+        )
+        .order('code')
+        .limit(500),
+      supabase
+        .from('flights')
+        .select(
+          'id, flight_number, departure_time, status, origin_airport:airports!flights_origin_airport_id_fkey(code), destination_airport:airports!flights_destination_airport_id_fkey(code)',
+        )
+        .in('status', ['scheduled', 'delayed', 'boarding'])
+        .gte('departure_time', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
+        .order('departure_time')
+        .limit(500),
+    ]);
+  for (const result of [
+    airportsResult,
+    airlinesResult,
+    aircraftsResult,
+    routesResult,
+    flightsResult,
+  ]) {
+    throwDatabaseError(result.error, 'Unable to load operation form options');
+  }
+  return {
+    airports: airportsResult.data ?? [],
+    airlines: airlinesResult.data ?? [],
+    aircrafts: aircraftsResult.data ?? [],
+    routes: routesResult.data ?? [],
+    flights: flightsResult.data ?? [],
+  };
+};
+
 export const insertAdminResource = async (resource, payload) => {
   const { data, error } = await supabase.from(resource).insert(payload).select('*').single();
   throwDatabaseError(error, 'Unable to create operations resource');

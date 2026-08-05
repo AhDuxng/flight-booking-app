@@ -326,6 +326,19 @@ test('public seat mutation endpoints have been removed', async () => {
   assert.doesNotMatch(source, /\/hold|\/release/);
 });
 
+test('operations form options are protected and raw resource fields are allowlisted', async () => {
+  const [routes, service] = await Promise.all([
+    readFile(new URL('../src/modules/operations/operation.routes.js', import.meta.url), 'utf8'),
+    readFile(new URL('../src/modules/operations/operation.service.js', import.meta.url), 'utf8'),
+  ]);
+  assert.ok(
+    routes.indexOf("router.use('/admin', requireRole('admin'))") <
+      routes.indexOf("router.get('/admin/form-options'"),
+  );
+  assert.match(service, /assertSafeResourcePayload/);
+  assert.match(service, /Unsupported fields/);
+});
+
 test('admin dashboard falls back to direct aggregates when its RPC is unavailable', async () => {
   const source = await readFile(
     new URL('../src/modules/admin/admin.queries.js', import.meta.url),

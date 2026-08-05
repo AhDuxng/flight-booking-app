@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import { toFlightView } from "../src/features/flights/flightView.js";
 import { formatCurrencyInput, normalizeCurrencyInput } from "../src/lib/currencyInput.js";
 import {
@@ -51,4 +52,19 @@ test("public flight-number search normalizes and validates user input", () => {
   assert.equal(isValidFlightNumber("VN123"), true);
   assert.equal(isValidFlightNumber("VN%"), false);
   assert.equal(isValidFlightNumber("V"), false);
+});
+
+test("operations admin uses business forms instead of a raw JSON editor", async () => {
+  const [page, form] = await Promise.all([
+    readFile(
+      new URL("../src/features/operations/AdminOperationsFeature.jsx", import.meta.url),
+      "utf8",
+    ),
+    readFile(new URL("../src/features/operations/AdminOperationForm.jsx", import.meta.url), "utf8"),
+  ]);
+  assert.doesNotMatch(page, /JSON\.stringify/);
+  assert.match(form, /Điểm đi \*/);
+  assert.match(form, /Hãng bay \*/);
+  assert.match(form, /CurrencyInput/);
+  assert.match(form, /Thông báo cho hành khách/);
 });

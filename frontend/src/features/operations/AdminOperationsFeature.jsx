@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
-import { Play, Plus, RefreshCw, Save } from "lucide-react";
+import { Play, Plus, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import Loading from "@/components/common/Loading";
 import { getErrorMessage } from "@/lib/apiError";
 import { cn } from "@/lib/utils";
 import { operationService } from "./operationService";
+import AdminOperationForm from "./AdminOperationForm";
 
 const resources = [
   ["routes", "Tuyến bay"],
@@ -16,78 +17,75 @@ const resources = [
   ["support_tickets", "Hỗ trợ"],
   ["ancillary_services", "Dịch vụ bổ sung"],
 ];
-const templates = {
-  routes: {
-    origin_airport_id: "UUID",
-    destination_airport_id: "UUID",
-    code: "HAN-SGN",
-    default_duration_minutes: 130,
-    is_active: true,
-  },
-  flight_schedules: {
-    route_id: "UUID",
-    airline_id: "UUID",
-    aircraft_id: "UUID",
-    flight_number: "VN123",
-    departure_local_time: "08:00",
-    duration_minutes: 130,
-    days_of_week: [1, 2, 3, 4, 5, 6, 7],
-    start_date: new Date().toISOString().slice(0, 10),
-    end_date: null,
-    base_price: 850000,
-    is_active: true,
-  },
-  fare_classes: {
-    code: "ECO-PROMO",
-    name: "Economy Promo",
-    cabin_class: "economy",
-    price_multiplier: 1,
-    change_allowed: true,
-    change_fee: 350000,
-    refundable: false,
-    cancellation_fee: 500000,
-    checked_baggage_kg: 0,
-    cabin_baggage_kg: 7,
-    priority_boarding: false,
-    is_active: true,
-  },
-  flight_status_events: {
-    flight_id: "UUID",
-    status: "delayed",
-    message: "Chuyến bay chậm do khai thác",
-    gate: "A5",
-    terminal: "T1",
-    estimated_departure_time: new Date().toISOString(),
-  },
-  cms_contents: {
-    type: "news",
-    slug: "tin-moi",
-    title: "Tiêu đề",
-    summary: "Tóm tắt",
-    body: "Nội dung",
-    status: "published",
-    published_at: new Date().toISOString(),
-    metadata: {},
-  },
-  ancillary_services: {
-    code: "NEW-SERVICE",
-    type: "insurance",
-    name: "Dịch vụ mới",
-    description: "Mô tả",
-    price: 100000,
-    currency: "VND",
-    rules: {},
-    is_active: true,
-  },
+const formResources = new Set([
+  "routes",
+  "flight_schedules",
+  "fare_classes",
+  "flight_status_events",
+  "cms_contents",
+  "ancillary_services",
+]);
+const editableResources = new Set([
+  "routes",
+  "flight_schedules",
+  "fare_classes",
+  "cms_contents",
+  "ancillary_services",
+]);
+
+const getRowTitle = (resource, row) => {
+  if (resource === "routes") {
+    return `${row.origin_airport?.code ?? "?"} → ${row.destination_airport?.code ?? "?"}`;
+  }
+  if (resource === "flight_schedules") {
+    return `${row.flight_number} · ${row.route?.code ?? "Chưa có tuyến"}`;
+  }
+  if (resource === "flight_status_events") {
+    return `${row.flight?.flight_number ?? "Chuyến bay"} · ${row.status}`;
+  }
+  return (
+    row.title ??
+    row.name ??
+    row.subject ??
+    row.flight_number ??
+    row.booking?.booking_reference ??
+    "-"
+  );
+};
+
+const getRowSubtitle = (resource, row) => {
+  if (resource === "routes") {
+    return `${row.origin_airport?.city ?? ""} → ${row.destination_airport?.city ?? ""} · ${row.default_duration_minutes} phút`;
+  }
+  if (resource === "flight_schedules") {
+    return `${row.airline?.name ?? ""} · ${row.aircraft?.model ?? ""} · ${String(row.departure_local_time ?? "").slice(0, 5)}`;
+  }
+  if (resource === "fare_classes") {
+    return `${row.cabin_class} · hệ số ×${row.price_multiplier}`;
+  }
+  if (resource === "refund_requests") {
+    return `${row.reason ?? ""} · ${Number(row.requested_amount ?? 0).toLocaleString("vi-VN")}₫ · ${row.payment?.provider?.toUpperCase() ?? ""}`;
+  }
+  if (resource === "ancillary_services") {
+    return `${row.description ?? ""} · ${Number(row.price ?? 0).toLocaleString("vi-VN")} ${row.currency ?? "VND"}`;
+  }
+  return row.summary ?? row.description ?? row.message ?? row.reason ?? "";
 };
 
 export default function AdminOperationsFeature() {
   const [resource, setResource] = useState("routes");
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [editor, setEditor] = useState("");
+  const [editingRow, setEditingRow] = useState(null);
   const [editingId, setEditingId] = useState(null);
   const [showEditor, setShowEditor] = useState(false);
+  const [formOptions, setFormOptions] = useState({
+    airports: [],
+    airlines: [],
+    aircrafts: [],
+    routes: [],
+    flights: [],
+  });
   const label = useMemo(() => resources.find(([key]) => key === resource)?.[1], [resource]);
   const load = async () => {
     setLoading(true);
@@ -104,46 +102,36 @@ export default function AdminOperationsFeature() {
     setShowEditor(false);
     load();
   }, [resource]);
+  const loadFormOptions = async () => {
+    try {
+      const response = await operationService.getAdminFormOptions();
+      setFormOptions(response.data ?? {});
+    } catch (error) {
+      toast.error(getErrorMessage(error, "Không thể tải danh mục cho biểu mẫu."));
+    }
+  };
+  useEffect(() => {
+    loadFormOptions();
+  }, []);
   const open = (row) => {
-    const value = row
-      ? Object.fromEntries(
-          Object.entries(row).filter(
-            ([key]) =>
-              ![
-                "id",
-                "created_at",
-                "updated_at",
-                "origin_airport",
-                "destination_airport",
-                "airline",
-                "aircraft",
-                "route",
-                "booking",
-                "payment",
-                "flight",
-                "support_messages",
-              ].includes(key),
-          ),
-        )
-      : (templates[resource] ?? {});
     setEditingId(row?.id ?? null);
-    setEditor(JSON.stringify(value, null, 2));
+    setEditingRow(row ?? null);
     setShowEditor(true);
   };
-  const save = async () => {
+  const save = async (payload) => {
     try {
-      const payload = JSON.parse(editor);
       if (editingId) await operationService.updateAdminResource(resource, editingId, payload);
       else await operationService.createAdminResource(resource, payload);
       toast.success("Đã lưu dữ liệu vận hành.");
       setShowEditor(false);
+      setEditingRow(null);
+      setEditingId(null);
       await load();
+      if (["routes", "flight_schedules", "flight_status_events"].includes(resource)) {
+        await loadFormOptions();
+      }
     } catch (error) {
-      toast.error(
-        error instanceof SyntaxError
-          ? "JSON không hợp lệ."
-          : getErrorMessage(error, "Không thể lưu dữ liệu."),
-      );
+      toast.error(getErrorMessage(error, "Không thể lưu dữ liệu."));
     }
   };
   const decideRefund = async (row, action) => {
@@ -187,8 +175,8 @@ export default function AdminOperationsFeature() {
     <div>
       <header className="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="text-label-md text-secondary">Network & Customer Operations</p>
-          <h1 className="text-headline-lg text-primary">Vận hành MVP</h1>
+          <p className="text-label-md text-secondary">Điều hành khai thác & dịch vụ khách hàng</p>
+          <h1 className="text-headline-lg text-primary">Vận hành hệ thống</h1>
           <p className="mt-1 text-body-md text-on-surface-variant">
             Quản lý tuyến/lịch, fare, trạng thái, refund, CMS, SLA và dịch vụ bổ sung.
           </p>
@@ -204,7 +192,7 @@ export default function AdminOperationsFeature() {
             <RefreshCw className="h-4 w-4" />
             Làm mới
           </button>
-          {templates[resource] ? (
+          {formResources.has(resource) ? (
             <button className={primaryClass} onClick={() => open()} type="button">
               <Plus className="h-4 w-4" />
               Thêm
@@ -230,27 +218,14 @@ export default function AdminOperationsFeature() {
         ))}
       </div>
       {showEditor ? (
-        <section className="mb-5 rounded-xl border border-primary bg-surface-container-lowest p-4">
-          <div className="mb-3 flex justify-between">
-            <h2 className="text-title-lg text-primary">
-              {editingId ? "Cập nhật" : "Tạo"} {label}
-            </h2>
-            <button className={primaryClass} onClick={save} type="button">
-              <Save className="h-4 w-4" />
-              Lưu
-            </button>
-          </div>
-          <p className="mb-2 text-xs text-on-surface-variant">
-            Các trường dùng đúng tên cột database; UUID có thể lấy ở các màn hình sân bay/hãng/tàu
-            bay.
-          </p>
-          <textarea
-            className="min-h-72 w-full rounded-lg bg-deep-navy p-4 font-mono text-sm text-white outline-none"
-            onChange={(e) => setEditor(e.target.value)}
-            spellCheck={false}
-            value={editor}
-          />
-        </section>
+        <AdminOperationForm
+          key={`${resource}:${editingId ?? "new"}`}
+          onCancel={() => setShowEditor(false)}
+          onSubmit={save}
+          options={formOptions}
+          resource={resource}
+          row={editingRow}
+        />
       ) : null}
       {loading ? (
         <Loading label={`Đang tải ${label}`} />
@@ -273,22 +248,9 @@ export default function AdminOperationsFeature() {
                     {row.reference ?? row.code ?? row.slug ?? row.id}
                   </td>
                   <td className="max-w-md p-3">
-                    <strong>
-                      {row.title ??
-                        row.name ??
-                        row.subject ??
-                        row.flight_number ??
-                        row.route?.code ??
-                        row.booking?.booking_reference ??
-                        "-"}
-                    </strong>
+                    <strong>{getRowTitle(resource, row)}</strong>
                     <small className="mt-1 block line-clamp-2 text-on-surface-variant">
-                      {row.summary ??
-                        row.description ??
-                        row.message ??
-                        row.reason ??
-                        row.payment?.transaction_ref ??
-                        ""}
+                      {getRowSubtitle(resource, row)}
                     </small>
                   </td>
                   <td className="p-3 uppercase">
@@ -303,7 +265,7 @@ export default function AdminOperationsFeature() {
                   </td>
                   <td className="p-3">
                     <div className="flex gap-2">
-                      {templates[resource] ? (
+                      {editableResources.has(resource) ? (
                         <button className={buttonClass} onClick={() => open(row)} type="button">
                           Sửa
                         </button>

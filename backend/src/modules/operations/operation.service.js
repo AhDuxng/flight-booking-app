@@ -247,18 +247,105 @@ export const addAdminSupportMessage = async (ticketId, adminId, payload) => {
 };
 
 export const getAdminResource = queries.getAdminResource;
+export const getAdminFormOptions = queries.getAdminFormOptions;
+const editableFields = {
+  routes: [
+    'origin_airport_id',
+    'destination_airport_id',
+    'code',
+    'default_duration_minutes',
+    'is_active',
+  ],
+  flight_schedules: [
+    'route_id',
+    'airline_id',
+    'aircraft_id',
+    'flight_number',
+    'departure_local_time',
+    'arrival_day_offset',
+    'duration_minutes',
+    'days_of_week',
+    'start_date',
+    'end_date',
+    'base_price',
+    'seat_template',
+    'is_active',
+  ],
+  fare_classes: [
+    'airline_id',
+    'route_id',
+    'code',
+    'name',
+    'cabin_class',
+    'price_multiplier',
+    'change_allowed',
+    'change_fee',
+    'refundable',
+    'cancellation_fee',
+    'checked_baggage_kg',
+    'cabin_baggage_kg',
+    'priority_boarding',
+    'is_active',
+  ],
+  flight_status_events: [
+    'flight_id',
+    'status',
+    'message',
+    'gate',
+    'terminal',
+    'baggage_carousel',
+    'estimated_departure_time',
+    'estimated_arrival_time',
+  ],
+  cms_contents: [
+    'type',
+    'slug',
+    'title',
+    'summary',
+    'body',
+    'image_url',
+    'metadata',
+    'status',
+    'published_at',
+  ],
+  ancillary_services: [
+    'code',
+    'type',
+    'name',
+    'description',
+    'price',
+    'currency',
+    'rules',
+    'is_active',
+  ],
+  support_tickets: ['status', 'priority', 'assigned_to', 'sla_due_at', 'resolved_at'],
+};
+
+const assertSafeResourcePayload = (resource, payload) => {
+  const allowed = new Set(editableFields[resource] ?? []);
+  const unknownFields = Object.keys(payload).filter((field) => !allowed.has(field));
+  if (unknownFields.length) {
+    throw createHttpError(400, `Unsupported fields: ${unknownFields.join(', ')}`);
+  }
+  return payload;
+};
+
 export const createAdminResource = async (resource, payload, adminId) => {
   if (['refund_requests', 'support_tickets'].includes(resource)) {
     throw createHttpError(405, 'This resource must be created by its business workflow');
   }
   if (resource === 'flight_status_events') {
-    const event = await queries.recordFlightStatusEvent(adminId, payload);
+    const event = await queries.recordFlightStatusEvent(
+      adminId,
+      assertSafeResourcePayload(resource, payload),
+    );
     await bumpCacheVersion('flight-search');
     return event;
   }
+  const safePayload = assertSafeResourcePayload(resource, payload);
   const normalized = ['cms_contents'].includes(resource)
-    ? { ...payload, created_by: adminId }
-    : payload;
+    ? { ...safePayload, created_by: adminId }
+    : safePayload;
   const data = await queries.insertAdminResource(resource, normalized);
   if (['fare_classes', 'flight_schedules', 'routes'].includes(resource)) {
     await bumpCacheVersion('flight-search');
@@ -270,10 +357,11 @@ export const updateAdminResource = async (resource, id, payload) => {
     throw createHttpError(405, 'Use the refund decision workflow');
   if (resource === 'flight_status_events')
     throw createHttpError(405, 'Flight status events are immutable; create a new event');
+  const safePayload = assertSafeResourcePayload(resource, payload);
   const normalized =
     resource === 'support_tickets' && ['resolved', 'closed'].includes(payload.status)
-      ? { ...payload, resolved_at: payload.resolved_at ?? new Date().toISOString() }
-      : payload;
+      ? { ...safePayload, resolved_at: safePayload.resolved_at ?? new Date().toISOString() }
+      : safePayload;
   const data = await queries.updateAdminResource(resource, id, normalized);
   if (['fare_classes', 'flight_schedules', 'routes'].includes(resource)) {
     await bumpCacheVersion('flight-search');

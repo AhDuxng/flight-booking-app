@@ -85,6 +85,7 @@ router.post(
 );
 
 router.use('/admin', requireRole('admin'));
+router.get('/admin/form-options', controller.getAdminFormOptions);
 router.get(
   '/admin/:resource',
   validate({ params: schema.resourceParamsSchema }),
