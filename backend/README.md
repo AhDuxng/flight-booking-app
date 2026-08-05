@@ -122,6 +122,14 @@ psql $DATABASE_URL -f database/migrations/20260725000000_complete_mvp_operations
 psql $DATABASE_URL -f database/migrations/20260802000000_harden_core_transactions.sql
 ```
 
+Sau migrations, có thể tạo bộ dữ liệu demo lớn từ 05/08/2026 đến 05/09/2026 bằng:
+
+```bash
+psql $DATABASE_URL -f database/seed-flights-2026-08-05-to-2026-09-05.sql
+```
+
+Seed này gồm 15 hãng, 22 sân bay, 66 lịch bay nội địa/quốc tế, 1.771 chuyến cùng tối đa khoảng 127.000 ghế, hành lý, suất ăn và mã giảm giá. File dùng upsert/natural key nên có thể chạy lại; mỗi chuyến giới hạn tối đa 72 ghế demo để giữ thời gian chạy hợp lý.
+
 Migration phải được chạy trước khi gọi các endpoint tạo chuyến bay, giữ ghế, đặt chỗ, thanh toán hoặc dashboard quản trị.
 
 Migration avatar tạo bucket `avatars` ở chế độ private. API chỉ nhận JPEG, PNG hoặc WebP tối đa 2 MB; ảnh được trả về bằng signed URL ngắn hạn.
