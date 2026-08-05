@@ -1,5 +1,6 @@
 import { supabase } from '../../config/supabase.js';
 import { throwDatabaseError } from '../../utils/error.js';
+import { logger } from '../../utils/logger.js';
 
 const ADMIN_FLIGHT_COLUMNS = `
   id, airline_id, aircraft_id, origin_airport_id, destination_airport_id,
@@ -30,10 +31,76 @@ const attachUserProfiles = async (rows = []) => {
   }));
 };
 
+const countRows = async (table, applyFilters = (query) => query) => {
+  const query = supabase.from(table).select('id', { count: 'exact', head: true });
+  const { count, error } = await applyFilters(query);
+  throwDatabaseError(error, `Unable to count ${table}`);
+  return count ?? 0;
+};
+
+const getConfirmedRevenue = async () => {
+  const pageSize = 1_000;
+  let revenue = 0;
+  let from = 0;
+
+  while (true) {
+    const { data, error } = await supabase
+      .from('bookings')
+      .select('id, total_price')
+      .eq('status', 'confirmed')
+      .order('id', { ascending: true })
+      .range(from, from + pageSize - 1);
+
+    throwDatabaseError(error, 'Unable to calculate confirmed booking revenue');
+    const rows = data ?? [];
+    revenue += rows.reduce((total, booking) => total + Number(booking.total_price ?? 0), 0);
+
+    if (rows.length < pageSize) break;
+    from += pageSize;
+  }
+
+  return revenue;
+};
+
+const getDashboardFromTables = async () => {
+  const [
+    flights,
+    scheduledFlights,
+    bookings,
+    pendingBookings,
+    confirmedBookings,
+    revenue,
+    users,
+  ] = await Promise.all([
+    countRows('flights'),
+    countRows('flights', (query) => query.in('status', ['scheduled', 'boarding', 'delayed'])),
+    countRows('bookings'),
+    countRows('bookings', (query) => query.eq('status', 'pending')),
+    countRows('bookings', (query) => query.eq('status', 'confirmed')),
+    getConfirmedRevenue(),
+    countRows('users'),
+  ]);
+
+  return {
+    flights,
+    scheduledFlights,
+    bookings,
+    pendingBookings,
+    confirmedBookings,
+    revenue,
+    users,
+  };
+};
+
 export const getDashboard = async () => {
   const { data, error } = await supabase.rpc('get_admin_dashboard');
-  throwDatabaseError(error, 'Unable to load dashboard');
-  return data;
+  if (!error && data) return data;
+
+  logger.warn('admin_dashboard_rpc_fallback', {
+    database_code: error?.code,
+    error: error?.message ?? 'RPC returned no data',
+  });
+  return getDashboardFromTables();
 };
 
 export const findFlights = async (from, to) => {

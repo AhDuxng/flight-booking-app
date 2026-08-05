@@ -199,3 +199,14 @@ test('public seat mutation endpoints have been removed', async () => {
   const source = await readFile(new URL('../src/modules/seats/seat.routes.js', import.meta.url), 'utf8');
   assert.doesNotMatch(source, /\/hold|\/release/);
 });
+
+test('admin dashboard falls back to direct aggregates when its RPC is unavailable', async () => {
+  const source = await readFile(
+    new URL('../src/modules/admin/admin.queries.js', import.meta.url),
+    'utf8',
+  );
+  assert.match(source, /admin_dashboard_rpc_fallback/);
+  assert.match(source, /return getDashboardFromTables\(\)/);
+  assert.match(source, /countRows\('flights'/);
+  assert.match(source, /getConfirmedRevenue\(\)/);
+});
