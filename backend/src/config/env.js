@@ -1,5 +1,6 @@
 import 'dotenv/config';
 import { z } from 'zod';
+import { resolveFrontendOrigins } from './frontendOrigins.js';
 
 const booleanFromString = z
   .string()
@@ -63,6 +64,12 @@ const envSchema = z.object({
   PAYMENT_REFUND_STATUS_API_URL: z.string().url().optional().or(z.literal('')).default(''),
   PAYMENT_REQUEST_TIMEOUT_MS: z.coerce.number().int().min(1_000).max(60_000).default(10_000),
   PAYMENT_WEBHOOK_REPLAY_WINDOW_SECONDS: z.coerce.number().int().min(30).max(3_600).default(300),
+  VNPAY_TMN_CODE: z.string().trim().optional().default(''),
+  VNPAY_HASH_SECRET: z.string().trim().optional().default(''),
+  VNPAY_PAY_URL: z.string().url().optional().or(z.literal('')).default(''),
+  VNPAY_API_URL: z.string().url().optional().or(z.literal('')).default(''),
+  VNPAY_RETURN_URL: z.string().url().optional().or(z.literal('')).default(''),
+  VNPAY_IPN_URL: z.string().url().optional().or(z.literal('')).default(''),
   SMTP_HOST: z.string().optional().default(''),
   SMTP_PORT: z.coerce.number().int().min(1).max(65535).default(587),
   SMTP_SECURE: booleanFromString,
@@ -92,7 +99,11 @@ if (!parsedEnv.success) {
 
 const values = parsedEnv.data;
 const productionFrontendOrigins = ['https://vietfly.netlify.app'];
-const corsOrigins = [...new Set([...values.FRONTEND_URL, ...productionFrontendOrigins])];
+const { corsOrigins, frontendUrl } = resolveFrontendOrigins({
+  configuredOrigins: values.FRONTEND_URL,
+  productionOrigins: productionFrontendOrigins,
+  nodeEnv: values.NODE_ENV,
+});
 
 export const env = {
   nodeEnv: values.NODE_ENV,
@@ -102,7 +113,7 @@ export const env = {
   supabaseReadUrl: values.SUPABASE_READ_URL,
   supabaseReadServiceRoleKey: values.SUPABASE_READ_SERVICE_ROLE_KEY,
   jwtSecret: values.JWT_SECRET,
-  frontendUrl: corsOrigins[0],
+  frontendUrl,
   corsOrigins,
   trustProxy: values.TRUST_PROXY,
   bodyLimit: values.BODY_LIMIT,
@@ -120,6 +131,12 @@ export const env = {
   paymentRefundStatusApiUrl: values.PAYMENT_REFUND_STATUS_API_URL,
   paymentRequestTimeoutMs: values.PAYMENT_REQUEST_TIMEOUT_MS,
   paymentWebhookReplayWindowSeconds: values.PAYMENT_WEBHOOK_REPLAY_WINDOW_SECONDS,
+  vnpayTmnCode: values.VNPAY_TMN_CODE,
+  vnpayHashSecret: values.VNPAY_HASH_SECRET,
+  vnpayPayUrl: values.VNPAY_PAY_URL,
+  vnpayApiUrl: values.VNPAY_API_URL,
+  vnpayReturnUrl: values.VNPAY_RETURN_URL,
+  vnpayIpnUrl: values.VNPAY_IPN_URL,
   smtpHost: values.SMTP_HOST,
   smtpPort: values.SMTP_PORT,
   smtpSecure: values.SMTP_SECURE,

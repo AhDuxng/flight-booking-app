@@ -6,15 +6,36 @@ import { bumpCacheVersion } from '../../config/cache.js';
 import { env } from '../../config/env.js';
 import { hashRequest, normalizeIdempotencyKey } from '../../utils/idempotency.js';
 import { logger } from '../../utils/logger.js';
+import { buildVnpayPaymentUrl, isVnpayConfigured } from './vnpay.gateway.js';
 
-const supportedProviders = [...new Set(['cash', ...(env.paymentCheckoutApiUrl && env.paymentSecretKey ? env.paymentProviders : [])])].filter((provider) =>
-  ['vnpay', 'momo', 'stripe', 'cash'].includes(provider),
-);
+const vnpayConfig = {
+  tmnCode: env.vnpayTmnCode,
+  hashSecret: env.vnpayHashSecret,
+  payUrl: env.vnpayPayUrl,
+  returnUrl: env.vnpayReturnUrl,
+};
+const genericProviders = env.paymentCheckoutApiUrl && env.paymentSecretKey
+  ? env.paymentProviders.filter((provider) => provider !== 'vnpay')
+  : [];
+const supportedProviders = [
+  ...new Set(['cash', ...(isVnpayConfigured(vnpayConfig) && env.paymentProviders.includes('vnpay') ? ['vnpay'] : []), ...genericProviders]),
+].filter((provider) => ['vnpay', 'momo', 'stripe', 'cash'].includes(provider));
 
 export const getPaymentConfig = () => ({ providers: supportedProviders });
 
-export const attachOnlineCheckout = async (payment, booking) => {
+export const attachOnlineCheckout = async (payment, booking, clientIp) => {
   if (payment.provider === 'cash') return payment;
+  if (payment.provider === 'vnpay') {
+    const { checkoutUrl, requestPayload } = buildVnpayPaymentUrl({
+      payment,
+      clientIp,
+      config: vnpayConfig,
+    });
+    return paymentQueries.attachCheckout(payment.id, checkoutUrl, {
+      provider: 'vnpay',
+      request: requestPayload,
+    });
+  }
   const response = await fetch(env.paymentCheckoutApiUrl, {
     method: 'POST',
     headers: {
@@ -41,7 +62,7 @@ export const attachOnlineCheckout = async (payment, booking) => {
   return paymentQueries.attachCheckout(payment.id, checkoutUrl, data);
 };
 
-export const createPaymentIntent = async (userId, payload, rawIdempotencyKey) => {
+export const createPaymentIntent = async (userId, payload, rawIdempotencyKey, clientIp) => {
   if (!supportedProviders.includes(payload.provider)) {
     throw createHttpError(400, 'Payment provider is not configured');
   }
@@ -55,10 +76,13 @@ export const createPaymentIntent = async (userId, payload, rawIdempotencyKey) =>
     provider: payload.provider,
     idempotencyKey,
     requestHash: hashRequest(payload),
-    transactionRef: `payment_${randomUUID()}`,
+    transactionRef:
+      payload.provider === 'vnpay'
+        ? `VF${randomUUID().replaceAll('-', '')}`
+        : `payment_${randomUUID()}`,
   });
   if (payment.checkout_url || payment.provider === 'cash') return payment;
-  return attachOnlineCheckout(payment, booking);
+  return attachOnlineCheckout(payment, booking, clientIp);
 };
 
 export const expirePaymentIntent = async (userId, paymentId) => {

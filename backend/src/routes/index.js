@@ -22,6 +22,10 @@ import {
   verifyPaymentWebhookSignature,
 } from '../modules/payments/payment.webhook.js';
 import { paymentWebhookSchema } from '../modules/payments/payment.schema.js';
+import {
+  handleVnpayIpn,
+  handleVnpayReturn,
+} from '../modules/payments/payment.vnpay.js';
 import reviewRoutes from '../modules/reviews/review.routes.js';
 import seatRoutes from '../modules/seats/seat.routes.js';
 import userRoutes from '../modules/users/user.routes.js';
@@ -29,6 +33,9 @@ import userRoutes from '../modules/users/user.routes.js';
 const router = Router();
 
 router.use('/auth', authRateLimiter, authRoutes);
+
+router.get('/payments/vnpay/ipn', handleVnpayIpn);
+router.get('/payments/vnpay/return', handleVnpayReturn);
 
 router.post('/payments/webhook', verifyPaymentWebhookSignature, (req, res, next) => {
   const result = paymentWebhookSchema.safeParse(req.body);

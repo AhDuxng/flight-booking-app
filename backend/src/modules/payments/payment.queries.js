@@ -62,6 +62,17 @@ export const findByReference = async (bookingId, transactionRef) => {
   return data;
 };
 
+export const findByTransactionRef = async (transactionRef) => {
+  const { data, error } = await supabase
+    .from('payments')
+    .select(PAYMENT_COLUMNS)
+    .eq('transaction_ref', transactionRef)
+    .maybeSingle();
+
+  throwDatabaseError(error, 'Unable to load payment');
+  return data;
+};
+
 export const processWebhook = async (payload) => {
   const { data, error } = await supabase.rpc('process_payment_webhook_v2', {
     p_provider_event_id: payload.providerEventId,

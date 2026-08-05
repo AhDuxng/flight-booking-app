@@ -67,6 +67,18 @@ services:
         value: 10000
       - key: PAYMENT_WEBHOOK_REPLAY_WINDOW_SECONDS
         value: 300
+      - key: VNPAY_TMN_CODE
+        sync: false
+      - key: VNPAY_HASH_SECRET
+        sync: false
+      - key: VNPAY_PAY_URL
+        value: https://sandbox.vnpayment.vn/paymentv2/vpcpay.html
+      - key: VNPAY_API_URL
+        value: https://sandbox.vnpayment.vn/merchant_webapi/api/transaction
+      - key: VNPAY_RETURN_URL
+        value: https://flight-booking-app-sjmo.onrender.com/api/payments/vnpay/return
+      - key: VNPAY_IPN_URL
+        value: https://flight-booking-app-sjmo.onrender.com/api/payments/vnpay/ipn
       - key: PAYMENT_SECRET_KEY
         sync: false
       - key: PAYMENT_WEBHOOK_SECRET
