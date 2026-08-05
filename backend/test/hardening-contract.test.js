@@ -210,3 +210,14 @@ test('admin dashboard falls back to direct aggregates when its RPC is unavailabl
   assert.match(source, /countRows\('flights'/);
   assert.match(source, /getConfirmedRevenue\(\)/);
 });
+
+test('flight reads retry the primary database and search has a table fallback', async () => {
+  const source = await readFile(
+    new URL('../src/modules/flights/flight.queries.js', import.meta.url),
+    'utf8',
+  );
+  assert.match(source, /supabaseRead !== supabase/);
+  assert.match(source, /flight_search_read_fallback/);
+  assert.match(source, /return searchFromTables\(filters, departureFrom, departureTo, from, to\)/);
+  assert.match(source, /loadSeatInventory/);
+});
