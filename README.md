@@ -18,7 +18,7 @@ Xây dựng một nền tảng đặt vé máy bay có trải nghiệm rõ ràng
 6. Theo dõi lịch sử đặt vé và chi tiết từng đơn đặt chỗ.
 7. Quản trị chuyến bay, sân bay, hãng bay, tàu bay, người dùng, đặt chỗ, thanh toán và đánh giá.
 8. Thông báo thay đổi chuyến bay/thanh toán, đánh giá sau chuyến và chatbot Gemini.
-9. Quên mật khẩu, OAuth Google/GitHub, tự làm mới phiên và upload avatar riêng tư.
+9. Quên mật khẩu, OAuth Google/Facebook qua Supabase, tự làm mới phiên và upload avatar riêng tư.
 10. Phát hành vé PDF/email, online check-in và boarding pass QR.
 11. Đổi chuyến có quote giá, phí đổi, thanh toán chênh lệch và phát hành lại vé.
 12. Refund request có quy trình duyệt, adapter hoàn tiền và lịch sử trạng thái.
@@ -27,9 +27,9 @@ Xây dựng một nền tảng đặt vé máy bay có trải nghiệm rõ ràng
 
 ## Công nghệ sử dụng
 
-Frontend sử dụng React, Vite, Tailwind CSS, shadcn/ui, React Router, Axios và lucide-react. Phần giao diện được tổ chức theo các nhóm component, page, feature, hook, service và store để tách biệt trách nhiệm giữa hiển thị, điều hướng, xử lý nghiệp vụ và giao tiếp API.
+Frontend sử dụng React, Vite, Tailwind CSS, React Router, Axios, Sonner và lucide-react. Phần giao diện được tổ chức theo các nhóm component, page, feature, hook, service và store để tách biệt trách nhiệm giữa hiển thị, điều hướng, xử lý nghiệp vụ và giao tiếp API.
 
-Backend sử dụng Node.js, Express, Supabase, JWT, bcryptjs, Zod, Nodemailer và các middleware bảo mật như Helmet, CORS, rate limit, compression và cookie parser. Cấu trúc backend được chia theo module nghiệp vụ, mỗi module có routes, controller, service, schema và queries riêng.
+Backend sử dụng Node.js, Express, Supabase Auth, Zod, Nodemailer và các middleware bảo mật như Helmet, CORS, rate limit và compression. Cấu trúc backend được chia theo module nghiệp vụ, mỗi module có routes, controller, service, schema và queries riêng.
 
 ## Cấu trúc thư mục
 
@@ -51,7 +51,6 @@ flight-booking-app
       pages
       services
       store
-      styles
 ```
 
 ## Backend
@@ -76,7 +75,7 @@ Biến môi trường mẫu nằm tại `frontend/.env.example`.
 
 ## Yêu cầu cài đặt
 
-1. Node.js phiên bản phù hợp với Vite 5 và Express 4.
+1. Node.js 20.19 trở lên.
 2. npm để cài đặt package.
 3. Tài khoản Supabase nếu cần kết nối cơ sở dữ liệu và xác thực.
 4. Thông tin cấu hình nhà cung cấp thanh toán nếu tích hợp cổng thanh toán ngoài; `cash` luôn dùng được.
@@ -118,7 +117,6 @@ Backend cần các biến cấu hình chính sau:
 PORT
 SUPABASE_URL
 SUPABASE_SERVICE_ROLE_KEY
-JWT_SECRET
 FRONTEND_URL
 PAYMENT_PROVIDER
 PAYMENT_SECRET_KEY
@@ -130,6 +128,12 @@ PAYMENT_WEBHOOK_REPLAY_WINDOW_SECONDS
 PAYMENT_WEBHOOK_SECRET
 PAYMENT_RETURN_URL
 PAYMENT_CANCEL_URL
+VNPAY_TMN_CODE
+VNPAY_HASH_SECRET
+VNPAY_PAY_URL
+VNPAY_API_URL
+VNPAY_RETURN_URL
+VNPAY_IPN_URL
 BACKEND_PUBLIC_URL
 SMTP_HOST
 SMTP_PORT
@@ -160,6 +164,8 @@ npm run dev
 npm start
 npm test
 npm run check
+npm run format
+npm run format:check
 ```
 
 Frontend:
@@ -170,6 +176,8 @@ npm run build
 npm run preview
 npm test
 npm run check
+npm run format
+npm run format:check
 ```
 
 ## Deploy Render và Netlify
@@ -189,7 +197,7 @@ GEMINI_API_KEYS
 FRONTEND_URL
 ```
 
-`JWT_SECRET` được Render tự sinh từ `render.yaml`. `GEMINI_API_KEYS` là danh sách key Gemini cho chatbot, phân tách bằng dấu phẩy để backend xoay vòng theo từng lượt hỏi. `FRONTEND_URL` là origin của frontend Netlify, ví dụ `https://your-site.netlify.app`. Nếu cần cho nhiều domain, phân tách bằng dấu phẩy.
+`GEMINI_API_KEYS` là danh sách key Gemini cho chatbot, phân tách bằng dấu phẩy để backend xoay vòng theo từng lượt hỏi. `FRONTEND_URL` là origin của frontend Netlify, ví dụ `https://your-site.netlify.app`. Nếu cần cho nhiều domain, phân tách bằng dấu phẩy.
 
 Các biến tùy chọn nếu bật cache hoặc thanh toán:
 
@@ -244,4 +252,4 @@ File `netlify.toml` cũng đã cấu hình redirect `/* -> /index.html` để Re
 
 Dự án đã có đầy đủ các luồng MVP trong `MISSING_MVP_FEATURES.md`. Trước khi chạy trên một Supabase mới, áp dụng `schema.sql`, `seed.sql` và toàn bộ migration theo đúng thứ tự trong [backend/README.md](backend/README.md). Sau đó chỉ cần điền credentials cho Supabase; SMTP, Gemini và payment adapter là cấu hình tùy theo dịch vụ muốn bật. `cash`, tải PDF/QR, CMS, support, lịch bay và toàn bộ nghiệp vụ nội bộ không phụ thuộc dịch vụ ngoài.
 
-Bản hardening concurrency, idempotency, outbox, webhook, refund và inventory được mô tả trong [CORE_HARDENING_REPORT.md](CORE_HARDENING_REPORT.md). Migration cuối cùng bắt buộc là `20260802000000_harden_core_transactions.sql`.
+Bản hardening concurrency, idempotency, outbox, webhook, refund và inventory được mô tả trong [CORE_HARDENING_REPORT.md](CORE_HARDENING_REPORT.md). Migration cuối cùng bắt buộc là `20260806000000_cleanup_stale_payment_intents.sql`.

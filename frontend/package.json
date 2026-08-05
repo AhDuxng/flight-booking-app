@@ -3,12 +3,17 @@
   "version": "1.0.0",
   "description": "Frontend for flight booking website using React JSX and Vite",
   "type": "module",
+  "engines": {
+    "node": ">=20.19.0"
+  },
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
     "test": "node --test test/*.test.js",
-    "check": "npm run test && npm run build"
+    "check": "npm run format:check && npm run test && npm run build",
+    "format": "prettier --write 'src/**/*.{js,jsx,css}' 'test/**/*.js'",
+    "format:check": "prettier --check 'src/**/*.{js,jsx,css}' 'test/**/*.js'"
   },
   "keywords": [
     "react",
@@ -20,17 +25,14 @@
   "license": "ISC",
   "dependencies": {
     "@fontsource-variable/geist": "^5.2.9",
-    "@react-oauth/google": "^0.13.5",
     "@tailwindcss/vite": "^4.3.1",
     "axios": "^1.7.2",
-    "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^0.468.0",
     "next-themes": "^0.4.6",
-    "radix-ui": "^1.6.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "react-router-dom": "^7.18.1",
+    "react-router-dom": "7.18.2",
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.6.0",
     "tailwindcss": "^4.3.1",
@@ -38,6 +40,7 @@
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^6.0.4",
+    "prettier": "3.6.2",
     "vite": "^8.1.5"
   }
 }

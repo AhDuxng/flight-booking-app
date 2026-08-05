@@ -82,7 +82,11 @@ export default function BookingForm() {
   const estimatedTotal = useMemo(() => {
     const baggageTotal = baggage.reduce((total, item) => total + Number(item?.price ?? 0), 0);
     const mealTotal = meal.reduce((total, item) => total + Number(item?.price ?? 0), 0);
-    return (flight?.price ?? 0) * Number(selectedFare?.price_multiplier ?? 1) * passengers.length + baggageTotal + mealTotal;
+    return (
+      (flight?.price ?? 0) * Number(selectedFare?.price_multiplier ?? 1) * passengers.length +
+      baggageTotal +
+      mealTotal
+    );
   }, [baggage, flight, meal, passengers.length, selectedFare]);
 
   const handleContinue = () => {
@@ -326,8 +330,14 @@ function BookingOptions({
               onClick={() => onFareChange(fare)}
               type="button"
             >
-              <span className="flex justify-between gap-2"><strong>{fare.name}</strong><span>×{Number(fare.price_multiplier).toFixed(2)}</span></span>
-              <small className="mt-1 block text-on-surface-variant">Hành lý {fare.checked_baggage_kg}kg · {fare.refundable ? "Được hoàn" : "Không hoàn"} · Phí đổi {formatCurrency(fare.change_fee)}</small>
+              <span className="flex justify-between gap-2">
+                <strong>{fare.name}</strong>
+                <span>×{Number(fare.price_multiplier).toFixed(2)}</span>
+              </span>
+              <small className="mt-1 block text-on-surface-variant">
+                Hành lý {fare.checked_baggage_kg}kg · {fare.refundable ? "Được hoàn" : "Không hoàn"}{" "}
+                · Phí đổi {formatCurrency(fare.change_fee)}
+              </small>
             </button>
           ))}
         </div>

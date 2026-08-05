@@ -16,7 +16,8 @@ export const verifyPaymentWebhookSignature = (req, res, next) => {
   }
 
   const eventTime = Number(timestamp);
-  if (!Number.isFinite(eventTime)) return res.status(400).json({ error: 'Invalid webhook timestamp' });
+  if (!Number.isFinite(eventTime))
+    return res.status(400).json({ error: 'Invalid webhook timestamp' });
   const eventTimeMs = eventTime < 10_000_000_000 ? eventTime * 1000 : eventTime;
   if (!isWebhookTimestampFresh(timestamp, Date.now(), env.paymentWebhookReplayWindowSeconds)) {
     return res.status(400).json({ error: 'Webhook timestamp is outside the replay window' });

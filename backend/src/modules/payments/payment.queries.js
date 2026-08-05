@@ -31,7 +31,11 @@ export const expireIntent = async (paymentId, userId) => {
 export const attachCheckout = async (paymentId, checkoutUrl, rawPayload) => {
   const { data, error } = await supabase
     .from('payments')
-    .update({ checkout_url: checkoutUrl, raw_payload: rawPayload, updated_at: new Date().toISOString() })
+    .update({
+      checkout_url: checkoutUrl,
+      raw_payload: rawPayload,
+      updated_at: new Date().toISOString(),
+    })
     .eq('id', paymentId)
     .select(PAYMENT_COLUMNS)
     .single();
@@ -97,19 +101,22 @@ export const processWebhook = async (payload) => {
 };
 
 export const storeFailedWebhook = async (payload, errorMessage) => {
-  const { error } = await supabase.from('payment_webhook_logs').upsert({
-    booking_id: payload.bookingId,
-    provider: payload.provider,
-    transaction_ref: payload.transactionRef,
-    provider_event_id: payload.providerEventId,
-    event_type: payload.eventType,
-    event_created_at: payload.eventCreatedAt,
-    raw_body: payload.rawBody,
-    signature: payload.signature,
-    payload: payload.rawPayload,
-    processing_status: 'failed',
-    error_message: String(errorMessage).slice(0, 1000),
-    processed_at: new Date().toISOString(),
-  }, { onConflict: 'provider,provider_event_id' });
+  const { error } = await supabase.from('payment_webhook_logs').upsert(
+    {
+      booking_id: payload.bookingId,
+      provider: payload.provider,
+      transaction_ref: payload.transactionRef,
+      provider_event_id: payload.providerEventId,
+      event_type: payload.eventType,
+      event_created_at: payload.eventCreatedAt,
+      raw_body: payload.rawBody,
+      signature: payload.signature,
+      payload: payload.rawPayload,
+      processing_status: 'failed',
+      error_message: String(errorMessage).slice(0, 1000),
+      processed_at: new Date().toISOString(),
+    },
+    { onConflict: 'provider,provider_event_id' },
+  );
   throwDatabaseError(error, 'Unable to store failed payment webhook');
 };

@@ -14,7 +14,8 @@ const FLIGHT_RELATIONS = `
 export const findBooking = async (bookingId, userId) => {
   const { data, error } = await supabase
     .from('bookings')
-    .select(`
+    .select(
+      `
       id, booking_reference, user_id, flight_id, fare_id, price_snapshot, total_price, currency,
       price_version, payment_started_at, price_locked_at, status,
       contact_email, contact_phone, created_at, updated_at,
@@ -29,7 +30,8 @@ export const findBooking = async (bookingId, userId) => {
       refund_requests(id, payment_id, reason, requested_amount, approved_amount, provider_refund_id, status, failure_reason, created_at, updated_at),
       booking_ancillaries(id, passenger_id, ancillary_service_id, quantity, price_snapshot, status, details,
         service:ancillary_services!booking_ancillaries_ancillary_service_id_fkey(id, code, type, name))
-    `)
+    `,
+    )
     .eq('id', bookingId)
     .eq('user_id', userId)
     .maybeSingle();
@@ -40,19 +42,27 @@ export const findBooking = async (bookingId, userId) => {
 export const findTicket = async (ticketId, userId) => {
   const { data, error } = await supabase
     .from('tickets')
-    .select(`
+    .select(
+      `
       id, ticket_number, booking_id, passenger_id, flight_id, status, issued_at,
       passenger:passengers!tickets_passenger_id_fkey(id, first_name, last_name, date_of_birth, nationality, passport_number),
       booking:bookings!tickets_booking_id_fkey(id, booking_reference, user_id, contact_email),
       flight:flights!tickets_flight_id_fkey(${FLIGHT_RELATIONS})
-    `)
+    `,
+    )
     .eq('id', ticketId)
     .maybeSingle();
   throwDatabaseError(error, 'Unable to load ticket');
   return data?.booking?.user_id === userId ? data : null;
 };
 
-export const checkInPassenger = async (bookingId, passengerId, userId, documentConfirmed, seatId = null) => {
+export const checkInPassenger = async (
+  bookingId,
+  passengerId,
+  userId,
+  documentConfirmed,
+  seatId = null,
+) => {
   const { data, error } = await supabase.rpc('check_in_passenger', {
     p_booking_id: bookingId,
     p_passenger_id: passengerId,
@@ -67,7 +77,8 @@ export const checkInPassenger = async (bookingId, passengerId, userId, documentC
 export const findCheckIn = async (checkInId, userId) => {
   const { data, error } = await supabase
     .from('check_ins')
-    .select(`
+    .select(
+      `
       id, booking_id, passenger_id, flight_id, ticket_id, seat_id, boarding_sequence,
       boarding_pass_number, qr_payload, status, checked_in_at,
       passenger:passengers!check_ins_passenger_id_fkey(id, first_name, last_name),
@@ -75,7 +86,8 @@ export const findCheckIn = async (checkInId, userId) => {
       seat:seats!check_ins_seat_id_fkey(id, seat_number, seat_class),
       booking:bookings!check_ins_booking_id_fkey(id, booking_reference, user_id),
       flight:flights!check_ins_flight_id_fkey(${FLIGHT_RELATIONS})
-    `)
+    `,
+    )
     .eq('id', checkInId)
     .maybeSingle();
   throwDatabaseError(error, 'Unable to load boarding pass');
@@ -102,10 +114,16 @@ export const findFaresForFlight = async (flightId) => {
 
 export const setBookingFare = async (bookingId, userId, fareId) => {
   const { data: id, error } = await supabase.rpc('set_booking_fare', {
-    p_booking_id: bookingId, p_user_id: userId, p_fare_id: fareId,
+    p_booking_id: bookingId,
+    p_user_id: userId,
+    p_fare_id: fareId,
   });
   throwDatabaseError(error, 'Unable to set booking fare');
-  const { data, error: loadError } = await supabase.from('bookings').select('id, fare_id, price_snapshot, total_price, fare:fare_classes(*)').eq('id', id).single();
+  const { data, error: loadError } = await supabase
+    .from('bookings')
+    .select('id, fare_id, price_snapshot, total_price, fare:fare_classes(*)')
+    .eq('id', id)
+    .single();
   throwDatabaseError(loadError, 'Unable to load booking fare');
   return data;
 };
@@ -181,9 +199,14 @@ export const findPublishedContent = async ({ type, slug }) => {
 };
 
 export const findFlightStatus = async ({ flightNumber, departureDate }) => {
-  let query = supabase.from('flights').select(`${FLIGHT_RELATIONS}, flight_status_events(*)`).eq('flight_number', flightNumber);
+  let query = supabase
+    .from('flights')
+    .select(`${FLIGHT_RELATIONS}, flight_status_events(*)`)
+    .eq('flight_number', flightNumber);
   if (departureDate) {
-    query = query.gte('departure_time', `${departureDate}T00:00:00.000Z`).lt('departure_time', `${departureDate}T23:59:59.999Z`);
+    query = query
+      .gte('departure_time', `${departureDate}T00:00:00.000Z`)
+      .lt('departure_time', `${departureDate}T23:59:59.999Z`);
   }
   const { data, error } = await query.order('departure_time').limit(20);
   throwDatabaseError(error, 'Unable to load flight status');
@@ -191,7 +214,11 @@ export const findFlightStatus = async ({ flightNumber, departureDate }) => {
 };
 
 export const findAncillaries = async () => {
-  const { data, error } = await supabase.from('ancillary_services').select('*').eq('is_active', true).order('type');
+  const { data, error } = await supabase
+    .from('ancillary_services')
+    .select('*')
+    .eq('is_active', true)
+    .order('type');
   throwDatabaseError(error, 'Unable to load ancillary services');
   return data ?? [];
 };
@@ -206,45 +233,75 @@ export const purchaseAncillary = async (payload) => {
     p_details: payload.details,
   });
   throwDatabaseError(error, 'Unable to add ancillary service');
-  const { data, error: loadError } = await supabase.from('booking_ancillaries').select('*, service:ancillary_services(*)').eq('id', id).single();
+  const { data, error: loadError } = await supabase
+    .from('booking_ancillaries')
+    .select('*, service:ancillary_services(*)')
+    .eq('id', id)
+    .single();
   throwDatabaseError(loadError, 'Unable to load ancillary service');
   return data;
 };
 
 export const createSupportTicket = async (payload) => {
-  const { data, error } = await supabase.from('support_tickets').insert(payload).select('*').single();
+  const { data, error } = await supabase
+    .from('support_tickets')
+    .insert(payload)
+    .select('*')
+    .single();
   throwDatabaseError(error, 'Unable to create support ticket');
   return data;
 };
 
 export const findSupportTickets = async (userId) => {
-  const { data, error } = await supabase.from('support_tickets').select('*, support_messages(id, sender_id, body, created_at)').eq('user_id', userId).order('created_at', { ascending: false });
+  const { data, error } = await supabase
+    .from('support_tickets')
+    .select('*, support_messages(id, sender_id, body, created_at)')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false });
   throwDatabaseError(error, 'Unable to load support tickets');
   return data ?? [];
 };
 
 export const addSupportMessage = async (payload) => {
-  const { data, error } = await supabase.from('support_messages').insert(payload).select('*').single();
+  const { data, error } = await supabase
+    .from('support_messages')
+    .insert(payload)
+    .select('*')
+    .single();
   throwDatabaseError(error, 'Unable to add support message');
   return data;
 };
 
 export const findSupportTicketById = async (ticketId) => {
-  const { data, error } = await supabase.from('support_tickets').select('*').eq('id', ticketId).maybeSingle();
+  const { data, error } = await supabase
+    .from('support_tickets')
+    .select('*')
+    .eq('id', ticketId)
+    .maybeSingle();
   throwDatabaseError(error, 'Unable to load support ticket');
   return data;
 };
 
 export const getAdminResource = async (resource) => {
   const relations = {
-    routes: '*, origin_airport:airports!routes_origin_airport_id_fkey(id, code, city), destination_airport:airports!routes_destination_airport_id_fkey(id, code, city)',
-    flight_schedules: '*, route:routes(id, code), airline:airlines(id, code, name), aircraft:aircrafts(id, code, model)',
+    routes:
+      '*, origin_airport:airports!routes_origin_airport_id_fkey(id, code, city), destination_airport:airports!routes_destination_airport_id_fkey(id, code, city)',
+    flight_schedules:
+      '*, route:routes(id, code), airline:airlines(id, code, name), aircraft:aircrafts(id, code, model)',
     fare_classes: '*, airline:airlines(id, code, name), route:routes(id, code)',
-    refund_requests: '*, booking:bookings(id, booking_reference, contact_email), payment:payments(id, provider, transaction_ref, amount)',
-    support_tickets: '*, booking:bookings(id, booking_reference), support_messages(id, sender_id, body, is_internal, created_at)',
-    cms_contents: '*', ancillary_services: '*', flight_status_events: '*, flight:flights(id, flight_number, departure_time)',
+    refund_requests:
+      '*, booking:bookings(id, booking_reference, contact_email), payment:payments(id, provider, transaction_ref, amount)',
+    support_tickets:
+      '*, booking:bookings(id, booking_reference), support_messages(id, sender_id, body, is_internal, created_at)',
+    cms_contents: '*',
+    ancillary_services: '*',
+    flight_status_events: '*, flight:flights(id, flight_number, departure_time)',
   };
-  const { data, error } = await supabase.from(resource).select(relations[resource] ?? '*').order('created_at', { ascending: false }).limit(500);
+  const { data, error } = await supabase
+    .from(resource)
+    .select(relations[resource] ?? '*')
+    .order('created_at', { ascending: false })
+    .limit(500);
   throwDatabaseError(error, 'Unable to load operations resource');
   return data ?? [];
 };
@@ -265,13 +322,22 @@ export const recordFlightStatusEvent = async (adminId, payload) => {
 };
 
 export const updateAdminResource = async (resource, id, payload) => {
-  const { data, error } = await supabase.from(resource).update({ ...payload, updated_at: new Date().toISOString() }).eq('id', id).select('*').single();
+  const { data, error } = await supabase
+    .from(resource)
+    .update({ ...payload, updated_at: new Date().toISOString() })
+    .eq('id', id)
+    .select('*')
+    .single();
   throwDatabaseError(error, 'Unable to update operations resource');
   return data;
 };
 
 export const findRefundRequest = async (id) => {
-  const { data, error } = await supabase.from('refund_requests').select('*, payment:payments(*), booking:bookings(*)').eq('id', id).maybeSingle();
+  const { data, error } = await supabase
+    .from('refund_requests')
+    .select('*, payment:payments(*), booking:bookings(*)')
+    .eq('id', id)
+    .maybeSingle();
   throwDatabaseError(error, 'Unable to load refund request');
   return data;
 };

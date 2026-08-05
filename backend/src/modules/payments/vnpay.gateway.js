@@ -49,19 +49,16 @@ const safeHexEqual = (left, right) => {
 };
 
 export const normalizeVnpayIp = (ipAddress) => {
-  const value = String(ipAddress ?? '').split(',')[0].trim();
+  const value = String(ipAddress ?? '')
+    .split(',')[0]
+    .trim();
   if (!value || value === '::1') return '127.0.0.1';
   if (value.startsWith('::ffff:')) return value.slice(7);
   return value.slice(0, 45);
 };
 
 export const isVnpayConfigured = (config) =>
-  Boolean(
-    config?.tmnCode &&
-      config?.hashSecret &&
-      config?.payUrl &&
-      config?.returnUrl,
-  );
+  Boolean(config?.tmnCode && config?.hashSecret && config?.payUrl && config?.returnUrl);
 
 export const buildVnpayPaymentUrl = ({ payment, clientIp, config, now = new Date() }) => {
   if (!isVnpayConfigured(config)) {
@@ -76,7 +73,9 @@ export const buildVnpayPaymentUrl = ({ payment, clientIp, config, now = new Date
   const configuredExpiry = payment.expires_at ? new Date(payment.expires_at) : null;
   const maximumExpiry = new Date(now.getTime() + 15 * 60 * 1000);
   const expiresAt =
-    configuredExpiry && Number.isFinite(configuredExpiry.getTime()) && configuredExpiry < maximumExpiry
+    configuredExpiry &&
+    Number.isFinite(configuredExpiry.getTime()) &&
+    configuredExpiry < maximumExpiry
       ? configuredExpiry
       : maximumExpiry;
   if (expiresAt <= now) throw createHttpError(409, 'Payment intent has expired');

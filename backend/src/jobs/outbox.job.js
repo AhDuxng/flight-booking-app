@@ -16,13 +16,41 @@ const notificationFor = (event) => {
   const bookingId = event.payload.bookingId;
   const messages = {
     BOOKING_CREATED: ['general', 'Booking created', `Booking ${bookingId} is awaiting payment.`],
-    BOOKING_CANCELLED: ['booking_cancelled', 'Booking cancelled', `Booking ${bookingId} has been cancelled.`],
-    CHECK_IN_COMPLETED: ['general', 'Online check-in completed', `A boarding pass is ready for booking ${bookingId}.`],
-    FLIGHT_CHANGED: ['booking_confirmed', 'Flight changed', `The new itinerary for booking ${bookingId} is ready.`],
-    PAYMENT_FAILED: ['payment_failed', 'Payment failed', `Payment for booking ${bookingId} failed.`],
-    PAYMENT_SUCCEEDED: ['payment_success', 'Payment successful', `Booking ${bookingId} is confirmed and tickets are ready.`],
-    REFUND_COMPLETED: ['refund_processed', 'Refund completed', `Refund for booking ${bookingId} has completed.`],
-    REFUND_REQUIRED: ['general', 'Refund review required', `Booking ${bookingId} is awaiting refund processing.`],
+    BOOKING_CANCELLED: [
+      'booking_cancelled',
+      'Booking cancelled',
+      `Booking ${bookingId} has been cancelled.`,
+    ],
+    CHECK_IN_COMPLETED: [
+      'general',
+      'Online check-in completed',
+      `A boarding pass is ready for booking ${bookingId}.`,
+    ],
+    FLIGHT_CHANGED: [
+      'booking_confirmed',
+      'Flight changed',
+      `The new itinerary for booking ${bookingId} is ready.`,
+    ],
+    PAYMENT_FAILED: [
+      'payment_failed',
+      'Payment failed',
+      `Payment for booking ${bookingId} failed.`,
+    ],
+    PAYMENT_SUCCEEDED: [
+      'payment_success',
+      'Payment successful',
+      `Booking ${bookingId} is confirmed and tickets are ready.`,
+    ],
+    REFUND_COMPLETED: [
+      'refund_processed',
+      'Refund completed',
+      `Refund for booking ${bookingId} has completed.`,
+    ],
+    REFUND_REQUIRED: [
+      'general',
+      'Refund review required',
+      `Booking ${bookingId} is awaiting refund processing.`,
+    ],
   };
   return messages[event.event_type];
 };
@@ -41,7 +69,10 @@ const dispatch = async (event) => {
   }
 
   if (event.event_type === 'PAYMENT_SUCCEEDED' && event.payload.bookingId && event.payload.userId) {
-    const booking = await operationQueries.findBooking(event.payload.bookingId, event.payload.userId);
+    const booking = await operationQueries.findBooking(
+      event.payload.bookingId,
+      event.payload.userId,
+    );
     if (booking?.tickets?.length) {
       await sendTicketEmail({ booking, pdf: await createETicketPdf(booking) });
     }

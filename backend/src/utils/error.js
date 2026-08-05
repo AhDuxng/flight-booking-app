@@ -42,7 +42,14 @@ export const throwDatabaseError = (error, fallbackMessage = 'Database request fa
       'PAYMENT_NOT_FOUND',
       'REFUND_NOT_FOUND',
     ]);
-    const status = businessCode === 'FORBIDDEN' ? 403 : notFoundCodes.has(businessCode) ? 404 : conflictCodes.has(businessCode) ? 409 : 422;
+    const status =
+      businessCode === 'FORBIDDEN'
+        ? 403
+        : notFoundCodes.has(businessCode)
+          ? 404
+          : conflictCodes.has(businessCode)
+            ? 409
+            : 422;
     throw createHttpError(status, businessCode.replaceAll('_', ' ').toLowerCase(), {
       code: businessCode,
       cause: error,

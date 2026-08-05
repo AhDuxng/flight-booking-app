@@ -65,7 +65,11 @@ export const createBookingSchema = z
       });
     }
 
-    for (const [index, item] of [...value.baggage, ...value.meals, ...value.ancillaries].entries()) {
+    for (const [index, item] of [
+      ...value.baggage,
+      ...value.meals,
+      ...value.ancillaries,
+    ].entries()) {
       if (item.passengerIndex != null && item.passengerIndex >= value.passengers.length) {
         context.addIssue({
           code: z.ZodIssueCode.custom,
@@ -77,9 +81,7 @@ export const createBookingSchema = z
   });
 
 export const bookingQuerySchema = z.object({
-  status: z
-    .enum(['pending', 'confirmed', 'cancelled', 'refund_pending', 'refunded'])
-    .optional(),
+  status: z.enum(['pending', 'confirmed', 'cancelled', 'refund_pending', 'refunded']).optional(),
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(100).default(20),
 });

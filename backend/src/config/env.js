@@ -60,7 +60,6 @@ const envSchema = z.object({
       (value) => !value || isSupabaseServerKey(value),
       'SUPABASE_READ_SERVICE_ROLE_KEY must be a service_role JWT or sb_secret key',
     ),
-  JWT_SECRET: z.string().min(32),
   FRONTEND_URL: corsOriginsSchema,
   TRUST_PROXY: booleanFromString,
   BODY_LIMIT: z.string().min(1).default('100kb'),
@@ -94,10 +93,25 @@ const envSchema = z.object({
   FLIGHT_SEARCH_CACHE_TTL_SECONDS: z.coerce.number().int().min(1).max(300).default(15),
   SEAT_CLEANUP_INTERVAL_MS: z.coerce.number().int().min(30_000).max(900_000).default(60_000),
   SCHEDULE_GENERATION_HORIZON_DAYS: z.coerce.number().int().min(1).max(365).default(90),
-  SCHEDULE_GENERATION_INTERVAL_MS: z.coerce.number().int().min(3_600_000).max(604_800_000).default(86_400_000),
+  SCHEDULE_GENERATION_INTERVAL_MS: z.coerce
+    .number()
+    .int()
+    .min(3_600_000)
+    .max(604_800_000)
+    .default(86_400_000),
   OUTBOX_POLL_INTERVAL_MS: z.coerce.number().int().min(1_000).max(60_000).default(5_000),
-  REFUND_RECONCILIATION_INTERVAL_MS: z.coerce.number().int().min(10_000).max(3_600_000).default(60_000),
-  INVENTORY_RECONCILIATION_INTERVAL_MS: z.coerce.number().int().min(60_000).max(86_400_000).default(300_000),
+  REFUND_RECONCILIATION_INTERVAL_MS: z.coerce
+    .number()
+    .int()
+    .min(10_000)
+    .max(3_600_000)
+    .default(60_000),
+  INVENTORY_RECONCILIATION_INTERVAL_MS: z.coerce
+    .number()
+    .int()
+    .min(60_000)
+    .max(86_400_000)
+    .default(300_000),
   INVENTORY_RECONCILIATION_AUTO_REPAIR: booleanFromString,
   GEMINI_API_KEYS: commaSeparatedListSchema,
   GEMINI_MODEL: optionalStringWithDefault('gemini-flash-lite-latest'),
@@ -126,7 +140,6 @@ export const env = {
   supabaseServiceRoleKey: values.SUPABASE_SERVICE_ROLE_KEY,
   supabaseReadUrl: values.SUPABASE_READ_URL,
   supabaseReadServiceRoleKey: values.SUPABASE_READ_SERVICE_ROLE_KEY,
-  jwtSecret: values.JWT_SECRET,
   frontendUrl,
   corsOrigins,
   trustProxy: values.TRUST_PROXY,

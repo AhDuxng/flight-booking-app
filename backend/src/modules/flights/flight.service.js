@@ -95,7 +95,8 @@ export const getFlightById = async (flightId) => {
   return {
     ...flight,
     dynamic_price: dynamicPrice,
-    dynamic_price_multiplier: Number(flight.base_price) > 0 ? dynamicPrice / Number(flight.base_price) : 1,
+    dynamic_price_multiplier:
+      Number(flight.base_price) > 0 ? dynamicPrice / Number(flight.base_price) : 1,
   };
 };
 

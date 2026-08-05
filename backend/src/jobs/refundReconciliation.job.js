@@ -44,7 +44,10 @@ const runOnce = async () => {
         const status = String(result.status ?? '').toLowerCase();
         if (['succeeded', 'success', 'completed'].includes(status)) {
           await operationQueries.completeRefundV2(refund.id, result.id ?? result.refundId, result);
-          logger.info('refund_completed', { refund_request_id: refund.id, booking_id: refund.booking_id });
+          logger.info('refund_completed', {
+            refund_request_id: refund.id,
+            booking_id: refund.booking_id,
+          });
         } else if (row.status === 'completed') {
           await operationQueries.reconcileRefund(refund.id, {
             status: 'requires_review',
@@ -66,11 +69,19 @@ const runOnce = async () => {
           });
         }
       } catch (itemError) {
-        await operationQueries.reconcileRefund(row.id, {
-          status: row.status === 'completed' || Number(row.attempts) >= 8 ? 'requires_review' : 'processing',
-          failureReason: itemError.message,
-        }).catch(() => {});
-        logger.warn('refund_reconciliation_mismatch', { refund_request_id: row.id, error: itemError.message });
+        await operationQueries
+          .reconcileRefund(row.id, {
+            status:
+              row.status === 'completed' || Number(row.attempts) >= 8
+                ? 'requires_review'
+                : 'processing',
+            failureReason: itemError.message,
+          })
+          .catch(() => {});
+        logger.warn('refund_reconciliation_mismatch', {
+          refund_request_id: row.id,
+          error: itemError.message,
+        });
       }
     }
   } catch (error) {

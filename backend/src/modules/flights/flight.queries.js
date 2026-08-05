@@ -47,7 +47,9 @@ const loadFlightCandidates = async (filters, departureFrom, departureTo) => {
   while (true) {
     let query = supabase
       .from('flights')
-      .select(`${FLIGHT_COLUMNS}, schedule:flight_schedules!flights_schedule_id_fkey(id, is_active)`)
+      .select(
+        `${FLIGHT_COLUMNS}, schedule:flight_schedules!flights_schedule_id_fkey(id, is_active)`,
+      )
       .in('status', ['scheduled', 'delayed'])
       .gt('departure_time', dayjs().add(45, 'minute').toISOString())
       .gte('departure_time', departureFrom)
@@ -93,6 +95,23 @@ const loadSeatInventory = async (flightIds, cabinClass) => {
   return seatsByFlight;
 };
 
+const calculatePriceFromTables = async (flightId) => {
+  const [flightResult, seatsResult] = await Promise.all([
+    supabase.from('flights').select('base_price').eq('id', flightId).maybeSingle(),
+    supabase.from('seats').select('status, price').eq('flight_id', flightId),
+  ]);
+  throwDatabaseError(flightResult.error, 'Unable to load flight base price');
+  throwDatabaseError(seatsResult.error, 'Unable to load flight price inventory');
+
+  if (!flightResult.data) return null;
+  const inventory = seatsResult.data ?? [];
+  const availableSeats = inventory.filter((seat) => seat.status === 'available').length;
+  const prices = inventory.map((seat) => Number(seat.price)).filter(Number.isFinite);
+  const basePrice = prices.length > 0 ? Math.min(...prices) : Number(flightResult.data.base_price);
+
+  return Math.round(basePrice * dynamicPriceMultiplier(availableSeats, inventory.length));
+};
+
 const searchFromTables = async (filters, departureFrom, departureTo, from, to) => {
   const flights = await loadFlightCandidates(filters, departureFrom, departureTo);
   if (flights.length === 0) return { data: [], count: 0 };
@@ -112,13 +131,15 @@ const searchFromTables = async (filters, departureFrom, departureTo, from, to) =
     const multiplier = dynamicPriceMultiplier(availableSeats, inventory.length);
     const { schedule, ...flightData } = flight;
 
-    return [{
-      ...flightData,
-      available_seats: availableSeats,
-      dynamic_price: Math.round(basePrice * multiplier),
-      dynamic_price_multiplier: multiplier,
-      sellable: true,
-    }];
+    return [
+      {
+        ...flightData,
+        available_seats: availableSeats,
+        dynamic_price: Math.round(basePrice * multiplier),
+        dynamic_price_multiplier: multiplier,
+        sellable: true,
+      },
+    ];
   });
 
   return {
@@ -128,7 +149,8 @@ const searchFromTables = async (filters, departureFrom, departureTo, from, to) =
 };
 
 export const search = async (filters, from, to) => {
-  if (filters.status && !['scheduled', 'delayed'].includes(filters.status)) return { data: [], count: 0 };
+  if (filters.status && !['scheduled', 'delayed'].includes(filters.status))
+    return { data: [], count: 0 };
   let departureFrom = new Date().toISOString();
   let departureTo = null;
   if (filters.departureDate) {
@@ -169,14 +191,21 @@ export const search = async (filters, from, to) => {
 
 export const findCalculatedPrice = async (flightId) => {
   const { data, error } = await runReadQuery(
-    (client) => client.rpc('calculate_flight_price', {
-      p_flight_id: flightId,
-      p_cabin_class: null,
-      p_fare_id: null,
-    }),
+    (client) =>
+      client.rpc('calculate_flight_price', {
+        p_flight_id: flightId,
+        p_cabin_class: null,
+        p_fare_id: null,
+      }),
     'flight_price_read_fallback',
   );
-  throwDatabaseError(error, 'Unable to calculate flight price');
+  if (error) {
+    logger.warn('flight_price_rpc_fallback', {
+      database_code: error.code,
+      error: error.message,
+    });
+    return calculatePriceFromTables(flightId);
+  }
   return Number(data);
 };
 
@@ -192,13 +221,14 @@ export const findById = async (id) => {
 
 export const findBasicById = async (id) => {
   const { data, error } = await runReadQuery(
-    (client) => client
-      .from('flights')
-      .select(
-        'id, airline_id, aircraft_id, origin_airport_id, destination_airport_id, departure_time, arrival_time, status',
-      )
-      .eq('id', id)
-      .maybeSingle(),
+    (client) =>
+      client
+        .from('flights')
+        .select(
+          'id, airline_id, aircraft_id, origin_airport_id, destination_airport_id, departure_time, arrival_time, status',
+        )
+        .eq('id', id)
+        .maybeSingle(),
     'flight_basic_read_fallback',
   );
 
@@ -220,11 +250,12 @@ export const aircraftBelongsToAirline = async (aircraftId, airlineId) => {
 
 export const findSeatsByFlightId = async (flightId) => {
   const { data, error } = await runReadQuery(
-    (client) => client
-      .from('seats')
-      .select('id, seat_number, seat_class, status, price')
-      .eq('flight_id', flightId)
-      .order('seat_number', { ascending: true }),
+    (client) =>
+      client
+        .from('seats')
+        .select('id, seat_number, seat_class, status, price')
+        .eq('flight_id', flightId)
+        .order('seat_number', { ascending: true }),
     'flight_seats_read_fallback',
   );
 

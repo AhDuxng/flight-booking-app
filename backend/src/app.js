@@ -3,7 +3,6 @@ import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
 import morgan from 'morgan';
-import cookieParser from 'cookie-parser';
 import { randomUUID } from 'node:crypto';
 import 'express-async-errors';
 import router from './routes/index.js';
@@ -55,8 +54,6 @@ export const createApp = () => {
     }),
   );
   app.use(express.urlencoded({ extended: true, limit: env.bodyLimit, parameterLimit: 50 }));
-  app.use(cookieParser());
-
   if (env.nodeEnv !== 'production') {
     app.use(morgan('dev'));
   }
@@ -75,17 +72,18 @@ export const createApp = () => {
     const status = err.status || 500;
     const message = status < 500 ? err.message : 'Internal server error';
 
-    if (env.nodeEnv !== 'test') logger.error('request_failed', {
-      request_id: req.requestId,
-      method: req.method,
-      path: req.originalUrl,
-      status,
-      error_code: err.code,
-      database_code: err.databaseCode ?? err.cause?.code,
-      database_details: err.databaseDetails ?? err.cause?.details,
-      database_hint: err.databaseHint ?? err.cause?.hint,
-      error: err.message,
-    });
+    if (env.nodeEnv !== 'test')
+      logger.error('request_failed', {
+        request_id: req.requestId,
+        method: req.method,
+        path: req.originalUrl,
+        status,
+        error_code: err.code,
+        database_code: err.databaseCode ?? err.cause?.code,
+        database_details: err.databaseDetails ?? err.cause?.details,
+        database_hint: err.databaseHint ?? err.cause?.hint,
+        error: err.message,
+      });
 
     res.status(status).json({ error: message, code: err.code, requestId: req.requestId });
   });

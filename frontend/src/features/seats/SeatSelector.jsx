@@ -107,25 +107,28 @@ export default function SeatSelector() {
     setIsSubmitting(true);
 
     try {
-      const response = await bookingService.create({
-        flightId,
-        contactEmail: passengerInfo.contactEmail,
-        contactPhone: passengerInfo.contactPhone,
-        passengers: passengerInfo.passengers,
-        seatIds: selectedSeats.map((seat) => seat.id),
-        baggage: (Array.isArray(passengerInfo.baggage) ? passengerInfo.baggage : [])
-          .map((item, passengerIndex) =>
-            item ? { passengerIndex, baggageOptionId: item.id, quantity: 1 } : null,
-          )
-          .filter(Boolean),
-        meals: (Array.isArray(passengerInfo.meal) ? passengerInfo.meal : [])
-          .map((item, passengerIndex) =>
-            item ? { passengerIndex, mealOptionId: item.id, quantity: 1 } : null,
-          )
-          .filter(Boolean),
-        discountCode: passengerInfo.discountCode,
-        fareId: passengerInfo.fareId,
-      }, bookingIdempotencyKey.current);
+      const response = await bookingService.create(
+        {
+          flightId,
+          contactEmail: passengerInfo.contactEmail,
+          contactPhone: passengerInfo.contactPhone,
+          passengers: passengerInfo.passengers,
+          seatIds: selectedSeats.map((seat) => seat.id),
+          baggage: (Array.isArray(passengerInfo.baggage) ? passengerInfo.baggage : [])
+            .map((item, passengerIndex) =>
+              item ? { passengerIndex, baggageOptionId: item.id, quantity: 1 } : null,
+            )
+            .filter(Boolean),
+          meals: (Array.isArray(passengerInfo.meal) ? passengerInfo.meal : [])
+            .map((item, passengerIndex) =>
+              item ? { passengerIndex, mealOptionId: item.id, quantity: 1 } : null,
+            )
+            .filter(Boolean),
+          discountCode: passengerInfo.discountCode,
+          fareId: passengerInfo.fareId,
+        },
+        bookingIdempotencyKey.current,
+      );
       selectedSeats.forEach(bookingStore.addSeat);
       toast.success("Đã giữ chỗ. Hãy hoàn tất thanh toán trước khi hết hạn.");
       navigate(`/payment/${response.data.id}`);

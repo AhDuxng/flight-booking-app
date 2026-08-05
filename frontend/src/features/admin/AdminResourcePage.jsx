@@ -333,10 +333,7 @@ export default function AdminResourcePage({ resource }) {
             label: "",
             render: (row) =>
               row.status === "refund_pending" ? (
-                <Link
-                  className={adminActionClass}
-                  to="/admin/operations"
-                >
+                <Link className={adminActionClass} to="/admin/operations">
                   Duyệt hoàn tiền
                 </Link>
               ) : row.provider === "cash" && row.status === "pending" ? (

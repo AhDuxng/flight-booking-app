@@ -46,11 +46,12 @@ test('production OAuth redirects never select a loopback frontend origin', () =>
 });
 
 test('backend rejects Supabase anon and publishable keys for server operations', () => {
-  const jwt = (role) => [
-    Buffer.from('{}').toString('base64url'),
-    Buffer.from(JSON.stringify({ role })).toString('base64url'),
-    'signature',
-  ].join('.');
+  const jwt = (role) =>
+    [
+      Buffer.from('{}').toString('base64url'),
+      Buffer.from(JSON.stringify({ role })).toString('base64url'),
+      'signature',
+    ].join('.');
 
   assert.equal(isSupabaseServerKey(jwt('service_role')), true);
   assert.equal(isSupabaseServerKey(jwt('anon')), false);
@@ -110,10 +111,17 @@ test('normalized payment webhooks require currency and event identity', () => {
 test('webhook HMAC is calculated from exact raw bytes', () => {
   const timestamp = '1785632400';
   const rawBody = '{"amount":100000,"currency":"VND"}';
-  const signature = createHmac('sha256', 'test-secret').update(`${timestamp}.${rawBody}`).digest('hex');
+  const signature = createHmac('sha256', 'test-secret')
+    .update(`${timestamp}.${rawBody}`)
+    .digest('hex');
   assert.equal(verifyWebhookHmac({ secret: 'test-secret', timestamp, rawBody, signature }), true);
   assert.equal(
-    verifyWebhookHmac({ secret: 'test-secret', timestamp, rawBody: '{"currency":"VND","amount":100000}', signature }),
+    verifyWebhookHmac({
+      secret: 'test-secret',
+      timestamp,
+      rawBody: '{"currency":"VND","amount":100000}',
+      signature,
+    }),
     false,
   );
 });
@@ -163,10 +171,7 @@ test('VNPAY canonicalization is stable and excludes signature fields', () => {
     vnp_Amount: '100000',
     vnp_SecureHash: 'ignored',
   });
-  assert.equal(
-    canonical,
-    'vnp_Amount=100000&vnp_OrderInfo=Thanh+toan+ve+may+bay&vnp_TxnRef=VF123',
-  );
+  assert.equal(canonical, 'vnp_Amount=100000&vnp_OrderInfo=Thanh+toan+ve+may+bay&vnp_TxnRef=VF123');
   assert.equal(createVnpaySecureHash(canonical, 'secret').length, 128);
   assert.equal(formatVnpayDate(new Date('2026-08-05T17:00:00.000Z')), '20260806000000');
   assert.equal(normalizeVnpayIp('::1'), '127.0.0.1');
@@ -192,11 +197,17 @@ test('hardening migration contains the core concurrency and recovery invariants'
     'search_flights_v2',
   ];
   for (const fragment of requiredFragments) assert.match(sql, new RegExp(fragment));
-  assert.doesNotMatch(sql.slice(sql.indexOf('CREATE OR REPLACE FUNCTION public.check_in_passenger')), /MAX\(boarding_sequence\)/);
+  assert.doesNotMatch(
+    sql.slice(sql.indexOf('CREATE OR REPLACE FUNCTION public.check_in_passenger')),
+    /MAX\(boarding_sequence\)/,
+  );
 });
 
 test('public seat mutation endpoints have been removed', async () => {
-  const source = await readFile(new URL('../src/modules/seats/seat.routes.js', import.meta.url), 'utf8');
+  const source = await readFile(
+    new URL('../src/modules/seats/seat.routes.js', import.meta.url),
+    'utf8',
+  );
   assert.doesNotMatch(source, /\/hold|\/release/);
 });
 
@@ -220,4 +231,5 @@ test('flight reads retry the primary database and search has a table fallback', 
   assert.match(source, /flight_search_read_fallback/);
   assert.match(source, /return searchFromTables\(filters, departureFrom, departureTo, from, to\)/);
   assert.match(source, /loadSeatInventory/);
+  assert.match(source, /return calculatePriceFromTables\(flightId\)/);
 });

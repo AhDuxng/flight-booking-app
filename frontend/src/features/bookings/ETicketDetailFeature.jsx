@@ -92,9 +92,7 @@ export default function ETicketDetailFeature({ bookingId }) {
   const departureIsFuture = new Date(flight?.departure_time).getTime() > Date.now();
   const flightCanBeCancelled = ["scheduled", "delayed"].includes(flight?.status);
   const canCancel =
-    ["pending", "confirmed"].includes(booking.status) &&
-    departureIsFuture &&
-    flightCanBeCancelled;
+    ["pending", "confirmed"].includes(booking.status) && departureIsFuture && flightCanBeCancelled;
 
   return (
     <div className="flex-grow bg-surface-container">

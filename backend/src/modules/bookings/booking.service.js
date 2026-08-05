@@ -26,14 +26,23 @@ export const createBooking = async (userId, payload, rawIdempotencyKey) => {
   const requestHash = hashRequest(payload);
   return withRedisLocks(payload.seatIds, async () => {
     try {
-      const bookingId = await bookingQueries.createAtomically(userId, payload, idempotencyKey, requestHash);
+      const bookingId = await bookingQueries.createAtomically(
+        userId,
+        payload,
+        idempotencyKey,
+        requestHash,
+      );
       const booking = await getMyBookingById(bookingId, userId);
 
       await bumpCacheVersion('flight-search');
       logger.info('booking_created', { booking_id: booking.id, user_id: userId });
       return booking;
     } catch (error) {
-      logger.warn('booking_creation_failed', { user_id: userId, error_code: error.code, error: error.message });
+      logger.warn('booking_creation_failed', {
+        user_id: userId,
+        error_code: error.code,
+        error: error.message,
+      });
       throw error;
     }
   });

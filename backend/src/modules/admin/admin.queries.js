@@ -63,23 +63,16 @@ const getConfirmedRevenue = async () => {
 };
 
 const getDashboardFromTables = async () => {
-  const [
-    flights,
-    scheduledFlights,
-    bookings,
-    pendingBookings,
-    confirmedBookings,
-    revenue,
-    users,
-  ] = await Promise.all([
-    countRows('flights'),
-    countRows('flights', (query) => query.in('status', ['scheduled', 'boarding', 'delayed'])),
-    countRows('bookings'),
-    countRows('bookings', (query) => query.eq('status', 'pending')),
-    countRows('bookings', (query) => query.eq('status', 'confirmed')),
-    getConfirmedRevenue(),
-    countRows('users'),
-  ]);
+  const [flights, scheduledFlights, bookings, pendingBookings, confirmedBookings, revenue, users] =
+    await Promise.all([
+      countRows('flights'),
+      countRows('flights', (query) => query.in('status', ['scheduled', 'boarding', 'delayed'])),
+      countRows('bookings'),
+      countRows('bookings', (query) => query.eq('status', 'pending')),
+      countRows('bookings', (query) => query.eq('status', 'confirmed')),
+      getConfirmedRevenue(),
+      countRows('users'),
+    ]);
 
   return {
     flights,
@@ -160,7 +153,9 @@ export const findActiveBookingsByFlightId = async (flightId) => {
 };
 
 export const findBookingsByFlightId = async (flightId) => {
-  const { data, error } = await supabase.from('bookings').select('id,user_id,status')
+  const { data, error } = await supabase
+    .from('bookings')
+    .select('id,user_id,status')
     .eq('flight_id', flightId);
   throwDatabaseError(error, 'Unable to load flight bookings');
   return data ?? [];
@@ -197,9 +192,14 @@ export const findPaymentById = async (paymentId) => {
 };
 
 export const findOpenRefundByPaymentId = async (paymentId) => {
-  const { data, error } = await supabase.from('refund_requests').select('*')
-    .eq('payment_id', paymentId).in('status', ['pending', 'approved', 'processing', 'requires_review'])
-    .order('created_at').limit(1).maybeSingle();
+  const { data, error } = await supabase
+    .from('refund_requests')
+    .select('*')
+    .eq('payment_id', paymentId)
+    .in('status', ['pending', 'approved', 'processing', 'requires_review'])
+    .order('created_at')
+    .limit(1)
+    .maybeSingle();
   throwDatabaseError(error, 'Unable to load refund request');
   return data;
 };

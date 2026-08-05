@@ -14,11 +14,16 @@ const vnpayConfig = {
   payUrl: env.vnpayPayUrl,
   returnUrl: env.vnpayReturnUrl,
 };
-const genericProviders = env.paymentCheckoutApiUrl && env.paymentSecretKey
-  ? env.paymentProviders.filter((provider) => provider !== 'vnpay')
-  : [];
+const genericProviders =
+  env.paymentCheckoutApiUrl && env.paymentSecretKey
+    ? env.paymentProviders.filter((provider) => provider !== 'vnpay')
+    : [];
 const supportedProviders = [
-  ...new Set(['cash', ...(isVnpayConfigured(vnpayConfig) && env.paymentProviders.includes('vnpay') ? ['vnpay'] : []), ...genericProviders]),
+  ...new Set([
+    'cash',
+    ...(isVnpayConfigured(vnpayConfig) && env.paymentProviders.includes('vnpay') ? ['vnpay'] : []),
+    ...genericProviders,
+  ]),
 ].filter((provider) => ['vnpay', 'momo', 'stripe', 'cash'].includes(provider));
 
 export const getPaymentConfig = () => ({ providers: supportedProviders });
@@ -52,13 +57,16 @@ export const attachOnlineCheckout = async (payment, booking, clientIp) => {
       currency: payment.currency,
       returnUrl: env.paymentReturnUrl,
       cancelUrl: env.paymentCancelUrl,
-      webhookUrl: env.backendPublicUrl ? `${env.backendPublicUrl.replace(/\/$/, '')}/api/payments/webhook` : undefined,
+      webhookUrl: env.backendPublicUrl
+        ? `${env.backendPublicUrl.replace(/\/$/, '')}/api/payments/webhook`
+        : undefined,
     }),
   });
   if (!response.ok) throw createHttpError(502, 'Unable to create provider checkout');
   const data = await response.json();
   const checkoutUrl = data.checkoutUrl ?? data.checkout_url ?? data.payUrl;
-  if (!checkoutUrl || !URL.canParse(checkoutUrl)) throw createHttpError(502, 'Payment provider returned an invalid checkout URL');
+  if (!checkoutUrl || !URL.canParse(checkoutUrl))
+    throw createHttpError(502, 'Payment provider returned an invalid checkout URL');
   return paymentQueries.attachCheckout(payment.id, checkoutUrl, data);
 };
 

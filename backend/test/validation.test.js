@@ -17,7 +17,10 @@ import {
   refundDecisionSchema,
   supportTicketSchema,
 } from '../src/modules/operations/operation.schema.js';
-import { createBoardingPassPdf, createETicketPdf } from '../src/modules/operations/document.service.js';
+import {
+  createBoardingPassPdf,
+  createETicketPdf,
+} from '../src/modules/operations/document.service.js';
 
 const FIRST_UUID = '11111111-1111-4111-8111-111111111111';
 const SECOND_UUID = '22222222-2222-4222-8222-222222222222';
@@ -59,6 +62,11 @@ test('flight search rejects an identical origin and destination', () => {
     }).success,
     false,
   );
+});
+
+test('flight search normalizes an optional flight number', () => {
+  const result = flightSearchSchema.parse({ flightNumber: 'vn 123' });
+  assert.equal(result.flightNumber, 'VN123');
 });
 
 test('booking validation requires one unique seat per passenger', () => {
@@ -154,13 +162,20 @@ test('operations validation enforces document confirmation and refund decisions'
     checkInSchema.safeParse({ passengerIds: [FIRST_UUID], documentConfirmed: false }).success,
     false,
   );
-  assert.equal(refundDecisionSchema.parse({ action: 'approve', approvedAmount: '250000' }).approvedAmount, 250000);
+  assert.equal(
+    refundDecisionSchema.parse({ action: 'approve', approvedAmount: '250000' }).approvedAmount,
+    250000,
+  );
   assert.equal(flightStatusQuerySchema.parse({ flightNumber: 'vn 123' }).flightNumber, 'VN123');
 });
 
 test('support requests require actionable details', () => {
   assert.equal(
-    supportTicketSchema.safeParse({ category: 'booking', subject: 'Help', description: 'too short' }).success,
+    supportTicketSchema.safeParse({
+      category: 'booking',
+      subject: 'Help',
+      description: 'too short',
+    }).success,
     false,
   );
 });
@@ -182,7 +197,9 @@ test('e-ticket and boarding pass generators produce PDF documents with unicode d
     fare: { name: 'Phổ thông linh hoạt' },
     passengers: [{ id: SECOND_UUID, first_name: 'Dũng', last_name: 'Phạm' }],
     tickets: [{ passenger_id: SECOND_UUID, ticket_number: '7380000000001', status: 'issued' }],
-    booking_seats: [{ passenger_id: SECOND_UUID, seat: { seat_number: '10A', seat_class: 'economy' } }],
+    booking_seats: [
+      { passenger_id: SECOND_UUID, seat: { seat_number: '10A', seat_class: 'economy' } },
+    ],
   };
   const ticket = await createETicketPdf(booking);
   const boardingPass = await createBoardingPassPdf({

@@ -25,6 +25,14 @@ export const flightSearchSchema = z
     departureDate: z.string().date().optional(),
     departureTimezone: timezoneSchema.optional(),
     airlineId: z.string().uuid().optional(),
+    flightNumber: z
+      .string()
+      .trim()
+      .min(2)
+      .max(12)
+      .toUpperCase()
+      .transform((value) => value.replace(/\s+/g, ''))
+      .optional(),
     cabinClass: z.enum(['economy', 'business', 'first']).optional(),
     passengerCount: z.coerce.number().int().min(1).max(9).default(1),
     status: z.enum(flightStatuses).optional(),

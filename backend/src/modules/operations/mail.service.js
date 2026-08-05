@@ -25,7 +25,9 @@ export const sendTicketEmail = async ({ booking, pdf }) => {
     to: booking.contact_email,
     subject: `Vé điện tử VietFly ${reference}`,
     text: `Đặt chỗ ${reference} đã được xác nhận. Vé điện tử được đính kèm trong email này.`,
-    attachments: [{ filename: `vietfly-${reference}.pdf`, content: pdf, contentType: 'application/pdf' }],
+    attachments: [
+      { filename: `vietfly-${reference}.pdf`, content: pdf, contentType: 'application/pdf' },
+    ],
   });
   return { sent: true, messageId: result.messageId };
 };

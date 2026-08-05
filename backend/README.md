@@ -6,7 +6,7 @@ Backend cung cấp API cho hệ thống đặt vé máy bay. Phần này xử l�
 
 1. Node.js và Express để xây dựng API server.
 2. Supabase để kết nối và quản lý dữ liệu.
-3. JWT và bcryptjs để xác thực và bảo mật tài khoản.
+3. Supabase Auth để xác thực, OAuth và quản lý phiên người dùng.
 4. Zod để kiểm tra dữ liệu đầu vào.
 5. Nodemailer để hỗ trợ gửi email.
 6. Helmet, CORS, rate limit và compression để tăng bảo mật và hiệu năng.
@@ -59,6 +59,7 @@ Kiểm tra cú pháp và chạy test:
 ```bash
 npm run check
 npm test
+npm run format:check
 ```
 
 Mặc định backend chạy tại `http://localhost:5000`.
@@ -69,7 +70,6 @@ Mặc định backend chạy tại `http://localhost:5000`.
 PORT
 SUPABASE_URL
 SUPABASE_SERVICE_ROLE_KEY
-JWT_SECRET
 FRONTEND_URL
 TRUST_PROXY
 BODY_LIMIT
@@ -152,7 +152,7 @@ Migration avatar tạo bucket `avatars` ở chế độ private. API chỉ nhậ
 
 ## Xác thực và dịch vụ ngoài
 
-- Password reset và OAuth dùng cấu hình Email/Google/GitHub trong Supabase Auth. Redirect URL cần cho phép `/reset-password` và `/auth/callback` của frontend.
+- Password reset và OAuth dùng cấu hình Email/Google/Facebook trong Supabase Auth. Redirect URL cần cho phép `/reset-password` và `/auth/callback` của frontend.
 - `GEMINI_API_KEYS` nhận một hoặc nhiều key phân tách bằng dấu phẩy. Khi bỏ trống, endpoint chatbot trả `503` rõ ràng.
 - Không commit `.env`, service-role key, Gemini key hoặc webhook secret vào repository.
 
