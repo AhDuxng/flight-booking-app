@@ -2,7 +2,7 @@ import { cn } from "@/lib/utils";
 
 const variants = {
   admin:
-    "bg-primary text-white shadow-sm hover:bg-primary-container hover:text-white [&_svg]:text-white",
+    "bg-primary text-white! shadow-sm hover:bg-primary-container hover:text-white! [&_span]:text-white! [&_svg]:text-white!",
   primary: "bg-primary text-on-primary shadow-sm hover:bg-primary-container",
   secondary:
     "bg-secondary-container text-on-secondary-container shadow-sm hover:bg-secondary-fixed-dim",
