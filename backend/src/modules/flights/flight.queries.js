@@ -18,10 +18,11 @@ const FLIGHT_COLUMNS = `
   destination_airport:airports!flights_destination_airport_id_fkey(id, code, name, city, timezone)
 `;
 
-const runReadQuery = async (operation, event) => {
-  let result = await operation(supabaseRead);
+const runReadQuery = async (operation, event, { preferPrimary = false } = {}) => {
+  const preferredClient = preferPrimary ? supabase : supabaseRead;
+  let result = await operation(preferredClient);
 
-  if (result.error && supabaseRead !== supabase) {
+  if (result.error && preferredClient !== supabase) {
     logger.warn(event, {
       database_code: result.error.code,
       error: result.error.message,
@@ -178,6 +179,7 @@ export const search = async (filters, from, to) => {
   const { data, error } = await runReadQuery(
     (client) => client.rpc('search_flights_v2', rpcParams),
     'flight_search_read_fallback',
+    { preferPrimary: Boolean(filters.flightNumber) },
   );
   if (error) {
     logger.warn('flight_search_rpc_fallback', {

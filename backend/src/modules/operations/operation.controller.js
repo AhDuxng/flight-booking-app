@@ -81,7 +81,7 @@ export const updateAdminResource = sendData((req) =>
   service.updateAdminResource(req.params.resource, req.params.id, req.body),
 );
 export const decideRefund = sendData((req) =>
-  service.decideRefund(req.params.refundId, req.user.id, req.body),
+  service.decideRefund(req.params.refundId, req.user.id, req.body, req.ip),
 );
 export const generateSchedules = sendData(() => service.generateSchedules());
 export const addAdminSupportMessage = sendData(

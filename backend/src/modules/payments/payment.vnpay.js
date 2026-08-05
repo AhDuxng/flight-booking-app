@@ -87,7 +87,13 @@ export const handleVnpayIpn = async (req, res) => {
       status: isSuccess ? 'success' : 'failed',
       rawBody: verification.canonicalData,
       signature: verification.secureHash,
-      rawPayload: req.query,
+      rawPayload: {
+        ...req.query,
+        vnp_OriginalCreateDate:
+          payment.raw_payload?.request?.vnp_CreateDate ??
+          payment.raw_payload?.vnp_OriginalCreateDate ??
+          null,
+      },
     });
 
     if (result?.duplicate || result?.processed === false) {

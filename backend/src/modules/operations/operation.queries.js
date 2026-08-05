@@ -56,21 +56,21 @@ export const findTicket = async (ticketId, userId) => {
   return data?.booking?.user_id === userId ? data : null;
 };
 
-export const checkInPassenger = async (
+export const checkInBooking = async (
   bookingId,
-  passengerId,
+  passengerIds,
   userId,
   documentConfirmed,
-  seatId = null,
+  seatAssignments,
 ) => {
-  const { data, error } = await supabase.rpc('check_in_passenger', {
+  const { data, error } = await supabase.rpc('check_in_booking_v2', {
     p_booking_id: bookingId,
-    p_passenger_id: passengerId,
+    p_passenger_ids: passengerIds,
     p_user_id: userId,
     p_document_confirmed: documentConfirmed,
-    p_seat_id: seatId,
+    p_seat_assignments: seatAssignments,
   });
-  throwDatabaseError(error, error?.message || 'Unable to check in passenger');
+  throwDatabaseError(error, error?.message || 'Unable to check in booking');
   return data;
 };
 
@@ -128,22 +128,6 @@ export const setBookingFare = async (bookingId, userId, fareId) => {
   return data;
 };
 
-export const findChangeOptions = async (booking, from, to) => {
-  const { data, error } = await supabase
-    .from('flights')
-    .select(FLIGHT_RELATIONS)
-    .eq('origin_airport_id', booking.flight.origin_airport.id)
-    .eq('destination_airport_id', booking.flight.destination_airport.id)
-    .in('status', ['scheduled', 'delayed'])
-    .gt('departure_time', new Date().toISOString())
-    .gte('available_seats', booking.passengers.length)
-    .neq('id', booking.flight_id)
-    .range(from, to)
-    .order('departure_time');
-  throwDatabaseError(error, 'Unable to load change options');
-  return data ?? [];
-};
-
 export const calculateFarePrice = async (flightId, cabinClass, fareId) => {
   const { data, error } = await supabase.rpc('calculate_flight_price', {
     p_flight_id: flightId,
@@ -181,6 +165,15 @@ export const applyFlightChange = async (requestId, userId) => {
     p_user_id: userId,
   });
   throwDatabaseError(error, error?.message || 'Unable to apply flight change');
+  return data;
+};
+
+export const expireChangeQuote = async (requestId, userId) => {
+  const { data, error } = await supabase.rpc('expire_flight_change_quote_v2', {
+    p_request_id: requestId,
+    p_user_id: userId,
+  });
+  throwDatabaseError(error, 'Unable to expire flight change quote');
   return data;
 };
 

@@ -18,6 +18,15 @@ export const getMyBookingById = async (req, res, next) => {
   }
 };
 
+export const getCancellationQuote = async (req, res, next) => {
+  try {
+    const data = await bookingService.getCancellationQuote(req.params.bookingId, req.user.id);
+    return res.json({ data });
+  } catch (error) {
+    return next(error);
+  }
+};
+
 export const createBooking = async (req, res, next) => {
   try {
     const data = await bookingService.createBooking(

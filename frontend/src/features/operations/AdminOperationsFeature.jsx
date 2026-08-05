@@ -160,6 +160,10 @@ export default function AdminOperationsFeature() {
       toast.error(getErrorMessage(error, "Không thể xử lý hoàn tiền."));
     }
   };
+  const isMandatoryRefund = (row) =>
+    row.metadata?.involuntary === true ||
+    row.metadata?.latePayment === true ||
+    Boolean(row.metadata?.changeRequestId || row.metadata?.failureCode);
   const generate = async () => {
     try {
       const response = await operationService.generateSchedules();
@@ -304,7 +308,8 @@ export default function AdminOperationsFeature() {
                           Sửa
                         </button>
                       ) : null}
-                      {resource === "refund_requests" && row.status === "pending" ? (
+                      {resource === "refund_requests" &&
+                      ["pending", "approved", "requires_review"].includes(row.status) ? (
                         <>
                           <button
                             className={primaryClass}
@@ -313,13 +318,19 @@ export default function AdminOperationsFeature() {
                           >
                             Duyệt
                           </button>
-                          <button
-                            className={buttonClass}
-                            onClick={() => decideRefund(row, "reject")}
-                            type="button"
-                          >
-                            Từ chối
-                          </button>
+                          {!isMandatoryRefund(row) ? (
+                            <button
+                              className={buttonClass}
+                              onClick={() => decideRefund(row, "reject")}
+                              type="button"
+                            >
+                              Từ chối
+                            </button>
+                          ) : (
+                            <span className="self-center text-xs text-on-surface-variant">
+                              Khoản hoàn bắt buộc
+                            </span>
+                          )}
                         </>
                       ) : null}
                       {resource === "support_tickets" ? (

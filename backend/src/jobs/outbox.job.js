@@ -101,7 +101,7 @@ const dispatch = async (event) => {
         user_id: userId,
         type: 'flight_cancelled',
         title: 'Flight cancelled',
-        body: 'Your flight has been cancelled. Refund processing follows the purchased fare policy.',
+        body: 'Your flight has been cancelled. A full refund request has been created for the original payment method.',
         payload: { flightId: event.payload.flightId },
       });
     }

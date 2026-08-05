@@ -23,16 +23,50 @@ export const resourceItemParamsSchema = resourceParamsSchema.extend({ id: uuid }
 
 export const fareQuerySchema = z.object({ flightId: uuid });
 export const setFareSchema = z.object({ fareId: uuid });
-export const checkInSchema = z.object({
-  passengerIds: z.array(uuid).min(1).max(9),
-  documentConfirmed: z.literal(true),
-  seatAssignments: z
-    .array(z.object({ passengerId: uuid, seatId: uuid }))
-    .max(9)
-    .default([]),
-});
+export const checkInSchema = z
+  .object({
+    passengerIds: z.array(uuid).min(1).max(9),
+    documentConfirmed: z.literal(true),
+    seatAssignments: z
+      .array(z.object({ passengerId: uuid, seatId: uuid }))
+      .max(9)
+      .default([]),
+  })
+  .superRefine((value, context) => {
+    const passengerIds = new Set(value.passengerIds);
+    if (passengerIds.size !== value.passengerIds.length) {
+      context.addIssue({
+        code: 'custom',
+        path: ['passengerIds'],
+        message: 'Passengers must be unique',
+      });
+    }
+    const assignmentPassengers = value.seatAssignments.map((item) => item.passengerId);
+    const seatIds = value.seatAssignments.map((item) => item.seatId);
+    if (new Set(assignmentPassengers).size !== assignmentPassengers.length) {
+      context.addIssue({
+        code: 'custom',
+        path: ['seatAssignments'],
+        message: 'Each passenger can have only one seat assignment',
+      });
+    }
+    if (new Set(seatIds).size !== seatIds.length) {
+      context.addIssue({
+        code: 'custom',
+        path: ['seatAssignments'],
+        message: 'Each seat can be assigned only once',
+      });
+    }
+    if (assignmentPassengers.some((passengerId) => !passengerIds.has(passengerId))) {
+      context.addIssue({
+        code: 'custom',
+        path: ['seatAssignments'],
+        message: 'Seat assignment passenger must be selected for check-in',
+      });
+    }
+  });
 export const changeOptionsQuerySchema = z.object({
-  page: z.coerce.number().int().min(1).default(1),
+  page: z.coerce.number().int().min(1).max(100).default(1),
   limit: z.coerce.number().int().min(1).max(50).default(20),
 });
 export const changeQuoteSchema = z.object({ newFlightId: uuid });

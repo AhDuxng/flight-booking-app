@@ -3,12 +3,53 @@ import { supabase } from '../config/supabase.js';
 import { env } from '../config/env.js';
 import { logger } from '../utils/logger.js';
 import * as operationQueries from '../modules/operations/operation.queries.js';
+import {
+  buildVnpayQueryRequest,
+  verifyVnpayApiResponse,
+} from '../modules/payments/vnpay.gateway.js';
 
 const workerId = `refund-${randomUUID()}`;
 let timer;
 let running = false;
 
 const checkProvider = async (refund) => {
+  if (refund.payment.provider === 'vnpay') {
+    const request = buildVnpayQueryRequest({
+      payment: refund.payment,
+      requestId: randomUUID(),
+      config: {
+        tmnCode: env.vnpayTmnCode,
+        hashSecret: env.vnpayHashSecret,
+        apiUrl: env.vnpayApiUrl,
+      },
+    });
+    const response = await fetch(request.apiUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(request.payload),
+      signal: AbortSignal.timeout(env.paymentRequestTimeoutMs),
+    });
+    if (!response.ok) throw new Error(`VNPAY query adapter returned ${response.status}`);
+    const result = await response.json();
+    if (!verifyVnpayApiResponse(result, env.vnpayHashSecret)) {
+      throw new Error('VNPAY query response checksum is invalid');
+    }
+    const responseCode = String(result.vnp_ResponseCode ?? '');
+    const transactionType = String(result.vnp_TransactionType ?? '');
+    const transactionStatus = String(result.vnp_TransactionStatus ?? '');
+    let status = 'processing';
+    if (responseCode === '00' && ['02', '03'].includes(transactionType)) {
+      if (transactionStatus === '00') status = 'succeeded';
+      else if (['02', '04', '07', '09'].includes(transactionStatus)) status = 'failed';
+    } else if (!['00', '94'].includes(responseCode)) {
+      status = responseCode === '91' ? 'not_found' : 'failed';
+    }
+    return {
+      ...result,
+      id: result.vnp_ResponseId ?? result.vnp_TransactionNo,
+      status,
+    };
+  }
   const response = await fetch(env.paymentRefundStatusApiUrl, {
     method: 'POST',
     headers: {
@@ -29,7 +70,9 @@ const checkProvider = async (refund) => {
 };
 
 const runOnce = async () => {
-  if (running || !env.paymentRefundStatusApiUrl || !env.paymentSecretKey) return;
+  const hasGenericAdapter = env.paymentRefundStatusApiUrl && env.paymentSecretKey;
+  const hasVnpayAdapter = env.vnpayApiUrl && env.vnpayTmnCode && env.vnpayHashSecret;
+  if (running || (!hasGenericAdapter && !hasVnpayAdapter)) return;
   running = true;
   try {
     const { data: claimed, error } = await supabase.rpc('claim_refund_reconciliation', {
@@ -40,6 +83,28 @@ const runOnce = async () => {
     for (const row of claimed ?? []) {
       try {
         const refund = await operationQueries.findRefundRequest(row.id);
+        if (refund.payment.provider !== 'vnpay' && !hasGenericAdapter) {
+          await operationQueries.reconcileRefund(refund.id, {
+            status: 'requires_review',
+            failureReason: 'Refund status adapter is not configured for this provider',
+          });
+          continue;
+        }
+        if (refund.payment.provider === 'vnpay' && !hasVnpayAdapter) {
+          await operationQueries.reconcileRefund(refund.id, {
+            status: 'requires_review',
+            failureReason: 'VNPAY query adapter is not configured',
+          });
+          continue;
+        }
+        if (refund.payment.provider === 'vnpay' && row.status === 'completed') {
+          await operationQueries.reconcileRefund(refund.id, {
+            status: 'completed',
+            providerStatus: refund.provider_status ?? 'succeeded',
+            providerResponse: refund.provider_response ?? {},
+          });
+          continue;
+        }
         const result = await checkProvider(refund);
         const status = String(result.status ?? '').toLowerCase();
         if (['succeeded', 'success', 'completed'].includes(status)) {

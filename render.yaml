@@ -25,6 +25,8 @@ services:
         value: 100
       - key: FLIGHT_SEARCH_CACHE_TTL_SECONDS
         value: 15
+      - key: REDIS_URL
+        sync: false
       - key: SEAT_CLEANUP_INTERVAL_MS
         value: 60000
       - key: SCHEDULE_GENERATION_HORIZON_DAYS

@@ -4,6 +4,12 @@ import { createHttpError } from '../../utils/error.js';
 const VNPAY_TIMEZONE = 'Asia/Ho_Chi_Minh';
 const VNPAY_VERSION = '2.1.0';
 
+const requireWholeVnd = (amount, message) => {
+  const value = Number(amount);
+  if (!Number.isSafeInteger(value) || value <= 0) throw createHttpError(422, message);
+  return value;
+};
+
 const sortedVnpayEntries = (params) =>
   Object.entries(params)
     .filter(
@@ -102,6 +108,158 @@ export const buildVnpayPaymentUrl = ({ payment, clientIp, config, now = new Date
     checkoutUrl: `${config.payUrl}?${canonicalData}&vnp_SecureHash=${secureHash}`,
     requestPayload: params,
   };
+};
+
+const getOriginalTransactionDate = (payment) => {
+  const payload = payment.raw_payload ?? {};
+  const rawDate =
+    payload.vnp_OriginalCreateDate ?? payload.vnp_CreateDate ?? payload.request?.vnp_CreateDate;
+  if (/^\d{14}$/.test(String(rawDate ?? ''))) return String(rawDate);
+  const createdAt = new Date(payment.created_at ?? payment.paid_at);
+  if (!Number.isFinite(createdAt.getTime())) {
+    throw createHttpError(422, 'VNPAY original transaction date is unavailable');
+  }
+  return formatVnpayDate(createdAt);
+};
+
+const requireVnpayApiConfig = (config) => {
+  if (!config?.tmnCode || !config?.hashSecret || !config?.apiUrl) {
+    throw createHttpError(503, 'VNPAY refund API is not configured');
+  }
+};
+
+export const buildVnpayRefundRequest = ({
+  refund,
+  config,
+  now = new Date(),
+  ipAddress,
+  createBy = 'VietFly',
+}) => {
+  requireVnpayApiConfig(config);
+  const amount = requireWholeVnd(
+    refund.approved_amount,
+    'VNPAY requires a positive whole-number VND refund amount',
+  );
+  const paidAmount = Number(refund.payment.amount_snapshot ?? refund.payment.amount);
+  const transactionNo = String(refund.payment.raw_payload?.vnp_TransactionNo ?? '').trim();
+  if (!transactionNo) throw createHttpError(422, 'VNPAY transaction number is unavailable');
+
+  const params = {
+    vnp_RequestId: String(refund.id).replaceAll('-', '').slice(0, 32),
+    vnp_Version: VNPAY_VERSION,
+    vnp_Command: 'refund',
+    vnp_TmnCode: config.tmnCode,
+    vnp_TransactionType: amount === paidAmount ? '02' : '03',
+    vnp_TxnRef: refund.payment.transaction_ref,
+    vnp_Amount: String(amount * 100),
+    vnp_TransactionNo: transactionNo,
+    vnp_TransactionDate: getOriginalTransactionDate(refund.payment),
+    vnp_CreateBy:
+      String(createBy)
+        .replace(/[^a-z0-9]/gi, '')
+        .slice(0, 100) || 'VietFly',
+    vnp_CreateDate: formatVnpayDate(now),
+    vnp_IpAddr: normalizeVnpayIp(ipAddress),
+    vnp_OrderInfo: `Hoan tien dat cho ${refund.booking?.booking_reference ?? refund.booking_id}`,
+  };
+  const checksumData = [
+    params.vnp_RequestId,
+    params.vnp_Version,
+    params.vnp_Command,
+    params.vnp_TmnCode,
+    params.vnp_TransactionType,
+    params.vnp_TxnRef,
+    params.vnp_Amount,
+    params.vnp_TransactionNo,
+    params.vnp_TransactionDate,
+    params.vnp_CreateBy,
+    params.vnp_CreateDate,
+    params.vnp_IpAddr,
+    params.vnp_OrderInfo,
+  ].join('|');
+
+  return {
+    apiUrl: config.apiUrl,
+    checksumData,
+    payload: { ...params, vnp_SecureHash: createVnpaySecureHash(checksumData, config.hashSecret) },
+  };
+};
+
+export const buildVnpayQueryRequest = ({
+  payment,
+  requestId,
+  config,
+  now = new Date(),
+  ipAddress,
+}) => {
+  requireVnpayApiConfig(config);
+  const params = {
+    vnp_RequestId: String(requestId).replaceAll('-', '').slice(0, 32),
+    vnp_Version: VNPAY_VERSION,
+    vnp_Command: 'querydr',
+    vnp_TmnCode: config.tmnCode,
+    vnp_TxnRef: payment.transaction_ref,
+    vnp_OrderInfo: `Doi soat giao dich ${payment.transaction_ref}`,
+    vnp_TransactionNo: payment.raw_payload?.vnp_TransactionNo,
+    vnp_TransactionDate: getOriginalTransactionDate(payment),
+    vnp_CreateDate: formatVnpayDate(now),
+    vnp_IpAddr: normalizeVnpayIp(ipAddress),
+  };
+  const checksumData = [
+    params.vnp_RequestId,
+    params.vnp_Version,
+    params.vnp_Command,
+    params.vnp_TmnCode,
+    params.vnp_TxnRef,
+    params.vnp_TransactionDate,
+    params.vnp_CreateDate,
+    params.vnp_IpAddr,
+    params.vnp_OrderInfo,
+  ].join('|');
+  return {
+    apiUrl: config.apiUrl,
+    checksumData,
+    payload: { ...params, vnp_SecureHash: createVnpaySecureHash(checksumData, config.hashSecret) },
+  };
+};
+
+export const verifyVnpayApiResponse = (payload, hashSecret) => {
+  const secureHash = String(payload?.vnp_SecureHash ?? '');
+  if (!secureHash) return false;
+  const responseFields = [
+    payload.vnp_ResponseId,
+    payload.vnp_Command,
+    payload.vnp_ResponseCode,
+    payload.vnp_Message,
+    payload.vnp_TmnCode,
+    payload.vnp_TxnRef,
+    payload.vnp_Amount,
+    payload.vnp_BankCode,
+    payload.vnp_PayDate,
+    payload.vnp_TransactionNo,
+    payload.vnp_TransactionType,
+    payload.vnp_TransactionStatus,
+    payload.vnp_OrderInfo,
+  ];
+  if (payload.vnp_Command === 'querydr') {
+    responseFields.push(payload.vnp_PromotionCode, payload.vnp_PromotionAmount);
+  }
+  const checksumData = responseFields.map((value) => String(value ?? '')).join('|');
+  return safeHexEqual(secureHash, createVnpaySecureHash(checksumData, hashSecret ?? ''));
+};
+
+export const classifyVnpayRefundResponse = (payload) => {
+  const responseCode = String(payload?.vnp_ResponseCode ?? '');
+  const transactionStatus = String(payload?.vnp_TransactionStatus ?? '');
+  if (responseCode === '00' && transactionStatus === '00') return 'succeeded';
+  if (
+    responseCode === '00' ||
+    responseCode === '94' ||
+    ['01', '05', '06'].includes(transactionStatus)
+  ) {
+    return 'processing';
+  }
+  return 'failed';
 };
 
 export const verifyVnpaySignature = (params, hashSecret) => {

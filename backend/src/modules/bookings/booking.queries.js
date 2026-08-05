@@ -15,7 +15,7 @@ const BOOKING_COLUMNS = `
   booking_baggage(id, passenger_id, baggage_option_id, quantity, price_snapshot),
   booking_meals(id, passenger_id, meal_option_id, quantity, price_snapshot),
   booking_discounts(id, discount_id, discount_amount, applied_at),
-  payments(id, amount, currency, provider, transaction_ref, status, paid_at, created_at),
+  payments(id, amount, amount_snapshot, currency, provider, transaction_ref, status, purpose, paid_at, created_at),
   reviews(id, rating, comment, is_visible, created_at, updated_at)
   ,fare:fare_classes(id, code, name, cabin_class, price_multiplier, change_allowed, change_fee, refundable, cancellation_fee, checked_baggage_kg, cabin_baggage_kg, priority_boarding)
   ,tickets(id, ticket_number, passenger_id, flight_id, status, issued_at)

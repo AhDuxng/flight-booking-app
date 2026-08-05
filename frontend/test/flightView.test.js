@@ -2,6 +2,10 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { toFlightView } from "../src/features/flights/flightView.js";
 import { formatCurrencyInput, normalizeCurrencyInput } from "../src/lib/currencyInput.js";
+import {
+  isValidFlightNumber,
+  normalizeFlightNumber,
+} from "../src/features/flights/flightConstants.js";
 
 test("flight API data is normalized for the UI", () => {
   const result = toFlightView({
@@ -40,4 +44,11 @@ test("currency input uses Vietnamese thousands separators and preserves a raw nu
   assert.equal(normalizeCurrencyInput("1.000.000 đ"), "1000000");
   assert.equal(normalizeCurrencyInput("0001250000"), "1250000");
   assert.equal(formatCurrencyInput(""), "");
+});
+
+test("public flight-number search normalizes and validates user input", () => {
+  assert.equal(normalizeFlightNumber("  vn 123 "), "VN123");
+  assert.equal(isValidFlightNumber("VN123"), true);
+  assert.equal(isValidFlightNumber("VN%"), false);
+  assert.equal(isValidFlightNumber("V"), false);
 });

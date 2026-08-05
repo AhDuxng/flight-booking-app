@@ -96,12 +96,18 @@ export const getDashboard = async () => {
   return getDashboardFromTables();
 };
 
-export const findFlights = async (from, to) => {
-  const { data, error, count } = await supabase
+export const findFlights = async (search, from, to) => {
+  let query = supabase
     .from('flights')
     .select(ADMIN_FLIGHT_COLUMNS, { count: 'exact' })
-    .range(from, to)
-    .order('departure_time', { ascending: false });
+    .order('departure_time', { ascending: false })
+    .range(from, to);
+
+  if (search) {
+    query = query.ilike('flight_number', `%${search}%`);
+  }
+
+  const { data, error, count } = await query;
 
   throwDatabaseError(error, 'Unable to load flights');
   return { data, count };

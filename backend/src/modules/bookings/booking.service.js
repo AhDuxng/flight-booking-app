@@ -21,6 +21,57 @@ export const getMyBookingById = async (bookingId, userId) => {
   return booking;
 };
 
+const assertCancellable = (booking) => {
+  if (!['pending', 'confirmed'].includes(booking.status)) {
+    throw createHttpError(409, 'Booking cannot be cancelled in its current status');
+  }
+  if (
+    !booking.flight ||
+    new Date(booking.flight.departure_time) <= new Date() ||
+    ['boarding', 'departed', 'arrived', 'cancelled'].includes(booking.flight.status)
+  ) {
+    throw createHttpError(409, 'Flight is no longer eligible for cancellation');
+  }
+};
+
+export const getCancellationQuote = async (bookingId, userId) => {
+  const booking = await getMyBookingById(bookingId, userId);
+  assertCancellable(booking);
+
+  const payments = (booking.payments ?? []).filter(
+    (item) => ['booking', 'flight_change'].includes(item.purpose) && item.status === 'success',
+  );
+  const paidAmount = payments.reduce(
+    (total, payment) => total + Number(payment.amount_snapshot ?? payment.amount ?? 0),
+    0,
+  );
+  const previousRefund = (booking.refund_requests ?? [])
+    .filter((item) => !['rejected', 'failed'].includes(item.status))
+    .reduce((total, item) => total + Number(item.approved_amount ?? item.requested_amount ?? 0), 0);
+  const refundable = Boolean(booking.fare?.refundable);
+  const cancellationFee =
+    payments.length && refundable ? Number(booking.fare?.cancellation_fee ?? 0) : 0;
+  const remainingPaidBalance = Math.max(0, paidAmount - previousRefund);
+  const refundAmount =
+    payments.length && refundable ? Math.max(0, remainingPaidBalance - cancellationFee) : 0;
+  const refundMethods = [...new Set(payments.map((payment) => payment.provider))];
+
+  return {
+    bookingId: booking.id,
+    currency: payments[0]?.currency ?? 'VND',
+    paidAmount,
+    previousRefund,
+    refundable,
+    cancellationFee,
+    refundAmount,
+    retainedAmount: Math.max(0, paidAmount - previousRefund - refundAmount),
+    refundMethod:
+      refundMethods.length === 1 ? refundMethods[0] : refundMethods.length ? 'multiple' : null,
+    refundMethods,
+    requiresRefundReview: refundAmount > 0,
+  };
+};
+
 export const createBooking = async (userId, payload, rawIdempotencyKey) => {
   const idempotencyKey = normalizeIdempotencyKey(rawIdempotencyKey);
   const requestHash = hashRequest(payload);
@@ -54,22 +105,13 @@ export const cancelBooking = async (bookingId, userId) => {
   if (!booking) {
     throw createHttpError(404, 'Booking not found');
   }
-  if (!['pending', 'confirmed'].includes(booking.status)) {
-    throw createHttpError(409, 'Booking cannot be cancelled in its current status');
-  }
-  if (
-    !booking.flight ||
-    new Date(booking.flight.departure_time) <= new Date() ||
-    ['boarding', 'departed', 'arrived', 'cancelled'].includes(booking.flight.status)
-  ) {
-    throw createHttpError(409, 'Flight is no longer eligible for cancellation');
-  }
+  assertCancellable(booking);
 
-  await bookingQueries.cancelAtomically(bookingId, userId);
+  const cancellation = await bookingQueries.cancelAtomically(bookingId, userId);
   const cancelledBooking = await getMyBookingById(bookingId, userId);
 
   // Bài toán 3 - Distributed Transaction: huỷ booking là bước bù trừ, trả lại tồn ghế và làm mới dữ liệu tìm kiếm.
   await bumpCacheVersion('flight-search');
 
-  return cancelledBooking;
+  return { ...cancelledBooking, cancellation_summary: cancellation };
 };

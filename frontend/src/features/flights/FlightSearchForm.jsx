@@ -5,17 +5,27 @@ import {
   ArrowLeftRight,
   Armchair,
   PlaneLanding,
+  Plane,
   PlaneTakeoff,
   Search,
   UsersRound,
 } from "lucide-react";
 import Button from "@/components/common/Button";
+import Input from "@/components/common/Input";
 import SegmentedControl from "@/components/common/SegmentedControl";
 import Select from "@/components/common/Select";
 import DateDropdown from "./DateDropdown";
 import LocationDropdown from "./LocationDropdown";
 import { useFlightSearch } from "./useFlightSearch";
-import { CABIN_OPTIONS, FLIGHT_SCOPES, FLIGHT_TYPES, PASSENGER_OPTIONS } from "./flightConstants";
+import {
+  CABIN_OPTIONS,
+  FLIGHT_SCOPES,
+  FLIGHT_SEARCH_MODES,
+  FLIGHT_TYPES,
+  isValidFlightNumber,
+  normalizeFlightNumber,
+  PASSENGER_OPTIONS,
+} from "./flightConstants";
 
 export default function FlightSearchForm() {
   const navigate = useNavigate();
@@ -29,6 +39,8 @@ export default function FlightSearchForm() {
     handleTypeChange,
     retryLocations,
   } = useFlightSearch();
+  const [searchMode, setSearchMode] = useState(FLIGHT_SEARCH_MODES[0].value);
+  const [flightNumber, setFlightNumber] = useState("");
   const [origin, setOrigin] = useState(null);
   const [destination, setDestination] = useState(null);
   const [departureDate, setDepartureDate] = useState("");
@@ -52,31 +64,35 @@ export default function FlightSearchForm() {
 
   const handleSubmit = (event) => {
     event.preventDefault();
-    if (!origin?.id || !destination?.id) {
-      toast.error("Vui lòng chọn điểm đi và điểm đến.");
-      return;
-    }
-    if (origin.id === destination.id) {
-      toast.error("Điểm đi và điểm đến phải khác nhau.");
-      return;
-    }
-    if (!departureDate) {
-      toast.error("Vui lòng chọn ngày đi.");
-      return;
-    }
     const params = new URLSearchParams();
     const [adultCount, childCount] = passengerSelection.split("-").map(Number);
 
-    if (origin?.id) {
+    if (searchMode === "flight-number") {
+      const normalizedFlightNumber = normalizeFlightNumber(flightNumber);
+      if (!isValidFlightNumber(normalizedFlightNumber)) {
+        toast.error("Mã chuyến bay phải có từ 2 đến 12 ký tự chữ, số hoặc dấu gạch ngang.");
+        return;
+      }
+      params.set("flightNumber", normalizedFlightNumber);
+    } else {
+      if (!origin?.id || !destination?.id) {
+        toast.error("Vui lòng chọn điểm đi và điểm đến.");
+        return;
+      }
+      if (origin.id === destination.id) {
+        toast.error("Điểm đi và điểm đến phải khác nhau.");
+        return;
+      }
+      if (!departureDate) {
+        toast.error("Vui lòng chọn ngày đi.");
+        return;
+      }
       params.set("originAirportId", origin.id);
-    }
-    if (destination?.id) {
       params.set("destinationAirportId", destination.id);
-    }
-    if (departureDate) {
       params.set("departureDate", departureDate);
+      params.set("departureTimezone", origin.timezone || "Asia/Ho_Chi_Minh");
     }
-    params.set("departureTimezone", origin.timezone || "Asia/Ho_Chi_Minh");
+
     params.set("adultCount", String(adultCount));
     params.set("childCount", String(childCount));
     params.set("passengerCount", String(adultCount + childCount));
@@ -94,21 +110,38 @@ export default function FlightSearchForm() {
     <div className="mx-auto max-w-5xl translate-y-8 rounded-lg border border-outline-variant bg-surface-container-lowest p-stack-lg shadow-lg md:translate-y-16">
       <div className="mb-stack-md flex flex-col justify-between gap-3 border-b border-outline-variant pb-stack-md sm:flex-row">
         <SegmentedControl
-          options={FLIGHT_SCOPES}
-          value={flightScope}
-          onChange={handleScopeChange}
+          options={FLIGHT_SEARCH_MODES}
+          value={searchMode}
+          onChange={setSearchMode}
         />
-        {FLIGHT_TYPES.length > 1 ? (
-          <SegmentedControl options={FLIGHT_TYPES} value={flightType} onChange={handleTypeChange} />
+        {searchMode === "route" ? (
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <SegmentedControl
+              options={FLIGHT_SCOPES}
+              value={flightScope}
+              onChange={handleScopeChange}
+            />
+            {FLIGHT_TYPES.length > 1 ? (
+              <SegmentedControl
+                options={FLIGHT_TYPES}
+                value={flightType}
+                onChange={handleTypeChange}
+              />
+            ) : (
+              <span className="self-center text-label-md text-on-surface-variant">
+                Hành trình một chiều
+              </span>
+            )}
+          </div>
         ) : (
           <span className="self-center text-label-md text-on-surface-variant">
-            Hành trình một chiều
+            Tìm các lịch bay còn mở bán
           </span>
         )}
       </div>
 
       <form className="grid grid-cols-1 gap-gutter-md md:grid-cols-12" onSubmit={handleSubmit}>
-        {locationError ? (
+        {searchMode === "route" && locationError ? (
           <div className="flex items-center justify-between gap-3 rounded-lg bg-status-error/10 p-3 text-body-sm text-status-error md:col-span-12">
             <span>{locationError}</span>
             <button className="font-semibold underline" onClick={retryLocations} type="button">
@@ -116,40 +149,56 @@ export default function FlightSearchForm() {
             </button>
           </div>
         ) : null}
-        <div className="md:col-span-3">
-          <LocationDropdown
-            label="Từ"
-            icon={PlaneTakeoff}
-            locations={locations}
-            value={origin}
-            onChange={setOrigin}
+        {searchMode === "flight-number" ? (
+          <Input
+            autoComplete="off"
+            className="uppercase"
+            icon={Plane}
+            label="Mã chuyến bay"
+            maxLength={12}
+            onChange={(event) => setFlightNumber(event.target.value.toUpperCase())}
+            placeholder="Ví dụ: VN123 hoặc 06082006"
+            value={flightNumber}
+            wrapperClassName="md:col-span-12"
           />
-        </div>
+        ) : (
+          <>
+            <div className="md:col-span-3">
+              <LocationDropdown
+                label="Từ"
+                icon={PlaneTakeoff}
+                locations={locations}
+                value={origin}
+                onChange={setOrigin}
+              />
+            </div>
 
-        <div className="mt-6 hidden items-center justify-center md:col-span-1 md:flex">
-          <button
-            aria-label="Đổi điểm đi và điểm đến"
-            className="flex h-9 w-9 items-center justify-center rounded-lg bg-surface-variant text-primary transition-colors hover:bg-surface-container-high"
-            type="button"
-            onClick={swapLocations}
-          >
-            <ArrowLeftRight className="h-5 w-5" />
-          </button>
-        </div>
+            <div className="mt-6 hidden items-center justify-center md:col-span-1 md:flex">
+              <button
+                aria-label="Đổi điểm đi và điểm đến"
+                className="flex h-9 w-9 items-center justify-center rounded-lg bg-surface-variant text-primary transition-colors hover:bg-surface-container-high"
+                type="button"
+                onClick={swapLocations}
+              >
+                <ArrowLeftRight className="h-5 w-5" />
+              </button>
+            </div>
 
-        <div className="md:col-span-3">
-          <LocationDropdown
-            label="Đến"
-            icon={PlaneLanding}
-            locations={locations}
-            value={destination}
-            onChange={setDestination}
-          />
-        </div>
+            <div className="md:col-span-3">
+              <LocationDropdown
+                label="Đến"
+                icon={PlaneLanding}
+                locations={locations}
+                value={destination}
+                onChange={setDestination}
+              />
+            </div>
 
-        <div className="md:col-span-5">
-          <DateDropdown label="Ngày đi" value={departureDate} onChange={setDepartureDate} />
-        </div>
+            <div className="md:col-span-5">
+              <DateDropdown label="Ngày đi" value={departureDate} onChange={setDepartureDate} />
+            </div>
+          </>
+        )}
 
         <div className="mt-stack-sm grid grid-cols-2 gap-gutter-md md:col-span-8 md:mt-0">
           <IconSelect
@@ -171,12 +220,12 @@ export default function FlightSearchForm() {
           <Button
             type="submit"
             className="mt-auto w-full"
-            disabled={isLoadingLocations || Boolean(locationError)}
+            disabled={searchMode === "route" && (isLoadingLocations || Boolean(locationError))}
             icon={Search}
             size="lg"
             variant="warning"
           >
-            {isLoadingLocations ? "Đang tải sân bay" : "Tìm chuyến bay"}
+            {searchMode === "route" && isLoadingLocations ? "Đang tải sân bay" : "Tìm chuyến bay"}
           </Button>
         </div>
       </form>

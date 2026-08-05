@@ -32,6 +32,7 @@ export const throwDatabaseError = (error, fallbackMessage = 'Database request fa
       'PAYMENT_PROVIDER_MISMATCH',
       'PAYMENT_PRICE_VERSION_MISMATCH',
       'REFUND_ALREADY_PROCESSING',
+      'MANDATORY_REFUND_CANNOT_BE_REJECTED',
       'SEAT_CHANGE_AFTER_CHECK_IN_NOT_ALLOWED',
       'SEAT_NOT_AVAILABLE',
     ]);
@@ -41,6 +42,7 @@ export const throwDatabaseError = (error, fallbackMessage = 'Database request fa
       'PASSENGER_NOT_OWNED',
       'PAYMENT_NOT_FOUND',
       'REFUND_NOT_FOUND',
+      'CHANGE_QUOTE_NOT_FOUND',
     ]);
     const status =
       businessCode === 'FORBIDDEN'

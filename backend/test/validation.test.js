@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { registerSchema } from '../src/modules/auth/auth.schema.js';
 import { createBookingSchema } from '../src/modules/bookings/booking.schema.js';
-import { flightSearchSchema } from '../src/modules/flights/flight.schema.js';
+import { createFlightSchema, flightSearchSchema } from '../src/modules/flights/flight.schema.js';
 import { createPagination, getPagination } from '../src/utils/pagination.js';
 import {
   detectAirports,
@@ -21,6 +21,7 @@ import {
   createBoardingPassPdf,
   createETicketPdf,
 } from '../src/modules/operations/document.service.js';
+import { adminListQuerySchema } from '../src/modules/admin/admin.schema.js';
 
 const FIRST_UUID = '11111111-1111-4111-8111-111111111111';
 const SECOND_UUID = '22222222-2222-4222-8222-222222222222';
@@ -67,6 +68,26 @@ test('flight search rejects an identical origin and destination', () => {
 test('flight search normalizes an optional flight number', () => {
   const result = flightSearchSchema.parse({ flightNumber: 'vn 123' });
   assert.equal(result.flightNumber, 'VN123');
+  assert.equal(flightSearchSchema.safeParse({ flightNumber: 'VN%' }).success, false);
+});
+
+test('flight creation stores the same canonical flight number used by public search', () => {
+  const result = createFlightSchema.parse({
+    airlineId: FIRST_UUID,
+    aircraftId: SECOND_UUID,
+    originAirportId: FIRST_UUID,
+    destinationAirportId: SECOND_UUID,
+    flightNumber: 'vn 123',
+    departureTime: '2999-01-01T01:00:00.000Z',
+    arrivalTime: '2999-01-01T03:00:00.000Z',
+    basePrice: 1_000_000,
+  });
+  assert.equal(result.flightNumber, 'VN123');
+});
+
+test('admin list search normalizes a flight number before querying the database', () => {
+  const result = adminListQuerySchema.parse({ search: '  vn 123  ' });
+  assert.equal(result.search, 'VN123');
 });
 
 test('booking validation requires one unique seat per passenger', () => {
@@ -167,6 +188,21 @@ test('operations validation enforces document confirmation and refund decisions'
     250000,
   );
   assert.equal(flightStatusQuerySchema.parse({ flightNumber: 'vn 123' }).flightNumber, 'VN123');
+  assert.equal(
+    checkInSchema.safeParse({
+      passengerIds: [FIRST_UUID, FIRST_UUID],
+      documentConfirmed: true,
+    }).success,
+    false,
+  );
+  assert.equal(
+    checkInSchema.safeParse({
+      passengerIds: [FIRST_UUID],
+      documentConfirmed: true,
+      seatAssignments: [{ passengerId: SECOND_UUID, seatId: FIRST_UUID }],
+    }).success,
+    false,
+  );
 });
 
 test('support requests require actionable details', () => {

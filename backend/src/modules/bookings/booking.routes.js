@@ -12,6 +12,11 @@ router.get(
   validate({ params: bookingParamsSchema }),
   bookingController.getMyBookingById,
 );
+router.get(
+  '/:bookingId/cancellation-quote',
+  validate({ params: bookingParamsSchema }),
+  bookingController.getCancellationQuote,
+);
 router.patch(
   '/:bookingId/cancel',
   validate({ params: bookingParamsSchema }),

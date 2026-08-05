@@ -18,8 +18,8 @@ const resourceConfig = {
   flights: {
     title: "Chuyến bay",
     description: "Quản lý lịch bay, giá vé, tải ghế và trạng thái mở bán.",
-    placeholder: "Tìm theo mã chuyến hoặc chặng bay",
-    load: () => adminService.getFlights({ limit: 100 }),
+    placeholder: "Tìm theo mã chuyến bay",
+    load: (params = {}) => adminService.getFlights({ limit: 100, ...params }),
     map: (item) => ({
       id: item.id,
       flight: item.flight_number,
@@ -197,6 +197,7 @@ export default function AdminResourcePage({ resource }) {
   const config = resourceConfig[resource];
   const [rows, setRows] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [editingItem, setEditingItem] = useState(undefined);
@@ -204,7 +205,9 @@ export default function AdminResourcePage({ resource }) {
   const loadRows = async () => {
     setIsLoading(true);
     try {
-      const response = await config.load();
+      const params =
+        resource === "flights" && debouncedSearchTerm ? { search: debouncedSearchTerm } : undefined;
+      const response = await config.load(params);
       setRows((response.data ?? []).map((item) => ({ ...config.map(item), _raw: item })));
       setError("");
     } catch (requestError) {
@@ -216,12 +219,21 @@ export default function AdminResourcePage({ resource }) {
 
   useEffect(() => {
     loadRows();
-  }, [resource]);
+  }, [resource, debouncedSearchTerm]);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setDebouncedSearchTerm(searchTerm.trim()), 300);
+    return () => window.clearTimeout(timer);
+  }, [searchTerm]);
 
   const filteredRows = useMemo(() => {
-    const query = searchTerm.trim().toLowerCase();
+    const normalize = (value) =>
+      String(value ?? "")
+        .toLowerCase()
+        .replace(/\s+/g, "");
+    const query = normalize(searchTerm);
     return query
-      ? rows.filter((row) => Object.values(row).join(" ").toLowerCase().includes(query))
+      ? rows.filter((row) => normalize(Object.values(row).join(" ")).includes(query))
       : rows;
   }, [rows, searchTerm]);
 

@@ -316,6 +316,14 @@ function FareAndChange({ booking, onRefresh }) {
               <p className="font-semibold">
                 Cần thanh toán: {formatCurrency(quote.additional_amount)}
               </p>
+              {Number(quote.refund_amount) > 0 ? (
+                <p className="font-semibold text-status-success">
+                  Dự kiến hoàn lại: {formatCurrency(quote.refund_amount)}
+                </p>
+              ) : null}
+              <p className="mt-1 text-xs text-on-surface-variant">
+                Báo giá giữ trong 15 phút, đến {formatDateTime(quote.quote_expires_at)}.
+              </p>
               {Number(quote.additional_amount) > 0 ? (
                 <select
                   className="mt-3 h-10 w-full rounded-lg border border-outline-variant bg-surface-container-lowest px-3"
@@ -355,7 +363,9 @@ function RefundStatus({ booking }) {
           <div className="rounded-lg bg-surface-container p-3" key={item.id}>
             <div className="flex justify-between">
               <strong>{formatCurrency(item.approved_amount ?? item.requested_amount)}</strong>
-              <span className="uppercase text-primary">{item.status}</span>
+              <span className="uppercase text-primary">
+                {refundStatusLabels[item.status] ?? item.status}
+              </span>
             </div>
             <p className="mt-1 text-xs text-on-surface-variant">
               {item.reason}
@@ -367,6 +377,16 @@ function RefundStatus({ booking }) {
     </Panel>
   );
 }
+
+const refundStatusLabels = {
+  pending: "Chờ duyệt",
+  approved: "Đã duyệt",
+  processing: "Đang hoàn qua cổng",
+  completed: "Đã hoàn",
+  rejected: "Không được duyệt",
+  failed: "Hoàn tiền lỗi",
+  requires_review: "Cần đối soát",
+};
 
 function Ancillaries({ booking, onRefresh }) {
   const [services, setServices] = useState([]);

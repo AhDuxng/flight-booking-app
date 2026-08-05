@@ -9,6 +9,8 @@ import {
 } from '../../config/cache.js';
 import { env } from '../../config/env.js';
 
+const inFlightSearches = new Map();
+
 // Bài toán 2 - Flight Search & Caching: dùng versioned cache key để invalidation O(1) khi tồn ghế thay đổi.
 const buildSearchCacheKey = (filters, version) => {
   const normalizedFilters = {
@@ -73,15 +75,21 @@ export const searchFlights = async (filters) => {
     return cachedResult;
   }
 
-  const { data, count } = await flightQueries.search(filters, from, to);
+  if (!inFlightSearches.has(cacheKey)) {
+    const request = (async () => {
+      const { data, count } = await flightQueries.search(filters, from, to);
+      const result = {
+        data,
+        pagination: createPagination(page, limit, count),
+      };
 
-  const result = {
-    data,
-    pagination: createPagination(page, limit, count),
-  };
+      await setCachedJson(cacheKey, result, env.flightSearchCacheTtlSeconds);
+      return result;
+    })().finally(() => inFlightSearches.delete(cacheKey));
+    inFlightSearches.set(cacheKey, request);
+  }
 
-  await setCachedJson(cacheKey, result, env.flightSearchCacheTtlSeconds);
-  return result;
+  return inFlightSearches.get(cacheKey);
 };
 
 export const getFlightById = async (flightId) => {

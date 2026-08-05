@@ -7,17 +7,31 @@ import { paymentWebhookSchema } from '../src/modules/payments/payment.schema.js'
 import { isWebhookTimestampFresh, verifyWebhookHmac } from '../src/utils/webhook.js';
 import {
   buildVnpayPaymentUrl,
+  buildVnpayQueryRequest,
+  buildVnpayRefundRequest,
   canonicalizeVnpayParams,
+  classifyVnpayRefundResponse,
   createVnpaySecureHash,
   formatVnpayDate,
   normalizeVnpayIp,
   verifyVnpaySignature,
+  verifyVnpayApiResponse,
 } from '../src/modules/payments/vnpay.gateway.js';
 import { resolveFrontendOrigins } from '../src/config/frontendOrigins.js';
 import { isSupabaseServerKey } from '../src/config/supabaseKey.js';
 
+const FIRST_UUID = '11111111-1111-4111-8111-111111111111';
+
 const migrationUrl = new URL(
   '../database/migrations/20260802000000_harden_core_transactions.sql',
+  import.meta.url,
+);
+const flightSearchMigrationUrl = new URL(
+  '../database/migrations/20260806010000_optimize_flight_number_search.sql',
+  import.meta.url,
+);
+const lifecycleMigrationUrl = new URL(
+  '../database/migrations/20260806020000_complete_booking_lifecycle.sql',
   import.meta.url,
 );
 
@@ -177,6 +191,107 @@ test('VNPAY canonicalization is stable and excludes signature fields', () => {
   assert.equal(normalizeVnpayIp('::1'), '127.0.0.1');
 });
 
+test('VNPAY refund requests use the documented signed field order', () => {
+  const hashSecret = 'sandbox-test-secret';
+  const { checksumData, payload } = buildVnpayRefundRequest({
+    refund: {
+      id: '11111111-1111-4111-8111-111111111111',
+      booking_id: FIRST_UUID,
+      approved_amount: 500000,
+      booking: { booking_reference: 'ABC123' },
+      payment: {
+        amount_snapshot: 1000000,
+        transaction_ref: 'VF123',
+        raw_payload: {
+          vnp_TransactionNo: '14567890',
+          vnp_OriginalCreateDate: '20260805070102',
+        },
+      },
+    },
+    config: {
+      tmnCode: 'Y8KALF3L',
+      hashSecret,
+      apiUrl: 'https://sandbox.vnpayment.vn/merchant_webapi/api/transaction',
+    },
+    now: new Date('2026-08-05T01:01:02.000Z'),
+    ipAddress: '203.0.113.10',
+  });
+  assert.equal(payload.vnp_TransactionType, '03');
+  assert.equal(payload.vnp_Amount, '50000000');
+  assert.equal(payload.vnp_TransactionDate, '20260805070102');
+  assert.equal(payload.vnp_SecureHash, createVnpaySecureHash(checksumData, hashSecret));
+
+  const response = {
+    vnp_ResponseId: 'response123',
+    vnp_Command: 'refund',
+    vnp_ResponseCode: '00',
+    vnp_Message: 'Success',
+    vnp_TmnCode: 'Y8KALF3L',
+    vnp_TxnRef: 'VF123',
+    vnp_Amount: '50000000',
+    vnp_BankCode: 'NCB',
+    vnp_PayDate: '20260805080203',
+    vnp_TransactionNo: '14567891',
+    vnp_TransactionType: '03',
+    vnp_TransactionStatus: '00',
+    vnp_OrderInfo: 'Hoan tien dat cho ABC123',
+  };
+  const responseData = [
+    response.vnp_ResponseId,
+    response.vnp_Command,
+    response.vnp_ResponseCode,
+    response.vnp_Message,
+    response.vnp_TmnCode,
+    response.vnp_TxnRef,
+    response.vnp_Amount,
+    response.vnp_BankCode,
+    response.vnp_PayDate,
+    response.vnp_TransactionNo,
+    response.vnp_TransactionType,
+    response.vnp_TransactionStatus,
+    response.vnp_OrderInfo,
+  ].join('|');
+  response.vnp_SecureHash = createVnpaySecureHash(responseData, hashSecret);
+  assert.equal(verifyVnpayApiResponse(response, hashSecret), true);
+  assert.equal(classifyVnpayRefundResponse(response), 'succeeded');
+  assert.equal(classifyVnpayRefundResponse({ vnp_ResponseCode: '94' }), 'processing');
+
+  const query = buildVnpayQueryRequest({
+    payment: {
+      transaction_ref: 'VF123',
+      raw_payload: {
+        vnp_TransactionNo: '14567890',
+        vnp_OriginalCreateDate: '20260805070102',
+      },
+    },
+    requestId: '22222222-2222-4222-8222-222222222222',
+    config: {
+      tmnCode: 'Y8KALF3L',
+      hashSecret,
+      apiUrl: 'https://sandbox.vnpayment.vn/merchant_webapi/api/transaction',
+    },
+    now: new Date('2026-08-05T01:01:02.000Z'),
+    ipAddress: '203.0.113.10',
+  });
+  assert.equal(query.payload.vnp_Command, 'querydr');
+  assert.equal(query.payload.vnp_SecureHash, createVnpaySecureHash(query.checksumData, hashSecret));
+});
+
+test('lifecycle migration makes group check-in atomic and refund rejection terminal', async () => {
+  const sql = await readFile(lifecycleMigrationUrl, 'utf8');
+  assert.match(sql, /check_in_booking_v2/);
+  assert.match(sql, /expire_flight_change_quote_v2/);
+  assert.match(sql, /expire_stale_flight_change_quotes_v2/);
+  assert.match(sql, /MANDATORY_REFUND_CANNOT_BE_REJECTED/);
+  assert.match(sql, /purpose IN \('booking','flight_change'\)/);
+  assert.match(sql, /v_fee_remaining/);
+  assert.match(sql, /DROP INDEX IF EXISTS public\.uq_open_refund_per_payment/);
+  assert.match(sql, /CREATE OR REPLACE FUNCTION public\.complete_refund_v2/);
+  assert.match(sql, /UPDATE public\.payments SET status='success'/);
+  assert.match(sql, /Seats are the inventory source of truth/);
+  assert.match(sql, /TO service_role/);
+});
+
 test('hardening migration contains the core concurrency and recovery invariants', async () => {
   const sql = await readFile(migrationUrl, 'utf8');
   const requiredFragments = [
@@ -227,9 +342,25 @@ test('flight reads retry the primary database and search has a table fallback', 
     new URL('../src/modules/flights/flight.queries.js', import.meta.url),
     'utf8',
   );
-  assert.match(source, /supabaseRead !== supabase/);
+  assert.match(source, /preferredClient !== supabase/);
   assert.match(source, /flight_search_read_fallback/);
+  assert.match(source, /preferPrimary: Boolean\(filters\.flightNumber\)/);
   assert.match(source, /return searchFromTables\(filters, departureFrom, departureTo, from, to\)/);
   assert.match(source, /loadSeatInventory/);
   assert.match(source, /return calculatePriceFromTables\(flightId\)/);
+});
+
+test('flight-number search has an index, bounded cache fallback and request coalescing', async () => {
+  const [migration, cacheSource, serviceSource] = await Promise.all([
+    readFile(flightSearchMigrationUrl, 'utf8'),
+    readFile(new URL('../src/config/cache.js', import.meta.url), 'utf8'),
+    readFile(new URL('../src/modules/flights/flight.service.js', import.meta.url), 'utf8'),
+  ]);
+
+  assert.match(migration, /idx_flights_sellable_number_departure/);
+  assert.match(migration, /flight_number, departure_time/);
+  assert.match(cacheSource, /MEMORY_CACHE_MAX_ENTRIES/);
+  assert.match(cacheSource, /memoryVersions/);
+  assert.match(serviceSource, /inFlightSearches/);
+  assert.match(serviceSource, /flightNumber: filters\.flightNumber/);
 });

@@ -16,7 +16,9 @@ export const getDashboard = async () => {
 };
 
 export const getFlights = async (query) => {
-  return getList(query, adminQueries.findFlights);
+  const { page, limit, from, to } = getPagination(query);
+  const { data, count } = await adminQueries.findFlights(query.search, from, to);
+  return { data, pagination: createPagination(page, limit, count) };
 };
 
 export const getBookings = async (query) => {

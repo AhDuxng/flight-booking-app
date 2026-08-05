@@ -6,8 +6,48 @@ let client;
 let connectionPromise;
 let retryAt = 0;
 
+const memoryCache = new Map();
+const memoryVersions = new Map();
+
 const REDIS_TIMEOUT_MS = 1_000;
 const REDIS_RETRY_DELAY_MS = 30_000;
+const MEMORY_CACHE_MAX_ENTRIES = 500;
+
+const pruneMemoryCache = (now = Date.now()) => {
+  for (const [key, entry] of memoryCache) {
+    if (entry.expiresAt <= now) memoryCache.delete(key);
+  }
+
+  while (memoryCache.size >= MEMORY_CACHE_MAX_ENTRIES) {
+    memoryCache.delete(memoryCache.keys().next().value);
+  }
+};
+
+const getMemoryJson = (key) => {
+  const entry = memoryCache.get(key);
+  if (!entry) return null;
+  if (entry.expiresAt <= Date.now()) {
+    memoryCache.delete(key);
+    return null;
+  }
+
+  memoryCache.delete(key);
+  memoryCache.set(key, entry);
+  try {
+    return JSON.parse(entry.value);
+  } catch {
+    memoryCache.delete(key);
+    return null;
+  }
+};
+
+const setMemoryJson = (key, value, ttlSeconds) => {
+  pruneMemoryCache();
+  memoryCache.set(key, {
+    value,
+    expiresAt: Date.now() + ttlSeconds * 1_000,
+  });
+};
 
 const withTimeout = async (promise, fallback = null) => {
   let timeoutId;
@@ -74,24 +114,26 @@ const getClient = async () => {
   return client?.isReady ? client : null;
 };
 
-// Bài toán 2 - Flight Search & Caching: đọc cache Redis trước để giảm tải read database.
+// Bài toán 2 - Flight Search & Caching: đọc Redis trước, dùng cache bộ nhớ có giới hạn khi Redis lỗi/chưa cấu hình.
 export const getCachedJson = async (key) => {
   const redis = await getClient();
 
-  if (!redis) {
-    return null;
+  if (redis) {
+    try {
+      const value = await withTimeout(redis.get(key));
+      if (value) return JSON.parse(value);
+    } catch {
+      // The bounded in-process cache keeps search available while Redis recovers.
+    }
   }
 
-  try {
-    const value = await withTimeout(redis.get(key));
-    return value ? JSON.parse(value) : null;
-  } catch {
-    return null;
-  }
+  return getMemoryJson(key);
 };
 
-// Bài toán 2 - Flight Search & Caching: cache ngắn hạn, Redis lỗi thì bỏ qua để API vẫn hoạt động.
+// Bài toán 2 - Flight Search & Caching: cache ngắn hạn ở local và Redis để API vẫn nhanh khi Redis gián đoạn.
 export const setCachedJson = async (key, value, ttlSeconds) => {
+  const serializedValue = JSON.stringify(value);
+  setMemoryJson(key, serializedValue, ttlSeconds);
   const redis = await getClient();
 
   if (!redis) {
@@ -99,7 +141,7 @@ export const setCachedJson = async (key, value, ttlSeconds) => {
   }
 
   try {
-    await withTimeout(redis.set(key, JSON.stringify(value), { EX: ttlSeconds }));
+    await withTimeout(redis.set(key, serializedValue, { EX: ttlSeconds }));
   } catch {
     return;
   }
@@ -109,19 +151,25 @@ export const setCachedJson = async (key, value, ttlSeconds) => {
 export const getCacheVersion = async (scope) => {
   const redis = await getClient();
 
-  if (!redis) {
-    return '0';
+  if (redis) {
+    try {
+      const version = await withTimeout(redis.get(`cache-version:${scope}`));
+      if (version !== null) {
+        memoryVersions.set(scope, version);
+        return version;
+      }
+    } catch {
+      // Fall through to the local version if Redis is temporarily unavailable.
+    }
   }
 
-  try {
-    return (await withTimeout(redis.get(`cache-version:${scope}`))) ?? '0';
-  } catch {
-    return '0';
-  }
+  return memoryVersions.get(scope) ?? '0';
 };
 
 // Bài toán 2 - Cache invalidation: mọi thay đổi tồn ghế hoặc chuyến bay sẽ tạo cache key phiên bản mới.
 export const bumpCacheVersion = async (scope) => {
+  const localVersion = String(Number(memoryVersions.get(scope) ?? 0) + 1);
+  memoryVersions.set(scope, localVersion);
   const redis = await getClient();
 
   if (!redis) {
@@ -129,7 +177,8 @@ export const bumpCacheVersion = async (scope) => {
   }
 
   try {
-    await withTimeout(redis.incr(`cache-version:${scope}`));
+    const version = await withTimeout(redis.incr(`cache-version:${scope}`));
+    if (version !== null) memoryVersions.set(scope, String(version));
   } catch {
     return;
   }

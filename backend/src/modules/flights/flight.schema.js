@@ -4,6 +4,15 @@ const flightStatuses = ['scheduled', 'boarding', 'departed', 'arrived', 'cancell
 
 const dateTimeSchema = z.string().datetime({ offset: true });
 
+const flightNumberSchema = z
+  .string()
+  .trim()
+  .min(2)
+  .max(12)
+  .toUpperCase()
+  .regex(/^[A-Z0-9 -]+$/, 'Flight number may only contain letters, numbers, spaces and hyphens')
+  .transform((value) => value.replace(/\s+/g, ''));
+
 const timezoneSchema = z
   .string()
   .trim()
@@ -25,14 +34,7 @@ export const flightSearchSchema = z
     departureDate: z.string().date().optional(),
     departureTimezone: timezoneSchema.optional(),
     airlineId: z.string().uuid().optional(),
-    flightNumber: z
-      .string()
-      .trim()
-      .min(2)
-      .max(12)
-      .toUpperCase()
-      .transform((value) => value.replace(/\s+/g, ''))
-      .optional(),
+    flightNumber: flightNumberSchema.optional(),
     cabinClass: z.enum(['economy', 'business', 'first']).optional(),
     passengerCount: z.coerce.number().int().min(1).max(9).default(1),
     status: z.enum(flightStatuses).optional(),
@@ -58,7 +60,7 @@ const flightInputSchema = z.object({
   aircraftId: z.string().uuid(),
   originAirportId: z.string().uuid(),
   destinationAirportId: z.string().uuid(),
-  flightNumber: z.string().trim().min(2).max(12).toUpperCase(),
+  flightNumber: flightNumberSchema,
   departureTime: dateTimeSchema,
   arrivalTime: dateTimeSchema,
   basePrice: z.coerce.number().min(0).max(999999999),

@@ -121,6 +121,8 @@ psql $DATABASE_URL -f database/migrations/20260721000000_harden_cancellation_and
 psql $DATABASE_URL -f database/migrations/20260725000000_complete_mvp_operations.sql
 psql $DATABASE_URL -f database/migrations/20260802000000_harden_core_transactions.sql
 psql $DATABASE_URL -f database/migrations/20260806000000_cleanup_stale_payment_intents.sql
+psql $DATABASE_URL -f database/migrations/20260806010000_optimize_flight_number_search.sql
+psql $DATABASE_URL -f database/migrations/20260806020000_complete_booking_lifecycle.sql
 ```
 
 Sau migrations, có thể tạo bộ dữ liệu demo lớn từ 05/08/2026 đến 05/09/2026 bằng:
@@ -138,14 +140,14 @@ Migration avatar tạo bucket `avatars` ở chế độ private. API chỉ nhậ
 ## Tồn ghế, tìm kiếm và thanh toán
 
 - Ghế được khoá bằng transaction Postgres (`SELECT ... FOR UPDATE`), có TTL 10 phút và job backend dọn ghế hết hạn mỗi phút. Redis chỉ là soft lock, nên không thể tạo overbooking khi Redis mất kết nối.
-- Tìm kiếm dùng index theo chặng/ngày, read client tùy chọn (`SUPABASE_READ_*`) và Redis cache 15 giây. Không cần Elasticsearch ở quy mô hiện tại; có thể thay query layer sau này nếu cần full-text search.
+- Tìm kiếm dùng index theo chặng/ngày và mã chuyến, read client tùy chọn (`SUPABASE_READ_*`), Redis cache 15 giây và cache bộ nhớ có giới hạn khi Redis tạm thời không khả dụng. Cache dùng version invalidation sau mọi thay đổi chuyến/tồn ghế và gom request đồng thời cùng điều kiện để tránh dồn tải vào database. Không cần Elasticsearch ở quy mô hiện tại.
 - Webhook thanh toán xác thực raw HTTP body, event ID và timestamp chống replay. RPC idempotent chuyển booking theo state machine; callback thành công đến sau TTL sẽ thành `refund_pending` để xử lý bù trừ.
 - `cash` hoạt động đầy đủ: người dùng tạo yêu cầu, admin xác nhận/từ chối.
 - `POST /api/payments/intent` bắt buộc có `Idempotency-Key` (8-200 ký tự). `POST /api/bookings` cũng nhận header này để retry an toàn. Muốn sửa giá booking, gọi `PATCH /api/payments/intent/:paymentId/expire` trước khi thay fare/ancillary.
 - Thanh toán online dùng adapter chuẩn hóa cấu hình qua `PAYMENT_CHECKOUT_API_URL`. Adapter nhận `provider`, `bookingId`, `transactionRef`, `amount`, `currency`, `returnUrl`, `cancelUrl`, `webhookUrl` và trả `{ "checkoutUrl": "https://..." }`. Adapter phải dùng `transactionRef` làm idempotency key ở provider.
 - VNPAY 2.1.0 là adapter trực tiếp, không cần `PAYMENT_CHECKOUT_API_URL`: bật bằng `PAYMENT_PROVIDER=vnpay` và cấu hình `VNPAY_TMN_CODE`, `VNPAY_HASH_SECRET`, `VNPAY_PAY_URL`, `VNPAY_RETURN_URL`. Return URL là `GET /api/payments/vnpay/return`; IPN HTTPS công khai cần đăng ký với VNPAY là `GET /api/payments/vnpay/ipn`. IPN kiểm tra HMAC-SHA512, merchant, mã giao dịch và số tiền trước khi gọi payment state machine; Return URL không cập nhật giao dịch.
 - Callback chuẩn hóa phải gửi `x-payment-event-id`, `x-payment-timestamp` và `x-payment-signature`. Chữ ký là HMAC-SHA256 dạng hex của chuỗi `<timestamp>.<raw-json-body>` với `PAYMENT_WEBHOOK_SECRET`. Body gồm `bookingId`, `transactionRef`, `provider`, `amount`, `currency`, `status` và `eventType`. Adapter phải chuẩn hóa `eventType` thành `payment.succeeded`, `payment.failed` hoặc `payment.ignored`; event và status phải khớp.
-- Hoàn tiền online dùng `PAYMENT_REFUND_API_URL`, luôn gửi `Idempotency-Key: refund:<refund_request_id>`. `PAYMENT_REFUND_STATUS_API_URL` phục vụ worker đối soát các refund đang `processing/requires_review`.
+- VNPAY hoàn tiền trực tiếp qua `VNPAY_API_URL`: backend ký HMAC-SHA512 cho yêu cầu `refund` (toàn phần `02`, một phần `03`) và dùng `querydr` để đối soát trạng thái `processing`. Các cổng khác dùng `PAYMENT_REFUND_API_URL`, luôn gửi `Idempotency-Key: refund:<refund_request_id>`; `PAYMENT_REFUND_STATUS_API_URL` phục vụ worker đối soát.
 - Hủy booking và hủy cả chuyến bay đi qua RPC version 2, giải phóng tồn kho, offload check-in, void vé và tạo refund/outbox trong một transaction.
 - Các endpoint public hold/release ghế đã bị loại bỏ. Chỉ `POST /api/bookings` được phép tạo seat hold.
 - Notification/email core được worker transactional outbox xử lý bằng `FOR UPDATE SKIP LOCKED`; inventory và refund có worker reconciliation riêng.

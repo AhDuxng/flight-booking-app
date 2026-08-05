@@ -7,16 +7,23 @@ let cleanupTimer;
 
 // Bài toán 1 - Seat Inventory & Concurrency: giải phóng các ghế held đã quá TTL bằng RPC transaction ở database.
 const releaseExpiredSeatHolds = async () => {
-  const { data, error } = await supabase.rpc('release_expired_held_seats');
+  const [seatResult, changeResult] = await Promise.all([
+    supabase.rpc('release_expired_held_seats'),
+    supabase.rpc('expire_stale_flight_change_quotes_v2'),
+  ]);
 
-  if (error) {
-    logger.error('seat_hold_cleanup_failed', { error: error.message });
-    return;
+  if (seatResult.error) {
+    logger.error('seat_hold_cleanup_failed', { error: seatResult.error.message });
   }
-
-  if (Number(data) > 0) {
-    logger.info('seat_holds_expired', { released_seats: Number(data) });
+  if (changeResult.error) {
+    logger.error('flight_change_quote_cleanup_failed', { error: changeResult.error.message });
+  }
+  if (Number(seatResult.data) > 0) {
+    logger.info('seat_holds_expired', { released_seats: Number(seatResult.data) });
     await bumpCacheVersion('flight-search');
+  }
+  if (Number(changeResult.data) > 0) {
+    logger.info('flight_change_quotes_expired', { expired_quotes: Number(changeResult.data) });
   }
 };
 

@@ -55,17 +55,36 @@ export default function ETicketDetailFeature({ bookingId }) {
   }, [bookingId]);
 
   const handleCancel = async () => {
-    if (!window.confirm("Bạn có chắc muốn hủy đặt chỗ này?")) {
-      return;
-    }
-
     setIsCancelling(true);
     try {
+      const quoteResponse = await bookingService.getCancellationQuote(bookingId);
+      const quote = quoteResponse.data;
+      const money = (value) => formatCurrency(Number(value ?? 0));
+      const message = quote.refundAmount
+        ? [
+            "Bạn có chắc muốn hủy đặt chỗ này?",
+            `Đã thanh toán: ${money(quote.paidAmount)}`,
+            `Phí hủy: ${money(quote.cancellationFee)}`,
+            `Dự kiến hoàn về ${(quote.refundMethods ?? [quote.refundMethod])
+              .filter(Boolean)
+              .map((method) => String(method).toUpperCase())
+              .join(", ")}: ${money(quote.refundAmount)}`,
+            "Khoản hoàn sẽ được tạo yêu cầu và đối soát với cổng thanh toán.",
+          ].join("\n")
+        : [
+            "Bạn có chắc muốn hủy đặt chỗ này?",
+            quote.paidAmount
+              ? `Hạng vé này không phát sinh khoản hoàn. Số tiền giữ lại theo điều kiện vé: ${money(quote.retainedAmount)}.`
+              : "Booking chưa thanh toán nên không có khoản tiền cần hoàn.",
+          ].join("\n");
+      if (!window.confirm(message)) return;
+
       const response = await bookingService.cancel(bookingId);
       setBooking(response.data);
+      const refundAmount = Number(response.data.cancellation_summary?.refund_amount ?? 0);
       toast.success(
-        response.data.status === "refund_pending"
-          ? "Đã hủy đặt chỗ và gửi yêu cầu hoàn tiền."
+        refundAmount > 0
+          ? `Đã hủy đặt chỗ và tạo yêu cầu hoàn ${formatCurrency(refundAmount)}.`
           : "Đã hủy đặt chỗ.",
       );
     } catch (requestError) {

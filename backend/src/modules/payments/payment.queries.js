@@ -2,7 +2,7 @@ import { supabase } from '../../config/supabase.js';
 import { throwDatabaseError } from '../../utils/error.js';
 
 const PAYMENT_COLUMNS =
-  'id, booking_id, user_id, amount, currency, provider, transaction_ref, status, purpose, change_request_id, checkout_url, idempotency_key, booking_price_version, amount_snapshot, currency_snapshot, expires_at, paid_at, created_at, updated_at';
+  'id, booking_id, user_id, amount, currency, provider, transaction_ref, status, purpose, change_request_id, checkout_url, idempotency_key, booking_price_version, amount_snapshot, currency_snapshot, expires_at, paid_at, raw_payload, created_at, updated_at';
 
 export const getOrCreateIntent = async (payload) => {
   const { data, error } = await supabase.rpc('get_or_create_payment_intent', {
@@ -25,6 +25,19 @@ export const expireIntent = async (paymentId, userId) => {
     p_user_id: userId,
   });
   throwDatabaseError(error, 'Unable to expire payment intent');
+  return data;
+};
+
+export const alignIntentExpiry = async (paymentId, userId, expiresAt) => {
+  const { data, error } = await supabase
+    .from('payments')
+    .update({ expires_at: expiresAt, updated_at: new Date().toISOString() })
+    .eq('id', paymentId)
+    .eq('user_id', userId)
+    .eq('status', 'pending')
+    .select(PAYMENT_COLUMNS)
+    .single();
+  throwDatabaseError(error, 'Unable to align payment expiry');
   return data;
 };
 

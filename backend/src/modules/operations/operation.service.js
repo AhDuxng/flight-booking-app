@@ -4,11 +4,18 @@ import { createHttpError } from '../../utils/error.js';
 import * as notificationService from '../notifications/notification.service.js';
 import * as paymentQueries from '../payments/payment.queries.js';
 import { attachOnlineCheckout } from '../payments/payment.service.js';
+import * as flightQueries from '../flights/flight.queries.js';
 import * as queries from './operation.queries.js';
 import { createBoardingPassPdf, createETicketPdf } from './document.service.js';
 import { sendTicketEmail } from './mail.service.js';
 import { generateScheduledFlights } from '../../jobs/scheduleGeneration.job.js';
 import { hashRequest, normalizeIdempotencyKey } from '../../utils/idempotency.js';
+import { bumpCacheVersion } from '../../config/cache.js';
+import {
+  buildVnpayRefundRequest,
+  classifyVnpayRefundResponse,
+  verifyVnpayApiResponse,
+} from '../payments/vnpay.gateway.js';
 
 const requireBooking = async (bookingId, userId) => {
   const booking = await queries.findBooking(bookingId, userId);
@@ -64,20 +71,13 @@ export const checkIn = async (bookingId, userId, payload) => {
   const passengerIds = new Set((booking.passengers ?? []).map((passenger) => passenger.id));
   if (payload.passengerIds.some((id) => !passengerIds.has(id)))
     throw createHttpError(400, 'Passenger does not belong to booking');
-  const ids = [];
-  for (const passengerId of payload.passengerIds) {
-    const seatId =
-      payload.seatAssignments.find((item) => item.passengerId === passengerId)?.seatId ?? null;
-    ids.push(
-      await queries.checkInPassenger(
-        bookingId,
-        passengerId,
-        userId,
-        payload.documentConfirmed,
-        seatId,
-      ),
-    );
-  }
+  await queries.checkInBooking(
+    bookingId,
+    payload.passengerIds,
+    userId,
+    payload.documentConfirmed,
+    payload.seatAssignments,
+  );
   const updated = await requireBooking(bookingId, userId);
   return updated.check_ins;
 };
@@ -98,14 +98,27 @@ export const getChangeOptions = async (bookingId, userId, query) => {
   if (!booking.fare?.change_allowed)
     throw createHttpError(409, 'Selected fare does not allow flight changes');
   const from = (query.page - 1) * query.limit;
-  const data = await queries.findChangeOptions(booking, from, from + query.limit - 1);
+  const { data } = await flightQueries.search(
+    {
+      originAirportId: booking.flight.origin_airport.id,
+      destinationAirportId: booking.flight.destination_airport.id,
+      cabinClass: booking.fare.cabin_class,
+      passengerCount: booking.passengers.length,
+    },
+    0,
+    query.page * query.limit,
+  );
+  const options = data
+    .filter((flight) => flight.id !== booking.flight_id)
+    .slice(from, from + query.limit);
   return Promise.all(
-    data.map(async (flight) => ({
-      ...flight,
-      quoted_fare_total:
-        (await queries.calculateFarePrice(flight.id, booking.fare.cabin_class, booking.fare.id)) *
-        booking.passengers.length,
-    })),
+    options.map(async (flight) => {
+      const farePrice = flight.fare_options?.find((fare) => fare.id === booking.fare.id)?.price;
+      const unitPrice =
+        farePrice ??
+        (await queries.calculateFarePrice(flight.id, booking.fare.cabin_class, booking.fare.id));
+      return { ...flight, quoted_fare_total: Number(unitPrice) * booking.passengers.length };
+    }),
   );
 };
 
@@ -122,19 +135,21 @@ export const confirmFlightChange = async (requestId, userId, provider, rawIdempo
   const request = await queries.findChangeRequest(requestId, userId);
   if (!request) throw createHttpError(404, 'Flight change quote not found');
   if (request.status === 'completed') return { change: request, payment: null };
-  if (
-    request.quote_expires_at <= new Date().toISOString() ||
-    !['quoted', 'pending_payment'].includes(request.status)
-  )
+  if (request.quote_expires_at <= new Date().toISOString()) {
+    await queries.expireChangeQuote(request.id, userId);
+    throw createHttpError(409, 'Flight change quote has expired');
+  }
+  if (!['quoted', 'pending_payment'].includes(request.status))
     throw createHttpError(409, 'Flight change quote has expired');
   if (Number(request.additional_amount) === 0) {
     const result = await queries.applyFlightChange(request.id, userId);
+    await bumpCacheVersion('flight-search');
     return { change: result, payment: null };
   }
   if (!['cash', ...env.paymentProviders].includes(provider))
     throw createHttpError(400, 'Payment provider is not configured');
   const idempotencyKey = normalizeIdempotencyKey(rawIdempotencyKey, { required: true });
-  const payment = await paymentQueries.getOrCreateIntent({
+  const intent = await paymentQueries.getOrCreateIntent({
     userId,
     bookingId: request.booking_id,
     purpose: 'flight_change',
@@ -144,6 +159,11 @@ export const confirmFlightChange = async (requestId, userId, provider, rawIdempo
     transactionRef: `change_${randomUUID()}`,
     changeRequestId: request.id,
   });
+  const payment = await paymentQueries.alignIntentExpiry(
+    intent.id,
+    userId,
+    request.quote_expires_at,
+  );
   const booking = await requireBooking(request.booking_id, userId);
   const checkout = payment.checkout_url ? payment : await attachOnlineCheckout(payment, booking);
   return { change: { ...request, status: 'pending_payment' }, payment: checkout };
@@ -232,12 +252,17 @@ export const createAdminResource = async (resource, payload, adminId) => {
     throw createHttpError(405, 'This resource must be created by its business workflow');
   }
   if (resource === 'flight_status_events') {
-    return queries.recordFlightStatusEvent(adminId, payload);
+    const event = await queries.recordFlightStatusEvent(adminId, payload);
+    await bumpCacheVersion('flight-search');
+    return event;
   }
   const normalized = ['cms_contents'].includes(resource)
     ? { ...payload, created_by: adminId }
     : payload;
   const data = await queries.insertAdminResource(resource, normalized);
+  if (['fare_classes', 'flight_schedules', 'routes'].includes(resource)) {
+    await bumpCacheVersion('flight-search');
+  }
   return data;
 };
 export const updateAdminResource = async (resource, id, payload) => {
@@ -249,13 +274,52 @@ export const updateAdminResource = async (resource, id, payload) => {
     resource === 'support_tickets' && ['resolved', 'closed'].includes(payload.status)
       ? { ...payload, resolved_at: payload.resolved_at ?? new Date().toISOString() }
       : payload;
-  return queries.updateAdminResource(resource, id, normalized);
+  const data = await queries.updateAdminResource(resource, id, normalized);
+  if (['fare_classes', 'flight_schedules', 'routes'].includes(resource)) {
+    await bumpCacheVersion('flight-search');
+  }
+  return data;
 };
-export const generateSchedules = async () => ({ createdFlights: await generateScheduledFlights() });
+export const generateSchedules = async () => {
+  const createdFlights = await generateScheduledFlights();
+  return { createdFlights };
+};
 
-const callRefundProvider = async (refund) => {
+const callRefundProvider = async (refund, context = {}) => {
   if (refund.payment.provider === 'cash')
     return { id: `cash_refund_${refund.id}`, status: 'succeeded' };
+  if (refund.payment.provider === 'vnpay') {
+    const request = buildVnpayRefundRequest({
+      refund,
+      config: {
+        tmnCode: env.vnpayTmnCode,
+        hashSecret: env.vnpayHashSecret,
+        apiUrl: env.vnpayApiUrl,
+      },
+      ipAddress: context.ipAddress,
+      createBy: context.adminId,
+    });
+    const response = await fetch(request.apiUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(request.payload),
+      signal: AbortSignal.timeout(env.paymentRequestTimeoutMs),
+    });
+    if (!response.ok) throw createHttpError(502, 'VNPAY refund request failed');
+    const result = await response.json();
+    if (!verifyVnpayApiResponse(result, env.vnpayHashSecret)) {
+      throw createHttpError(502, 'VNPAY refund response checksum is invalid');
+    }
+    const status = classifyVnpayRefundResponse(result);
+    if (status === 'failed') {
+      throw createHttpError(502, `VNPAY rejected refund (${result.vnp_ResponseCode ?? 'unknown'})`);
+    }
+    return {
+      ...result,
+      id: result.vnp_ResponseId ?? result.vnp_TransactionNo ?? refund.id,
+      status,
+    };
+  }
   if (!env.paymentRefundApiUrl || !env.paymentSecretKey)
     throw createHttpError(503, 'Refund provider is not configured');
   if (refund.payment.provider === 'stripe') {
@@ -301,7 +365,7 @@ const callRefundProvider = async (refund) => {
   return response.json();
 };
 
-export const decideRefund = async (refundId, adminId, payload) => {
+export const decideRefund = async (refundId, adminId, payload, ipAddress) => {
   const refund = await queries.findRefundRequest(refundId);
   if (!refund) throw createHttpError(404, 'Refund request not found');
   if (refund.status === 'processing') return refund;
@@ -314,7 +378,10 @@ export const decideRefund = async (refundId, adminId, payload) => {
     throw createHttpError(400, 'Approved amount exceeds requested amount');
   await queries.reviewRefundRequest(refundId, adminId, 'approve', approvedAmount, payload.reason);
   try {
-    const providerResult = await callRefundProvider({ ...refund, approved_amount: approvedAmount });
+    const providerResult = await callRefundProvider(
+      { ...refund, approved_amount: approvedAmount },
+      { adminId, ipAddress },
+    );
     const providerStatus = String(providerResult.status ?? 'succeeded').toLowerCase();
     if (['succeeded', 'success', 'completed'].includes(providerStatus)) {
       return queries.completeRefundV2(
