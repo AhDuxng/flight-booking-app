@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import Button from "@/components/common/Button";
+import CurrencyInput from "@/components/common/CurrencyInput";
 import ErrorMessage from "@/components/common/ErrorMessage";
 import Input from "@/components/common/Input";
 import Loading from "@/components/common/Loading";
@@ -255,13 +256,12 @@ export default function AdminFlightFormFeature({ mode = "create" }) {
             type="time"
             value={values.arrivalTime}
           />
-          <Input
+          <CurrencyInput
             label="Giá vé cơ bản"
-            min="0"
             name="basePrice"
-            onChange={(event) => setField("basePrice", event.target.value)}
+            onValueChange={(value) => setField("basePrice", value)}
+            placeholder="1.000.000"
             required
-            type="number"
             value={values.basePrice}
           />
           {mode === "create" ? (

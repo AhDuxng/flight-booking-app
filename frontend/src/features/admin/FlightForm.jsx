@@ -1,4 +1,5 @@
 import Button from "@/components/common/Button";
+import CurrencyInput from "@/components/common/CurrencyInput";
 import Input from "@/components/common/Input";
 import Select from "@/components/common/Select";
 import { useForm } from "@/hooks/useForm";
@@ -96,12 +97,12 @@ export default function FlightForm({ initialValues, onSubmit, submitLabel = "Lư
             value={values.arrival}
           />
         </div>
-        <Input
+        <CurrencyInput
           label="Giá vé cơ bản"
           name="price"
-          onChange={handleChange}
+          onValueChange={(value) => setFieldValue("price", value)}
+          placeholder="1.000.000"
           required
-          type="number"
           value={values.price}
         />
         <Input

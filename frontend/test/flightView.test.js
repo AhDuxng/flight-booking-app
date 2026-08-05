@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { toFlightView } from "../src/features/flights/flightView.js";
+import { formatCurrencyInput, normalizeCurrencyInput } from "../src/lib/currencyInput.js";
 
 test("flight API data is normalized for the UI", () => {
   const result = toFlightView({
@@ -31,4 +32,12 @@ test("invalid flight duration is represented as unavailable", () => {
     arrival_time: "2026-07-22T02:00:00.000Z",
   });
   assert.equal(result.duration, null);
+});
+
+test("currency input uses Vietnamese thousands separators and preserves a raw numeric value", () => {
+  assert.equal(formatCurrencyInput("1000000"), "1.000.000");
+  assert.equal(formatCurrencyInput(134000000), "134.000.000");
+  assert.equal(normalizeCurrencyInput("1.000.000 đ"), "1000000");
+  assert.equal(normalizeCurrencyInput("0001250000"), "1250000");
+  assert.equal(formatCurrencyInput(""), "");
 });
