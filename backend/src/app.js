@@ -81,6 +81,9 @@ export const createApp = () => {
       path: req.originalUrl,
       status,
       error_code: err.code,
+      database_code: err.databaseCode ?? err.cause?.code,
+      database_details: err.databaseDetails ?? err.cause?.details,
+      database_hint: err.databaseHint ?? err.cause?.hint,
       error: err.message,
     });
 

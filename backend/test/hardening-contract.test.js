@@ -14,6 +14,7 @@ import {
   verifyVnpaySignature,
 } from '../src/modules/payments/vnpay.gateway.js';
 import { resolveFrontendOrigins } from '../src/config/frontendOrigins.js';
+import { isSupabaseServerKey } from '../src/config/supabaseKey.js';
 
 const migrationUrl = new URL(
   '../database/migrations/20260802000000_harden_core_transactions.sql',
@@ -42,6 +43,19 @@ test('production OAuth redirects never select a loopback frontend origin', () =>
     nodeEnv: 'development',
   });
   assert.equal(development.frontendUrl, 'http://localhost:5173');
+});
+
+test('backend rejects Supabase anon and publishable keys for server operations', () => {
+  const jwt = (role) => [
+    Buffer.from('{}').toString('base64url'),
+    Buffer.from(JSON.stringify({ role })).toString('base64url'),
+    'signature',
+  ].join('.');
+
+  assert.equal(isSupabaseServerKey(jwt('service_role')), true);
+  assert.equal(isSupabaseServerKey(jwt('anon')), false);
+  assert.equal(isSupabaseServerKey('sb_secret_server-key'), true);
+  assert.equal(isSupabaseServerKey('sb_publishable_browser-key'), false);
 });
 
 test('normalized payment webhooks require currency and event identity', () => {

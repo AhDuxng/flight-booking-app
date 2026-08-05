@@ -120,6 +120,7 @@ psql $DATABASE_URL -f database/migrations/20260716000000_add_private_avatar_stor
 psql $DATABASE_URL -f database/migrations/20260721000000_harden_cancellation_and_refunds.sql
 psql $DATABASE_URL -f database/migrations/20260725000000_complete_mvp_operations.sql
 psql $DATABASE_URL -f database/migrations/20260802000000_harden_core_transactions.sql
+psql $DATABASE_URL -f database/migrations/20260806000000_cleanup_stale_payment_intents.sql
 ```
 
 Sau migrations, có thể tạo bộ dữ liệu demo lớn từ 05/08/2026 đến 05/09/2026 bằng:

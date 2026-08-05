@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import { z } from 'zod';
 import { resolveFrontendOrigins } from './frontendOrigins.js';
+import { isSupabaseServerKey } from './supabaseKey.js';
 
 const booleanFromString = z
   .string()
@@ -43,9 +44,22 @@ const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().int().min(1).max(65535).default(5000),
   SUPABASE_URL: z.string().url(),
-  SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
+  SUPABASE_SERVICE_ROLE_KEY: z
+    .string()
+    .min(1)
+    .refine(
+      isSupabaseServerKey,
+      'SUPABASE_SERVICE_ROLE_KEY must be a service_role JWT or sb_secret key, not an anon/publishable key',
+    ),
   SUPABASE_READ_URL: z.string().url().optional().or(z.literal('')).default(''),
-  SUPABASE_READ_SERVICE_ROLE_KEY: z.string().optional().default(''),
+  SUPABASE_READ_SERVICE_ROLE_KEY: z
+    .string()
+    .optional()
+    .default('')
+    .refine(
+      (value) => !value || isSupabaseServerKey(value),
+      'SUPABASE_READ_SERVICE_ROLE_KEY must be a service_role JWT or sb_secret key',
+    ),
   JWT_SECRET: z.string().min(32),
   FRONTEND_URL: corsOriginsSchema,
   TRUST_PROXY: booleanFromString,
