@@ -115,7 +115,7 @@ export default function AdminDashboardFeature() {
           <AdminStatCard key={stat.label} {...stat} />
         ))}
       </div>
-      <div className="grid grid-cols-1 gap-stack-md xl:grid-cols-2">
+      <div className="flex flex-col gap-stack-md">
         <DashboardSection
           icon={CalendarCheck}
           rows={bookings}
