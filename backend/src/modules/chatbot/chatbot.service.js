@@ -3,6 +3,7 @@ import { createHttpError } from '../../utils/error.js';
 import { logger } from '../../utils/logger.js';
 import { loadFlightPromptContext } from './chatbot.flight-context.js';
 import { buildChatbotFallback, isGeminiCredentialFailure } from './chatbot.fallback.js';
+import { isPromotionQuestion, loadPromotionPromptContext } from './chatbot.promotion-context.js';
 
 const GEMINI_API_BASE_URL = 'https://generativelanguage.googleapis.com/v1beta';
 
@@ -12,6 +13,7 @@ const SYSTEM_INSTRUCTION = [
   'Hỗ trợ tìm chuyến bay, hành lý, đổi/hoàn vé, khuyến mãi và thông tin đặt chỗ.',
   'Không tự xác nhận đặt vé, thanh toán, hoàn tiền hoặc thay đổi booking khi người dùng chưa thực hiện trên hệ thống.',
   'Nếu cần dữ liệu cá nhân, mã đặt chỗ hoặc thông tin thời gian thực mà bạn không có, hãy hỏi lại người dùng hoặc hướng dẫn họ kiểm tra trong tài khoản VietFly.',
+  'Luôn ưu tiên yêu cầu hiện tại; không giữ chặng bay, ngày bay hoặc ý định từ câu trước khi câu hiện tại đã cung cấp thông tin mới.',
 ].join(' ');
 
 let nextApiKeyIndex = 0;
@@ -120,10 +122,12 @@ const extractText = (body) => {
 };
 
 export const sendMessage = async (payload) => {
-  const flightContext = await loadFlightPromptContext(payload);
+  const realtimeContext = isPromotionQuestion(payload.message)
+    ? await loadPromotionPromptContext(payload.message)
+    : await loadFlightPromptContext(payload);
   const geminiPayload = buildGeminiPayload({
     ...payload,
-    flightPrompt: flightContext?.prompt,
+    flightPrompt: realtimeContext?.prompt,
   });
   const attempts = env.geminiApiKeys.length;
   let lastError;
@@ -137,7 +141,7 @@ export const sendMessage = async (payload) => {
       return {
         text: extractText(body),
         model: env.geminiModel,
-        grounding: flightContext?.metadata ?? null,
+        grounding: realtimeContext?.metadata ?? null,
       };
     } catch (error) {
       lastError = error;
@@ -157,8 +161,8 @@ export const sendMessage = async (payload) => {
   });
   return {
     degraded: true,
-    grounding: flightContext?.metadata ?? null,
+    grounding: realtimeContext?.metadata ?? null,
     model: 'vietfly-fallback',
-    text: buildChatbotFallback(payload.message, flightContext),
+    text: buildChatbotFallback(payload.message, realtimeContext),
   };
 };

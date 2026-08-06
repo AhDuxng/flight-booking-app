@@ -32,6 +32,7 @@ export const flightSearchSchema = z
     originAirportId: z.string().uuid().optional(),
     destinationAirportId: z.string().uuid().optional(),
     departureDate: z.string().date().optional(),
+    departureDateTo: z.string().date().optional(),
     departureTimezone: timezoneSchema.optional(),
     airlineId: z.string().uuid().optional(),
     flightNumber: flightNumberSchema.optional(),
@@ -47,6 +48,26 @@ export const flightSearchSchema = z
         code: z.ZodIssueCode.custom,
         path: ['destinationAirportId'],
         message: 'Origin and destination must differ',
+      });
+    }
+
+    if (value.departureDateTo && !value.departureDate) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['departureDateTo'],
+        message: 'Departure start date is required when an end date is provided',
+      });
+    }
+
+    if (
+      value.departureDate &&
+      value.departureDateTo &&
+      value.departureDateTo < value.departureDate
+    ) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['departureDateTo'],
+        message: 'Departure end date must not be before the start date',
       });
     }
   });

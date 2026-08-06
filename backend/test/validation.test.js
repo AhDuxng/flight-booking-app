@@ -11,10 +11,12 @@ import { createPagination, getPagination } from '../src/utils/pagination.js';
 import {
   detectAirports,
   detectDepartureDate,
+  detectDepartureWindow,
   detectFlightNumber,
   detectPassengerCount,
   normalizeVietnameseText,
 } from '../src/modules/chatbot/chatbot.flight-context.js';
+import { isPromotionQuestion } from '../src/modules/chatbot/chatbot.promotion-context.js';
 import {
   checkInSchema,
   flightStatusQuerySchema,
@@ -34,6 +36,9 @@ import {
 
 const FIRST_UUID = '11111111-1111-4111-8111-111111111111';
 const SECOND_UUID = '22222222-2222-4222-8222-222222222222';
+const THIRD_UUID = '33333333-3333-4333-8333-333333333333';
+const FOURTH_UUID = '44444444-4444-4444-8444-444444444444';
+const FIFTH_UUID = '55555555-5555-4555-8555-555555555555';
 const AIRPORTS = [
   {
     id: FIRST_UUID,
@@ -47,6 +52,27 @@ const AIRPORTS = [
     code: 'DAD',
     city: 'Đà Nẵng',
     name: 'Sân bay Quốc tế Đà Nẵng',
+    timezone: 'Asia/Ho_Chi_Minh',
+  },
+  {
+    id: THIRD_UUID,
+    code: 'DLI',
+    city: 'Đà Lạt',
+    name: 'Sân bay Liên Khương',
+    timezone: 'Asia/Ho_Chi_Minh',
+  },
+  {
+    id: FOURTH_UUID,
+    code: 'PQC',
+    city: 'Phú Quốc',
+    name: 'Sân bay Quốc tế Phú Quốc',
+    timezone: 'Asia/Ho_Chi_Minh',
+  },
+  {
+    id: FIFTH_UUID,
+    code: 'SGN',
+    city: 'Sài Gòn',
+    name: 'Sân bay Quốc tế Tân Sơn Nhất',
     timezone: 'Asia/Ho_Chi_Minh',
   },
 ];
@@ -69,6 +95,21 @@ test('flight search rejects an identical origin and destination', () => {
     flightSearchSchema.safeParse({
       originAirportId: FIRST_UUID,
       destinationAirportId: FIRST_UUID,
+    }).success,
+    false,
+  );
+});
+
+test('flight search accepts an inclusive date range', () => {
+  const result = flightSearchSchema.parse({
+    departureDate: '2026-08-10',
+    departureDateTo: '2026-08-16',
+  });
+  assert.equal(result.departureDateTo, '2026-08-16');
+  assert.equal(
+    flightSearchSchema.safeParse({
+      departureDate: '2026-08-16',
+      departureDateTo: '2026-08-10',
     }).success,
     false,
   );
@@ -200,6 +241,75 @@ test('chatbot understands relative dates, passengers and flight numbers', () => 
   assert.equal(detectFlightNumber('Thông tin chuyến VN 215'), 'VN215');
   assert.equal(detectFlightNumber('Bay ngày 25/07/2026'), null);
   assert.equal(detectFlightNumber('Tìm vé cho 2 người'), null);
+});
+
+test('chatbot treats "đi Đà Lạt" as a destination and resolves next week', () => {
+  const route = detectAirports('Tìm chuyến bay đi Đà Lạt', AIRPORTS);
+  assert.equal(route.origin, null);
+  assert.equal(route.destination?.code, 'DLI');
+
+  const window = detectDepartureWindow(
+    'Tìm chuyến bay đến Đà Lạt bất kỳ ngày nào trong tuần sau',
+    new Date('2026-08-06T03:00:00.000Z'),
+  );
+  assert.deepEqual(
+    { endDate: window.endDate, startDate: window.startDate },
+    { endDate: '2026-08-16', startDate: '2026-08-10' },
+  );
+});
+
+test('chatbot parses each new route without retaining the previous destination', () => {
+  const previous = detectAirports('Tìm chuyến bay từ Hà Nội đến Phú Quốc vào tuần sau', AIRPORTS);
+  const current = detectAirports('Tìm chuyến bay từ Hà Nội đến Sài Gòn vào tuần sau', AIRPORTS);
+
+  assert.equal(previous.destination?.code, 'PQC');
+  assert.equal(current.origin?.code, 'HAN');
+  assert.equal(current.destination?.code, 'SGN');
+});
+
+test('chatbot classifies hot promotions separately from flight search', () => {
+  assert.equal(isPromotionQuestion('Khuyến mãi hot'), true);
+  assert.equal(isPromotionQuestion('Tìm chuyến bay đến Phú Quốc'), false);
+
+  const response = buildChatbotFallback('Khuyến mãi hot', {
+    metadata: {
+      intent: 'promotion',
+      discounts: [
+        {
+          code: 'FLAT50K',
+          endDate: '2026-09-01T00:00:00.000Z',
+          minimumOrder: 500_000,
+          value: '50.000đ',
+        },
+      ],
+    },
+  });
+  assert.match(response, /FLAT50K/);
+  assert.doesNotMatch(response, /chuyến bay phù hợp/);
+});
+
+test('chatbot degraded mode returns real flight details instead of a generic outage', () => {
+  const response = buildChatbotFallback('Tìm chuyến bay đi Đà Lạt', {
+    metadata: {
+      departureLabel: 'tuần sau (10/08–16/08/2026)',
+      flightCount: 1,
+      flights: [
+        {
+          availableSeats: 20,
+          departureTime: '2026-08-10T01:00:00.000Z',
+          destination: 'DLI',
+          flightNumber: 'VN123',
+          id: FIRST_UUID,
+          origin: 'HAN',
+          price: 1_200_000,
+        },
+      ],
+      intent: 'flight',
+    },
+  });
+  assert.match(response, /VN123/);
+  assert.match(response, /HAN → DLI/);
+  assert.doesNotMatch(response, /tạm gián đoạn/);
 });
 
 test('discount preview applies percentage caps and never exceeds the order total', () => {

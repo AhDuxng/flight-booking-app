@@ -17,6 +17,7 @@ const buildSearchCacheKey = (filters, version) => {
     airlineId: filters.airlineId ?? null,
     cabinClass: filters.cabinClass ?? null,
     departureDate: filters.departureDate ?? null,
+    departureDateTo: filters.departureDateTo ?? null,
     departureTimezone: filters.departureTimezone ?? null,
     destinationAirportId: filters.destinationAirportId ?? null,
     flightNumber: filters.flightNumber ?? null,

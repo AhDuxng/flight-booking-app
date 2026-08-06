@@ -158,7 +158,12 @@ export const search = async (filters, from, to) => {
     const start = dayjs
       .tz(filters.departureDate, filters.departureTimezone ?? 'UTC')
       .startOf('day');
-    const end = start.add(1, 'day');
+    const end = filters.departureDateTo
+      ? dayjs
+          .tz(filters.departureDateTo, filters.departureTimezone ?? 'UTC')
+          .startOf('day')
+          .add(1, 'day')
+      : start.add(1, 'day');
     const lowerBound = start.isAfter(dayjs()) ? start : dayjs();
     departureFrom = lowerBound.toISOString();
     departureTo = end.toISOString();

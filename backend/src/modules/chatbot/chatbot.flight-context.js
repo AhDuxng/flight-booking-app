@@ -62,7 +62,7 @@ const roleBeforeMention = (normalizedText, index) => {
     return 'origin';
   }
 
-  if (/\b(?:den|toi|bay den|di den)\s*$/.test(prefix)) {
+  if (/\b(?:den|toi|bay den|di den|di)\s*$/.test(prefix)) {
     return 'destination';
   }
 
@@ -158,6 +158,39 @@ export const detectDepartureDate = (text, now = new Date()) => {
   return candidate.isValid() ? candidate.format('YYYY-MM-DD') : null;
 };
 
+export const detectDepartureWindow = (text, now = new Date()) => {
+  const normalizedText = normalizeVietnameseText(text);
+  const today = dayjs(now).tz(DEFAULT_TIMEZONE).startOf('day');
+
+  if (/\btuan sau\b/.test(normalizedText)) {
+    const daysUntilNextMonday = today.day() === 0 ? 1 : 8 - today.day();
+    const start = today.add(daysUntilNextMonday, 'day');
+    return {
+      endDate: start.add(6, 'day').format('YYYY-MM-DD'),
+      label: `tuần sau (${start.format('DD/MM')}–${start.add(6, 'day').format('DD/MM/YYYY')})`,
+      startDate: start.format('YYYY-MM-DD'),
+    };
+  }
+
+  if (/\btuan nay\b/.test(normalizedText)) {
+    const daysUntilSunday = today.day() === 0 ? 0 : 7 - today.day();
+    return {
+      endDate: today.add(daysUntilSunday, 'day').format('YYYY-MM-DD'),
+      label: `tuần này (${today.format('DD/MM')}–${today.add(daysUntilSunday, 'day').format('DD/MM/YYYY')})`,
+      startDate: today.format('YYYY-MM-DD'),
+    };
+  }
+
+  const departureDate = detectDepartureDate(text, now);
+  return departureDate
+    ? {
+        endDate: departureDate,
+        label: dayjs(departureDate).format('DD/MM/YYYY'),
+        startDate: departureDate,
+      }
+    : null;
+};
+
 export const detectPassengerCount = (text) => {
   const normalizedText = normalizeVietnameseText(text);
   const match = normalizedText.match(/\b([1-9])\s*(?:nguoi|hanh khach|ve)\b/);
@@ -212,7 +245,7 @@ const createPromptContext = ({ filters, flights, pagination, airports }) => {
     filters.destination
       ? `điểm đến ${filters.destination.code} - ${filters.destination.city}`
       : null,
-    filters.departureDate ? `ngày ${filters.departureDate}` : null,
+    filters.departureWindow ? `thời gian ${filters.departureWindow.label}` : null,
     `${filters.passengerCount} hành khách`,
   ]
     .filter(Boolean)
@@ -238,26 +271,22 @@ const createPromptContext = ({ filters, flights, pagination, airports }) => {
   ].join('\n');
 };
 
-export const loadFlightPromptContext = async ({ message, history = [] }) => {
-  const recentUserMessages = history
-    .filter((item) => item.role === 'user')
-    .slice(-2)
-    .map((item) => item.text);
-  const conversationText = [...recentUserMessages, message].join(' ');
-
-  if (!isFlightDataQuestion(conversationText)) {
+export const loadFlightPromptContext = async ({ message }) => {
+  if (!isFlightDataQuestion(message)) {
     return null;
   }
 
   try {
     const airports = await findAirports();
-    const { origin, destination } = detectAirports(conversationText, airports);
-    const departureDate =
-      detectDepartureDate(message) ?? detectDepartureDate(recentUserMessages.at(-1) ?? '');
-    const passengerCount = detectPassengerCount(message) || detectPassengerCount(conversationText);
-    const flightNumber = detectFlightNumber(message) ?? detectFlightNumber(conversationText);
+    // Mỗi yêu cầu tìm kiếm mới được phân tích độc lập để chặng cũ không làm nhiễm chặng mới.
+    const { origin, destination } = detectAirports(message, airports);
+    const departureWindow = detectDepartureWindow(message);
+    const departureDate = departureWindow?.startDate ?? null;
+    const passengerCount = detectPassengerCount(message);
+    const flightNumber = detectFlightNumber(message);
     const searchFilters = {
       departureDate,
+      departureDateTo: departureWindow?.endDate,
       departureTimezone: origin?.timezone ?? DEFAULT_TIMEZONE,
       destinationAirportId: destination?.id,
       flightNumber,
@@ -269,6 +298,7 @@ export const loadFlightPromptContext = async ({ message, history = [] }) => {
     const result = await flightService.searchFlights(searchFilters);
     const filters = {
       departureDate,
+      departureWindow,
       destination,
       flightNumber,
       origin,
@@ -278,9 +308,21 @@ export const loadFlightPromptContext = async ({ message, history = [] }) => {
     return {
       metadata: {
         departureDate,
+        departureDateTo: departureWindow?.endDate ?? null,
+        departureLabel: departureWindow?.label ?? null,
         destination: destination?.code ?? null,
         flightCount: result.pagination.total,
+        flights: result.data.map((flight) => ({
+          availableSeats: flight.available_seats,
+          departureTime: flight.departure_time,
+          destination: flight.destination_airport?.code,
+          flightNumber: flight.flight_number,
+          id: flight.id,
+          origin: flight.origin_airport?.code,
+          price: Number(flight.dynamic_price),
+        })),
         flightNumber,
+        intent: 'flight',
         origin: origin?.code ?? null,
       },
       prompt: createPromptContext({
@@ -293,7 +335,7 @@ export const loadFlightPromptContext = async ({ message, history = [] }) => {
   } catch (error) {
     console.error('Unable to ground chatbot with flight data', error);
     return {
-      metadata: { unavailable: true },
+      metadata: { intent: 'flight', unavailable: true },
       prompt: [
         'Dữ liệu chuyến bay VietFly hiện không truy xuất được.',
         'Không được tự bịa thông tin chuyến bay, giá, giờ hoặc số ghế.',
