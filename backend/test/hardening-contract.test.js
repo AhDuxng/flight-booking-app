@@ -34,6 +34,10 @@ const lifecycleMigrationUrl = new URL(
   '../database/migrations/20260806020000_complete_booking_lifecycle.sql',
   import.meta.url,
 );
+const checkoutMigrationUrl = new URL(
+  '../database/migrations/20260806030000_fix_booking_checkout.sql',
+  import.meta.url,
+);
 
 test('request hashing is deterministic and rejects unsafe idempotency keys', () => {
   assert.equal(stableStringify({ b: 2, a: 1 }), '{"a":1,"b":2}');
@@ -289,6 +293,15 @@ test('lifecycle migration makes group check-in atomic and refund rejection termi
   assert.match(sql, /CREATE OR REPLACE FUNCTION public\.complete_refund_v2/);
   assert.match(sql, /UPDATE public\.payments SET status='success'/);
   assert.match(sql, /Seats are the inventory source of truth/);
+  assert.match(sql, /TO service_role/);
+});
+
+test('checkout migration applies discounts once after fare pricing', async () => {
+  const sql = await readFile(checkoutMigrationUrl, 'utf8');
+  assert.match(sql, /p_passengers, p_seat_ids, p_baggage, p_meals, NULL/);
+  assert.ok(sql.indexOf('set_booking_fare') < sql.indexOf('INSERT INTO public.booking_discounts'));
+  assert.match(sql, /applicable_to IN \('all', 'flight'\)/);
+  assert.match(sql, /DISCOUNT_NOT_ELIGIBLE/);
   assert.match(sql, /TO service_role/);
 });
 

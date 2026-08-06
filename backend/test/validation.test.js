@@ -22,6 +22,11 @@ import {
   createETicketPdf,
 } from '../src/modules/operations/document.service.js';
 import { adminListQuerySchema } from '../src/modules/admin/admin.schema.js';
+import { calculateDiscountAmount } from '../src/modules/discounts/discount.calculator.js';
+import {
+  buildChatbotFallback,
+  isGeminiCredentialFailure,
+} from '../src/modules/chatbot/chatbot.fallback.js';
 
 const FIRST_UUID = '11111111-1111-4111-8111-111111111111';
 const SECOND_UUID = '22222222-2222-4222-8222-222222222222';
@@ -176,6 +181,35 @@ test('chatbot understands relative dates, passengers and flight numbers', () => 
   assert.equal(detectFlightNumber('Thông tin chuyến VN 215'), 'VN215');
   assert.equal(detectFlightNumber('Bay ngày 25/07/2026'), null);
   assert.equal(detectFlightNumber('Tìm vé cho 2 người'), null);
+});
+
+test('discount preview applies percentage caps and never exceeds the order total', () => {
+  assert.equal(
+    calculateDiscountAmount(
+      { discount_type: 'percentage', discount_value: 20, max_discount: 150_000 },
+      1_000_000,
+    ),
+    150_000,
+  );
+  assert.equal(
+    calculateDiscountAmount(
+      { discount_type: 'fixed', discount_value: 800_000, max_discount: null },
+      500_000,
+    ),
+    500_000,
+  );
+});
+
+test('chatbot retries invalid credentials and returns a safe Vietnamese fallback', () => {
+  assert.equal(
+    isGeminiCredentialFailure(400, {
+      error: { status: 'INVALID_ARGUMENT', message: 'API key not valid' },
+    }),
+    true,
+  );
+  const response = buildChatbotFallback('Tôi muốn hoàn vé', null);
+  assert.match(response, /Đặt chỗ của tôi/);
+  assert.doesNotMatch(response, /API key|Gemini/i);
 });
 
 test('operations validation enforces document confirmation and refund decisions', () => {

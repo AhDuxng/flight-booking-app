@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowRight, ChevronRight, Plane, ShieldCheck, UserRound } from "lucide-react";
+import { ArrowLeft, ArrowRight, ChevronRight, Plane, ShieldCheck, UserRound } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import BookingSteps from "@/components/booking/BookingSteps";
@@ -7,10 +7,11 @@ import SeatMap from "@/components/booking/SeatMap";
 import ErrorMessage from "@/components/common/ErrorMessage";
 import Loading from "@/components/common/Loading";
 import { bookingService } from "@/features/bookings/bookingService";
+import { discountService } from "@/features/discounts/discountService";
 import { flightService } from "@/features/flights/flightService";
 import { formatCurrency, formatDateTime, toFlightView } from "@/features/flights/flightView";
 import { seatService } from "@/features/seats/seatService";
-import { getErrorMessage } from "@/lib/apiError";
+import { getBookingErrorMessage, getErrorMessage } from "@/lib/apiError";
 import { cn } from "@/lib/utils";
 import { bookingStore, useBookingStore } from "@/store/bookingStore";
 
@@ -25,10 +26,12 @@ export default function SeatSelector() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [discountAmount, setDiscountAmount] = useState(() =>
+    Number(passengerInfo?.discountAmount ?? 0),
+  );
 
   useEffect(() => {
     if (!passengerInfo?.passengers?.length) {
-      bookingStore.reset();
       navigate(`/booking/${flightId}`, { replace: true });
       return;
     }
@@ -82,6 +85,12 @@ export default function SeatSelector() {
     const mealTotal = mealItems.reduce((total, item) => total + Number(item?.price ?? 0), 0);
     return seatTotal * fareMultiplier + baggageTotal + mealTotal;
   }, [passengerInfo, selectedSeats]);
+  const finalTotal = Math.max(0, totalPrice - discountAmount);
+  const fareCabinClass = passengerInfo?.fareCabinClass ?? "economy";
+  const eligibleSeats = useMemo(
+    () => seats.filter((seat) => seat.seat_class === fareCabinClass),
+    [fareCabinClass, seats],
+  );
 
   const passengerCount = passengerInfo?.passengers?.length ?? 0;
 
@@ -107,6 +116,13 @@ export default function SeatSelector() {
     setIsSubmitting(true);
 
     try {
+      if (passengerInfo.discountCode) {
+        const discountResponse = await discountService.validate({
+          code: passengerInfo.discountCode,
+          orderValue: totalPrice,
+        });
+        setDiscountAmount(Number(discountResponse.data?.discountAmount ?? 0));
+      }
       const response = await bookingService.create(
         {
           flightId,
@@ -130,10 +146,11 @@ export default function SeatSelector() {
         bookingIdempotencyKey.current,
       );
       selectedSeats.forEach(bookingStore.addSeat);
+      bookingStore.clearBookingDraft();
       toast.success("Đã giữ chỗ. Hãy hoàn tất thanh toán trước khi hết hạn.");
       navigate(`/payment/${response.data.id}`);
     } catch (requestError) {
-      toast.error(getErrorMessage(requestError, "Không thể tạo đặt chỗ. Vui lòng chọn ghế khác."));
+      toast.error(getBookingErrorMessage(requestError));
       const seatsResponse = await seatService.getByFlight(flightId).catch(() => null);
       if (seatsResponse?.data) {
         setSeats(seatsResponse.data);
@@ -163,12 +180,17 @@ export default function SeatSelector() {
         <div className="grid grid-cols-1 items-start gap-stack-lg lg:grid-cols-12">
           <div className="flex flex-col gap-stack-lg lg:col-span-8">
             <FlightHeader
+              cabinClass={fareCabinClass}
               flight={flight}
               passengerCount={passengerCount}
               selectedCount={selectedSeats.length}
             />
             <SeatLegend />
-            <SeatMap seats={seats} onSelectSeat={handleSelectSeat} selectedSeats={selectedSeats} />
+            <SeatMap
+              seats={eligibleSeats}
+              onSelectSeat={handleSelectSeat}
+              selectedSeats={selectedSeats}
+            />
           </div>
           <div className="lg:sticky lg:top-24 lg:col-span-4">
             <SeatSummary
@@ -177,6 +199,9 @@ export default function SeatSelector() {
               onContinue={handleContinue}
               passengerCount={passengerCount}
               fareMultiplier={Number(passengerInfo?.fareMultiplier ?? 1)}
+              discountAmount={discountAmount}
+              finalTotal={finalTotal}
+              onBack={() => navigate(`/booking/${flightId}${window.location.search}`)}
               selectedSeats={selectedSeats}
               totalPrice={totalPrice}
             />
@@ -201,7 +226,7 @@ function StepTrail() {
   );
 }
 
-function FlightHeader({ flight, passengerCount, selectedCount }) {
+function FlightHeader({ flight, passengerCount, selectedCount, cabinClass }) {
   return (
     <section className="flex flex-col gap-stack-md rounded-xl border border-outline-variant bg-surface-container-lowest p-container-padding shadow-sm md:flex-row md:items-center md:justify-between">
       <div>
@@ -212,6 +237,9 @@ function FlightHeader({ flight, passengerCount, selectedCount }) {
           <span className="font-bold">{flight.destination}</span>
           <span className="mx-2 text-outline">|</span>
           {flight.flightNumber}
+          <span className="rounded-full bg-primary-fixed px-2 py-1 text-xs font-semibold text-on-primary-fixed">
+            {formatCabinClass(cabinClass)}
+          </span>
         </p>
       </div>
       <div className="flex w-fit items-center gap-2 rounded-lg bg-sky-blue px-4 py-2 text-label-md font-label-md text-primary">
@@ -250,6 +278,9 @@ function SeatSummary({
   passengerCount,
   fareMultiplier,
   totalPrice,
+  discountAmount,
+  finalTotal,
+  onBack,
   onContinue,
   isSubmitting,
 }) {
@@ -277,11 +308,12 @@ function SeatSummary({
       <div className="flex flex-col gap-2 border-t border-outline-variant pt-4">
         <PriceLine label="Vé và hạng giá" value={fareSeatTotal} />
         <PriceLine label="Dịch vụ bổ sung" value={totalPrice - fareSeatTotal} />
+        {discountAmount > 0 ? <PriceLine label="Mã giảm giá" value={-discountAmount} /> : null}
       </div>
       <div className="flex items-end justify-between border-t border-outline-variant pt-4">
         <span className="text-title-lg font-title-lg text-primary">Tạm tính</span>
         <span className="text-headline-md font-headline-md font-bold text-primary">
-          {formatCurrency(totalPrice)}
+          {formatCurrency(finalTotal)}
         </span>
       </div>
       <div className="flex items-start gap-2 rounded-lg bg-primary-fixed p-3 text-on-primary-fixed">
@@ -290,6 +322,15 @@ function SeatSummary({
           Ghế sẽ được giữ sau khi hệ thống tạo booking thành công.
         </p>
       </div>
+      <button
+        className="flex w-full items-center justify-center gap-2 rounded-xl border border-outline-variant py-3 text-label-md font-label-md text-on-surface-variant hover:bg-surface-container"
+        disabled={isSubmitting}
+        onClick={onBack}
+        type="button"
+      >
+        <ArrowLeft className="h-4 w-4" />
+        Quay lại sửa thông tin
+      </button>
       <button
         className={cn(
           "mt-1 flex w-full items-center justify-center gap-2 rounded-xl bg-status-warning py-4 text-label-md font-label-md font-bold text-primary transition-all hover:bg-secondary-container",
@@ -303,6 +344,16 @@ function SeatSummary({
         <ArrowRight className="h-4 w-4" />
       </button>
     </aside>
+  );
+}
+
+function formatCabinClass(value) {
+  return (
+    {
+      business: "Thương gia",
+      economy: "Phổ thông",
+      first: "Hạng nhất",
+    }[value] ?? value
   );
 }
 

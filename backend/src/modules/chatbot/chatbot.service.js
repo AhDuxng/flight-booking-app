@@ -1,6 +1,8 @@
 import { env } from '../../config/env.js';
 import { createHttpError } from '../../utils/error.js';
+import { logger } from '../../utils/logger.js';
 import { loadFlightPromptContext } from './chatbot.flight-context.js';
+import { buildChatbotFallback, isGeminiCredentialFailure } from './chatbot.fallback.js';
 
 const GEMINI_API_BASE_URL = 'https://generativelanguage.googleapis.com/v1beta';
 
@@ -13,17 +15,19 @@ const SYSTEM_INSTRUCTION = [
 ].join(' ');
 
 let nextApiKeyIndex = 0;
+const disabledApiKeyIndexes = new Set();
 
 const normalizeModelName = (model) => model.replace(/^models\//, '');
 
 const selectNextGeminiApiKey = () => {
-  if (!env.geminiApiKeys.length) {
-    throw createHttpError(503, 'Gemini API keys are not configured');
+  for (let offset = 0; offset < env.geminiApiKeys.length; offset += 1) {
+    const keyIndex = nextApiKeyIndex % env.geminiApiKeys.length;
+    nextApiKeyIndex = (nextApiKeyIndex + 1) % env.geminiApiKeys.length;
+    if (!disabledApiKeyIndexes.has(keyIndex)) {
+      return { apiKey: env.geminiApiKeys[keyIndex], keyIndex };
+    }
   }
-
-  const apiKey = env.geminiApiKeys[nextApiKeyIndex % env.geminiApiKeys.length];
-  nextApiKeyIndex = (nextApiKeyIndex + 1) % env.geminiApiKeys.length;
-  return apiKey;
+  return null;
 };
 
 const toGeminiRole = (role) => (role === 'assistant' ? 'model' : 'user');
@@ -52,7 +56,8 @@ const buildGeminiPayload = ({ message, history, flightPrompt }) => ({
 const parseGeminiError = (status, body) => {
   const message = body?.error?.message || 'Gemini request failed';
   const error = createHttpError(status >= 500 ? 502 : status, message);
-  error.retryable = [429, 500, 502, 503, 504].includes(status);
+  error.credentialFailure = isGeminiCredentialFailure(status, body);
+  error.retryable = error.credentialFailure || [429, 500, 502, 503, 504].includes(status);
   return error;
 };
 
@@ -120,14 +125,15 @@ export const sendMessage = async (payload) => {
     ...payload,
     flightPrompt: flightContext?.prompt,
   });
-  const attempts = Math.max(env.geminiApiKeys.length, 1);
+  const attempts = env.geminiApiKeys.length;
   let lastError;
 
   for (let attempt = 0; attempt < attempts; attempt += 1) {
-    const apiKey = selectNextGeminiApiKey();
+    const selectedKey = selectNextGeminiApiKey();
+    if (!selectedKey) break;
 
     try {
-      const body = await requestGemini(apiKey, geminiPayload);
+      const body = await requestGemini(selectedKey.apiKey, geminiPayload);
       return {
         text: extractText(body),
         model: env.geminiModel,
@@ -135,6 +141,9 @@ export const sendMessage = async (payload) => {
       };
     } catch (error) {
       lastError = error;
+      if (error.credentialFailure) {
+        disabledApiKeyIndexes.add(selectedKey.keyIndex);
+      }
 
       if (!error.retryable || attempt === attempts - 1) {
         break;
@@ -142,5 +151,14 @@ export const sendMessage = async (payload) => {
     }
   }
 
-  throw createHttpError(lastError?.status || 502, lastError?.message || 'Gemini request failed');
+  logger.warn('chatbot_provider_degraded', {
+    error: lastError?.message ?? 'No usable Gemini API key',
+    provider_status: lastError?.status,
+  });
+  return {
+    degraded: true,
+    grounding: flightContext?.metadata ?? null,
+    model: 'vietfly-fallback',
+    text: buildChatbotFallback(payload.message, flightContext),
+  };
 };

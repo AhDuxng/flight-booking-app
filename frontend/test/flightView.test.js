@@ -68,3 +68,16 @@ test("operations admin uses business forms instead of a raw JSON editor", async 
   assert.match(form, /CurrencyInput/);
   assert.match(form, /Thông báo cho hành khách/);
 });
+
+test("booking flow persists drafts, displays discounts and enforces fare-compatible seats", async () => {
+  const [form, seats, store] = await Promise.all([
+    readFile(new URL("../src/features/bookings/BookingForm.jsx", import.meta.url), "utf8"),
+    readFile(new URL("../src/features/seats/SeatSelector.jsx", import.meta.url), "utf8"),
+    readFile(new URL("../src/store/bookingStore.js", import.meta.url), "utf8"),
+  ]);
+  assert.match(store, /bookingDraft/);
+  assert.match(form, /setBookingDraft/);
+  assert.match(form, /discountAmount/);
+  assert.match(seats, /seat\.seat_class === fareCabinClass/);
+  assert.match(seats, /Quay lại sửa thông tin/);
+});

@@ -2,7 +2,7 @@ import { supabase } from '../../config/supabase.js';
 import { throwDatabaseError } from '../../utils/error.js';
 
 const DISCOUNT_COLUMNS =
-  'id, code, description, discount_type, discount_value, min_order_value, max_discount, max_uses, used_count, start_date, end_date, applicable_to';
+  'id, code, description, discount_type, discount_value, min_order_value, max_discount, max_uses, used_count, start_date, end_date, applicable_to, is_active';
 
 export const findActive = async () => {
   const now = new Date().toISOString();
@@ -18,15 +18,13 @@ export const findActive = async () => {
   return data;
 };
 
-export const validate = async (code, orderValue) => {
-  const { data, error } = await supabase.rpc('apply_discount', {
-    p_code: code,
-    p_order_value: orderValue,
-  });
+export const findByCode = async (code) => {
+  const { data, error } = await supabase
+    .from('discounts')
+    .select(DISCOUNT_COLUMNS)
+    .eq('code', code)
+    .maybeSingle();
 
-  if (error) {
-    throw Object.assign(new Error('Invalid or ineligible discount code'), { status: 400 });
-  }
-
-  return data?.[0] ?? null;
+  throwDatabaseError(error, 'Unable to validate discount');
+  return data;
 };

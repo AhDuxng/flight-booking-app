@@ -36,6 +36,13 @@ export default function BookingForm() {
     );
     return [...Array(adultCount).fill("adult"), ...Array(childCount).fill("child")];
   }, [searchParams]);
+  const [initialDraft] = useState(() => {
+    const draft = bookingStore.getState().bookingDraft;
+    const matchesPassengers =
+      Array.isArray(draft?.passengerTypes) &&
+      draft.passengerTypes.join(",") === passengerTypes.join(",");
+    return draft?.flightId === flightId && matchesPassengers ? draft : null;
+  });
   const [flight, setFlight] = useState(null);
   const [baggageOptions, setBaggageOptions] = useState([]);
   const [mealOptions, setMealOptions] = useState([]);
@@ -43,14 +50,23 @@ export default function BookingForm() {
   const [selectedFare, setSelectedFare] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
-  const [contact, setContact] = useState({ email: "", countryCode: "+84", phone: "" });
-  const [passengers, setPassengers] = useState(() =>
-    passengerTypes.map((passengerType) => createPassenger(passengerType)),
+  const [contact, setContact] = useState(
+    () => initialDraft?.contact ?? { email: "", countryCode: "+84", phone: "" },
   );
-  const [baggage, setBaggage] = useState(() => passengerTypes.map(() => null));
-  const [meal, setMeal] = useState(() => passengerTypes.map(() => null));
-  const [discountCode, setDiscountCode] = useState("");
-  const [isDiscountApplied, setIsDiscountApplied] = useState(false);
+  const [passengers, setPassengers] = useState(
+    () =>
+      initialDraft?.passengers ??
+      passengerTypes.map((passengerType) => createPassenger(passengerType)),
+  );
+  const [baggage, setBaggage] = useState(
+    () => initialDraft?.baggage ?? passengerTypes.map(() => null),
+  );
+  const [meal, setMeal] = useState(() => initialDraft?.meal ?? passengerTypes.map(() => null));
+  const [discountCode, setDiscountCode] = useState(() => initialDraft?.discountCode ?? "");
+  const [appliedDiscount, setAppliedDiscount] = useState(
+    () => initialDraft?.appliedDiscount ?? null,
+  );
+  const isDiscountApplied = Boolean(appliedDiscount);
 
   useEffect(() => {
     const loadBookingData = async () => {
@@ -67,8 +83,13 @@ export default function BookingForm() {
         setFlight(toFlightView(flightResponse.data));
         setBaggageOptions(baggageResponse.data ?? []);
         setMealOptions(mealResponse.data ?? []);
-        setFares(fareResponse.data ?? []);
-        setSelectedFare((fareResponse.data ?? [])[0] ?? null);
+        const availableFares = fareResponse.data ?? [];
+        setFares(availableFares);
+        setSelectedFare(
+          availableFares.find((fare) => fare.id === initialDraft?.fareId) ??
+            availableFares[0] ??
+            null,
+        );
       } catch (requestError) {
         setError(getErrorMessage(requestError, "Không thể tải dữ liệu đặt vé."));
       } finally {
@@ -77,7 +98,7 @@ export default function BookingForm() {
     };
 
     loadBookingData();
-  }, [flightId]);
+  }, [flightId, initialDraft]);
 
   const estimatedTotal = useMemo(() => {
     const baggageTotal = baggage.reduce((total, item) => total + Number(item?.price ?? 0), 0);
@@ -88,6 +109,34 @@ export default function BookingForm() {
       mealTotal
     );
   }, [baggage, flight, meal, passengers.length, selectedFare]);
+
+  const estimatedDiscount = Number(appliedDiscount?.discountAmount ?? 0);
+  const estimatedFinalTotal = Math.max(0, estimatedTotal - estimatedDiscount);
+
+  useEffect(() => {
+    bookingStore.setBookingDraft({
+      appliedDiscount,
+      baggage,
+      contact,
+      discountCode,
+      fareId: selectedFare?.id ?? initialDraft?.fareId ?? null,
+      flightId,
+      meal,
+      passengers,
+      passengerTypes,
+    });
+  }, [
+    appliedDiscount,
+    baggage,
+    contact,
+    discountCode,
+    flightId,
+    initialDraft?.fareId,
+    meal,
+    passengers,
+    passengerTypes,
+    selectedFare?.id,
+  ]);
 
   const handleContinue = () => {
     const hasIncompletePassenger = passengers.some(
@@ -118,7 +167,9 @@ export default function BookingForm() {
       baggage,
       meal,
       discountCode: isDiscountApplied ? discountCode.trim().toUpperCase() : null,
+      discountAmount: estimatedDiscount,
       fareId: selectedFare?.id ?? null,
+      fareCabinClass: selectedFare?.cabin_class ?? "economy",
       fareMultiplier: Number(selectedFare?.price_multiplier ?? 1),
     });
     navigate(`/booking/${flight.id}/seats${window.location.search}`);
@@ -138,10 +189,12 @@ export default function BookingForm() {
         throw new Error("Mã giảm giá không hợp lệ.");
       }
       setDiscountCode(code);
-      setIsDiscountApplied(true);
-      toast.success("Mã giảm giá hợp lệ. Giá cuối cùng sẽ do hệ thống xác nhận.");
+      setAppliedDiscount(response.data);
+      toast.success(
+        `Đã giảm tạm tính ${formatCurrency(Number(response.data.discountAmount ?? 0))}.`,
+      );
     } catch (requestError) {
-      setIsDiscountApplied(false);
+      setAppliedDiscount(null);
       toast.error(getErrorMessage(requestError, "Mã giảm giá không hợp lệ."));
     }
   };
@@ -207,27 +260,33 @@ export default function BookingForm() {
               baggage={baggage}
               baggageOptions={baggageOptions}
               discountCode={discountCode}
+              discountAmount={estimatedDiscount}
               isDiscountApplied={isDiscountApplied}
               meal={meal}
               mealOptions={mealOptions}
               fares={fares}
               selectedFare={selectedFare}
               onApplyDiscount={handleApplyDiscount}
-              onBaggageChange={(index, value) =>
+              onBaggageChange={(index, value) => {
+                setAppliedDiscount(null);
                 setBaggage((current) =>
                   current.map((item, itemIndex) => (itemIndex === index ? value : item)),
-                )
-              }
+                );
+              }}
               onDiscountCodeChange={(value) => {
                 setDiscountCode(value);
-                setIsDiscountApplied(false);
+                setAppliedDiscount(null);
               }}
-              onMealChange={(index, value) =>
+              onMealChange={(index, value) => {
+                setAppliedDiscount(null);
                 setMeal((current) =>
                   current.map((item, itemIndex) => (itemIndex === index ? value : item)),
-                )
-              }
-              onFareChange={setSelectedFare}
+                );
+              }}
+              onFareChange={(fare) => {
+                setSelectedFare(fare);
+                setAppliedDiscount(null);
+              }}
               passengerCount={passengers.length}
             />
             <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
@@ -254,7 +313,8 @@ export default function BookingForm() {
             fare={selectedFare}
             flight={flight}
             meal={meal}
-            total={estimatedTotal}
+            discountAmount={estimatedDiscount}
+            total={estimatedFinalTotal}
           />
         </div>
       </div>
@@ -307,6 +367,7 @@ function BookingOptions({
   selectedFare,
   passengerCount,
   discountCode,
+  discountAmount,
   isDiscountApplied,
   onBaggageChange,
   onMealChange,
@@ -399,7 +460,7 @@ function BookingOptions({
         >
           {isDiscountApplied ? <Check className="h-4 w-4" /> : <BadgePercent className="h-4 w-4" />}
           {isDiscountApplied
-            ? "Mã đã được kiểm tra. Giá cuối cùng do máy chủ xác nhận."
+            ? `Đã giảm tạm tính ${formatCurrency(discountAmount)}. Máy chủ sẽ xác nhận lại khi tạo booking.`
             : "Mã được kiểm tra trước khi tạo booking."}
         </div>
       </OptionPanel>
@@ -455,7 +516,7 @@ function RadioList({ items, selectedItem, onChange, itemLabel, emptyLabel }) {
   );
 }
 
-function BookingEstimate({ flight, baggage, meal, fare, total }) {
+function BookingEstimate({ flight, baggage, meal, fare, discountAmount, total }) {
   const passengerCount = baggage.length;
   const baggageTotal = baggage.reduce((sum, item) => sum + Number(item?.price ?? 0), 0);
   const mealTotal = meal.reduce((sum, item) => sum + Number(item?.price ?? 0), 0);
@@ -469,6 +530,7 @@ function BookingEstimate({ flight, baggage, meal, fare, total }) {
         />
         <PriceLine label="Hành lý" value={baggageTotal} />
         <PriceLine label="Suất ăn" value={mealTotal} />
+        {discountAmount > 0 ? <PriceLine label="Mã giảm giá" value={-discountAmount} /> : null}
       </div>
       <div className="mt-4 flex items-end justify-between">
         <span className="text-title-lg font-title-lg text-primary">Tạm tính</span>

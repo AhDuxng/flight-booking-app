@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from "react";
 
 const initialState = {
+  bookingDraft: null,
   passengerInfo: null,
   selectedFlight: null,
   selectedSeats: [],
@@ -57,6 +58,12 @@ export const bookingStore = {
       selectedSeats: [...state.selectedSeats, seat],
     });
   },
+  clearBookingDraft: () => {
+    setState({
+      ...state,
+      bookingDraft: null,
+    });
+  },
   getState: () => state,
   removeSeat: (seatId) => {
     setState({
@@ -73,6 +80,12 @@ export const bookingStore = {
     setState({
       ...state,
       passengerInfo,
+    });
+  },
+  setBookingDraft: (bookingDraft) => {
+    setState({
+      ...state,
+      bookingDraft,
     });
   },
   setSelectedFlight: (selectedFlight) => {
