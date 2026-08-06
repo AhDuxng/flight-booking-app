@@ -38,6 +38,10 @@ const checkoutMigrationUrl = new URL(
   '../database/migrations/20260806030000_fix_booking_checkout.sql',
   import.meta.url,
 );
+const bookingReferenceMigrationUrl = new URL(
+  '../database/migrations/20260806040000_fix_booking_reference_generation.sql',
+  import.meta.url,
+);
 
 test('request hashing is deterministic and rejects unsafe idempotency keys', () => {
   assert.equal(stableStringify({ b: 2, a: 1 }), '{"a":1,"b":2}');
@@ -303,6 +307,16 @@ test('checkout migration applies discounts once after fare pricing', async () =>
   assert.match(sql, /applicable_to IN \('all', 'flight'\)/);
   assert.match(sql, /DISCOUNT_NOT_ELIGIBLE/);
   assert.match(sql, /TO service_role/);
+});
+
+test('booking references do not depend on pgcrypto search paths', async () => {
+  const sql = await readFile(bookingReferenceMigrationUrl, 'utf8');
+  assert.match(sql, /booking_reference_seq/);
+  assert.match(sql, /NEXTVAL\('public\.booking_reference_seq'\)/);
+  assert.doesNotMatch(sql, /ENCODE\(gen_random_bytes/);
+  assert.match(sql, /CREATE TRIGGER bookings_assign_defaults/);
+  assert.match(sql, /SECURITY DEFINER/);
+  assert.match(sql, /uq_booking_single_discount/);
 });
 
 test('hardening migration contains the core concurrency and recovery invariants', async () => {

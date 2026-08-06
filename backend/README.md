@@ -124,6 +124,7 @@ psql $DATABASE_URL -f database/migrations/20260806000000_cleanup_stale_payment_i
 psql $DATABASE_URL -f database/migrations/20260806010000_optimize_flight_number_search.sql
 psql $DATABASE_URL -f database/migrations/20260806020000_complete_booking_lifecycle.sql
 psql $DATABASE_URL -f database/migrations/20260806030000_fix_booking_checkout.sql
+psql $DATABASE_URL -f database/migrations/20260806040000_fix_booking_reference_generation.sql
 ```
 
 Sau migrations, có thể tạo bộ dữ liệu demo lớn từ 05/08/2026 đến 05/09/2026 bằng:

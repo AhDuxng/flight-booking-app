@@ -145,8 +145,7 @@ export default function SeatSelector() {
         },
         bookingIdempotencyKey.current,
       );
-      selectedSeats.forEach(bookingStore.addSeat);
-      bookingStore.clearBookingDraft();
+      bookingStore.reset();
       toast.success("Đã giữ chỗ. Hãy hoàn tất thanh toán trước khi hết hạn.");
       navigate(`/payment/${response.data.id}`);
     } catch (requestError) {

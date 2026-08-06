@@ -9,6 +9,15 @@ export const getActiveDiscounts = async (req, res, next) => {
   }
 };
 
+export const getEligibleDiscounts = async (req, res, next) => {
+  try {
+    const data = await discountService.getEligibleDiscounts(req.body);
+    return res.json({ data });
+  } catch (error) {
+    return next(error);
+  }
+};
+
 export const validateDiscount = async (req, res, next) => {
   try {
     const data = await discountService.validateDiscount(req.body);

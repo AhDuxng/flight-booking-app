@@ -1,4 +1,5 @@
 import { CalendarDays, Contact, Mail, Phone, UserRound } from "lucide-react";
+import { latestAdultBirthDate } from "@/lib/passengerAge";
 
 const inputClass =
   "h-11 w-full rounded-lg border border-outline-variant bg-surface-container-lowest px-4 text-body-md font-body-md text-on-surface transition-all placeholder:text-outline focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20";
@@ -136,13 +137,22 @@ export default function PassengerForm({ contact, passengers, onContactChange, on
                   <CalendarDays className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-outline" />
                   <input
                     className={`${inputClass} pl-10`}
-                    max={new Intl.DateTimeFormat("en-CA").format(new Date())}
+                    max={
+                      passenger.passengerType === "adult"
+                        ? latestAdultBirthDate()
+                        : new Intl.DateTimeFormat("en-CA").format(new Date())
+                    }
                     name="birthDate"
                     onChange={(event) => onPassengerChange(index, event)}
                     type="date"
                     value={passenger.birthDate}
                   />
                 </div>
+                {passenger.passengerType === "adult" ? (
+                  <span className="text-xs text-on-surface-variant">
+                    Hành khách người lớn phải đủ 18 tuổi.
+                  </span>
+                ) : null}
               </Field>
             </div>
             <div className="sm:col-span-4">

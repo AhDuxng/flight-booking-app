@@ -28,3 +28,14 @@ export const findByCode = async (code) => {
   throwDatabaseError(error, 'Unable to validate discount');
   return data;
 };
+
+export const findFlight = async (flightId) => {
+  const { data, error } = await supabase
+    .from('flights')
+    .select('id, status, departure_time')
+    .eq('id', flightId)
+    .maybeSingle();
+
+  throwDatabaseError(error, 'Unable to validate discount flight');
+  return data;
+};

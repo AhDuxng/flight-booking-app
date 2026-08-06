@@ -19,6 +19,13 @@ export const throwDatabaseError = (error, fallbackMessage = 'Database request fa
     throw createHttpError(404, 'Record not found');
   }
 
+  if (error.code === '42883' && String(error.message).includes('gen_random_bytes')) {
+    throw createHttpError(503, 'Database checkout migration is required', {
+      cause: error,
+      code: 'DATABASE_MIGRATION_REQUIRED',
+    });
+  }
+
   const businessCode = String(error.message ?? '').match(/\b[A-Z][A-Z0-9_]{2,}\b/)?.[0];
   if (error.code === 'P0001' && businessCode) {
     const conflictCodes = new Set([

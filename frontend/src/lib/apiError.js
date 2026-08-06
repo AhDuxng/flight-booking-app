@@ -8,6 +8,7 @@ export const getErrorMessage = (error, fallback = "Đã có lỗi xảy ra. Vui 
 
 const bookingErrorMessages = {
   BOOKING_INPUT_INVALID: "Thông tin hành khách hoặc dịch vụ đi kèm chưa hợp lệ.",
+  DATABASE_MIGRATION_REQUIRED: "Hệ thống đặt chỗ đang được nâng cấp. Vui lòng thử lại sau.",
   DISCOUNT_NOT_ELIGIBLE: "Mã giảm giá không còn đủ điều kiện áp dụng.",
   FARE_NOT_AVAILABLE: "Hạng giá không phù hợp với ghế đã chọn.",
   FLIGHT_NOT_SELLABLE: "Chuyến bay này hiện không còn mở bán.",

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { Bell, Bot, CheckCheck, LogIn, LogOut, Menu, User, X } from "lucide-react";
 import logo from "@/assets/images/logo.png";
@@ -7,6 +7,7 @@ import { authService } from "@/features/auth/authService";
 import { notificationService } from "@/features/notifications/notificationService";
 import { cn } from "@/lib/utils";
 import { authStore } from "@/store/authStore";
+import { bookingStore } from "@/store/bookingStore";
 import { notificationStore, useNotificationStore } from "@/store/notificationStore";
 
 const navItems = [
@@ -25,6 +26,16 @@ export default function TopNavBar() {
   const { isOpen: isNotificationsOpen, unreadCount } = useNotificationStore();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
+  const previousPath = useRef(location.pathname);
+
+  useEffect(() => {
+    const isInBookingFlow = location.pathname.startsWith("/booking/");
+    const leftBookingFlow = previousPath.current.startsWith("/booking/") && !isInBookingFlow;
+    const loadedOutsideBookingWithDraft =
+      !isInBookingFlow && Boolean(bookingStore.getState().bookingDraft);
+    if (leftBookingFlow || loadedOutsideBookingWithDraft) bookingStore.reset();
+    previousPath.current = location.pathname;
+  }, [location.pathname]);
 
   useEffect(() => {
     setIsMobileMenuOpen(false);

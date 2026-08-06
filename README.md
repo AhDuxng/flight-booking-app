@@ -252,4 +252,4 @@ File `netlify.toml` cũng đã cấu hình redirect `/* -> /index.html` để Re
 
 Dự án đã có đầy đủ các luồng MVP trong `MISSING_MVP_FEATURES.md`. Trước khi chạy trên một Supabase mới, áp dụng `schema.sql`, `seed.sql` và toàn bộ migration theo đúng thứ tự trong [backend/README.md](backend/README.md). Sau đó chỉ cần điền credentials cho Supabase; SMTP, Gemini và payment adapter là cấu hình tùy theo dịch vụ muốn bật. `cash`, tải PDF/QR, CMS, support, lịch bay và toàn bộ nghiệp vụ nội bộ không phụ thuộc dịch vụ ngoài.
 
-Bản hardening concurrency, idempotency, outbox, webhook, refund và inventory được mô tả trong [CORE_HARDENING_REPORT.md](CORE_HARDENING_REPORT.md). Migration cuối cùng bắt buộc là `20260806030000_fix_booking_checkout.sql`.
+Bản hardening concurrency, idempotency, outbox, webhook, refund và inventory được mô tả trong [CORE_HARDENING_REPORT.md](CORE_HARDENING_REPORT.md). Migration cuối cùng bắt buộc là `20260806040000_fix_booking_reference_generation.sql`.

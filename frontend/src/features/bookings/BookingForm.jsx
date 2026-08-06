@@ -20,6 +20,7 @@ import { flightService } from "@/features/flights/flightService";
 import { formatCurrency, formatTime, toFlightView } from "@/features/flights/flightView";
 import { mealService } from "@/features/meals/mealService";
 import { getErrorMessage } from "@/lib/apiError";
+import { isPassengerAgeValid } from "@/lib/passengerAge";
 import { cn } from "@/lib/utils";
 import { bookingStore } from "@/store/bookingStore";
 import { operationService } from "@/features/operations/operationService";
@@ -66,6 +67,8 @@ export default function BookingForm() {
   const [appliedDiscount, setAppliedDiscount] = useState(
     () => initialDraft?.appliedDiscount ?? null,
   );
+  const [eligibleDiscounts, setEligibleDiscounts] = useState([]);
+  const [areDiscountsLoading, setAreDiscountsLoading] = useState(false);
   const isDiscountApplied = Boolean(appliedDiscount);
 
   useEffect(() => {
@@ -114,6 +117,37 @@ export default function BookingForm() {
   const estimatedFinalTotal = Math.max(0, estimatedTotal - estimatedDiscount);
 
   useEffect(() => {
+    if (!flightId || estimatedTotal <= 0) return undefined;
+    let cancelled = false;
+    const timeoutId = window.setTimeout(async () => {
+      setAreDiscountsLoading(true);
+      try {
+        const response = await discountService.getEligible({
+          flightId,
+          orderValue: estimatedTotal,
+        });
+        if (cancelled) return;
+        const discounts = response.data ?? [];
+        setEligibleDiscounts(discounts);
+        if (discountCode) {
+          setAppliedDiscount(discounts.find((item) => item.code === discountCode) ?? null);
+        }
+      } catch {
+        if (!cancelled) {
+          setEligibleDiscounts([]);
+          setAppliedDiscount(null);
+        }
+      } finally {
+        if (!cancelled) setAreDiscountsLoading(false);
+      }
+    }, 250);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timeoutId);
+    };
+  }, [discountCode, estimatedTotal, flightId]);
+
+  useEffect(() => {
     bookingStore.setBookingDraft({
       appliedDiscount,
       baggage,
@@ -150,6 +184,15 @@ export default function BookingForm() {
       toast.error("Vui lòng điền đầy đủ thông tin liên hệ và hành khách.");
       return;
     }
+    const invalidAdultIndex = passengers.findIndex(
+      (passenger) =>
+        passenger.passengerType === "adult" &&
+        !isPassengerAgeValid(passenger.birthDate, passenger.passengerType),
+    );
+    if (invalidAdultIndex >= 0) {
+      toast.error(`Hành khách ${invalidAdultIndex + 1} phải đủ 18 tuổi tại ngày đặt vé.`);
+      return;
+    }
 
     bookingStore.setSelectedFlight(flight);
     bookingStore.setPassengerInfo({
@@ -173,30 +216,6 @@ export default function BookingForm() {
       fareMultiplier: Number(selectedFare?.price_multiplier ?? 1),
     });
     navigate(`/booking/${flight.id}/seats${window.location.search}`);
-  };
-
-  const handleApplyDiscount = async () => {
-    const code = discountCode.trim().toUpperCase();
-
-    if (!code) {
-      toast.error("Hãy nhập mã giảm giá.");
-      return;
-    }
-
-    try {
-      const response = await discountService.validate({ code, orderValue: estimatedTotal });
-      if (!response.data) {
-        throw new Error("Mã giảm giá không hợp lệ.");
-      }
-      setDiscountCode(code);
-      setAppliedDiscount(response.data);
-      toast.success(
-        `Đã giảm tạm tính ${formatCurrency(Number(response.data.discountAmount ?? 0))}.`,
-      );
-    } catch (requestError) {
-      setAppliedDiscount(null);
-      toast.error(getErrorMessage(requestError, "Mã giảm giá không hợp lệ."));
-    }
   };
 
   if (isLoading) {
@@ -226,7 +245,10 @@ export default function BookingForm() {
           </div>
           <button
             className="inline-flex h-10 w-fit items-center gap-2 rounded-lg border border-primary-fixed/40 px-4 text-label-md font-label-md text-primary-fixed transition-colors hover:bg-primary-container"
-            onClick={() => navigate("/flights")}
+            onClick={() => {
+              bookingStore.reset();
+              navigate("/flights");
+            }}
             type="button"
           >
             <ArrowLeft className="h-4 w-4" />
@@ -257,25 +279,32 @@ export default function BookingForm() {
               passengers={passengers}
             />
             <BookingOptions
+              areDiscountsLoading={areDiscountsLoading}
               baggage={baggage}
               baggageOptions={baggageOptions}
               discountCode={discountCode}
               discountAmount={estimatedDiscount}
+              eligibleDiscounts={eligibleDiscounts}
               isDiscountApplied={isDiscountApplied}
               meal={meal}
               mealOptions={mealOptions}
               fares={fares}
               selectedFare={selectedFare}
-              onApplyDiscount={handleApplyDiscount}
               onBaggageChange={(index, value) => {
                 setAppliedDiscount(null);
                 setBaggage((current) =>
                   current.map((item, itemIndex) => (itemIndex === index ? value : item)),
                 );
               }}
-              onDiscountCodeChange={(value) => {
-                setDiscountCode(value);
-                setAppliedDiscount(null);
+              onDiscountChange={(code) => {
+                const discount = eligibleDiscounts.find((item) => item.code === code) ?? null;
+                setDiscountCode(code);
+                setAppliedDiscount(discount);
+                if (discount) {
+                  toast.success(
+                    `Đã chọn mã ${code}, giảm ${formatCurrency(discount.discountAmount)}.`,
+                  );
+                }
               }}
               onMealChange={(index, value) => {
                 setAppliedDiscount(null);
@@ -292,7 +321,10 @@ export default function BookingForm() {
             <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
               <button
                 className="inline-flex h-12 items-center justify-center gap-2 rounded-lg border border-outline-variant px-5 text-label-md font-label-md text-on-surface-variant transition-colors hover:bg-surface-container"
-                onClick={() => navigate(`/flights/${flight.id}`)}
+                onClick={() => {
+                  bookingStore.reset();
+                  navigate(`/flights/${flight.id}`);
+                }}
                 type="button"
               >
                 <ArrowLeft className="h-4 w-4" />
@@ -359,6 +391,7 @@ function Metric({ label, value }) {
 }
 
 function BookingOptions({
+  areDiscountsLoading,
   baggage,
   baggageOptions,
   meal,
@@ -368,12 +401,12 @@ function BookingOptions({
   passengerCount,
   discountCode,
   discountAmount,
+  eligibleDiscounts,
   isDiscountApplied,
   onBaggageChange,
   onMealChange,
   onFareChange,
-  onDiscountCodeChange,
-  onApplyDiscount,
+  onDiscountChange,
 }) {
   return (
     <div className="grid grid-cols-1 gap-stack-lg xl:grid-cols-2">
@@ -436,22 +469,21 @@ function BookingOptions({
         </OptionPanel>
       ))}
       <OptionPanel icon={BadgePercent} title="Mã giảm giá">
-        <div className="flex gap-2">
-          <input
-            className="h-11 min-w-0 flex-1 rounded-lg border border-outline-variant bg-surface-container-lowest px-4 text-body-md font-body-md uppercase text-on-surface placeholder:normal-case placeholder:text-outline focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-            onChange={(event) => onDiscountCodeChange(event.target.value)}
-            placeholder="Nhập mã giảm giá"
-            type="text"
-            value={discountCode}
-          />
-          <button
-            className="inline-flex h-11 items-center justify-center rounded-lg bg-primary px-4 text-label-md font-label-md text-on-primary transition-colors hover:bg-primary-container"
-            onClick={onApplyDiscount}
-            type="button"
-          >
-            Áp dụng
-          </button>
-        </div>
+        <select
+          className="h-11 w-full rounded-lg border border-outline-variant bg-surface-container-lowest px-4 text-body-md text-on-surface focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+          disabled={areDiscountsLoading}
+          onChange={(event) => onDiscountChange(event.target.value)}
+          value={discountCode}
+        >
+          <option value="">
+            {areDiscountsLoading ? "Đang tìm mã phù hợp..." : "Không áp dụng mã giảm giá"}
+          </option>
+          {eligibleDiscounts.map((discount) => (
+            <option key={discount.discountId} value={discount.code}>
+              {discount.code} — giảm {formatCurrency(discount.discountAmount)}
+            </option>
+          ))}
+        </select>
         <div
           className={cn(
             "mt-3 flex items-center gap-2 text-body-sm font-body-sm",
@@ -461,7 +493,9 @@ function BookingOptions({
           {isDiscountApplied ? <Check className="h-4 w-4" /> : <BadgePercent className="h-4 w-4" />}
           {isDiscountApplied
             ? `Đã giảm tạm tính ${formatCurrency(discountAmount)}. Máy chủ sẽ xác nhận lại khi tạo booking.`
-            : "Mã được kiểm tra trước khi tạo booking."}
+            : eligibleDiscounts.length
+              ? "Chỉ được áp dụng một mã cho mỗi booking."
+              : "Không có mã nào đủ điều kiện với giá trị hiện tại."}
         </div>
       </OptionPanel>
     </div>

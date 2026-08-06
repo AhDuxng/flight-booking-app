@@ -1,7 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 import { registerSchema } from '../src/modules/auth/auth.schema.js';
-import { createBookingSchema } from '../src/modules/bookings/booking.schema.js';
+import {
+  calculatePassengerAge,
+  createBookingSchema,
+} from '../src/modules/bookings/booking.schema.js';
 import { createFlightSchema, flightSearchSchema } from '../src/modules/flights/flight.schema.js';
 import { createPagination, getPagination } from '../src/utils/pagination.js';
 import {
@@ -136,6 +140,21 @@ test('booking validation rejects a future passenger date of birth', () => {
   });
 
   assert.equal(result.success, false);
+});
+
+test('adult passengers must be at least 18 years old', () => {
+  const today = new Date('2026-08-06T12:00:00.000Z');
+  assert.equal(calculatePassengerAge('2008-08-06', today), 18);
+  assert.equal(calculatePassengerAge('2008-08-07', today), 17);
+});
+
+test('eligible discount endpoint is separate from free-form validation', async () => {
+  const routes = await readFile(
+    new URL('../src/modules/discounts/discount.routes.js', import.meta.url),
+    'utf8',
+  );
+  assert.match(routes, /\/eligible/);
+  assert.match(routes, /eligibleDiscountsSchema/);
 });
 
 test('registration rejects weak passwords', () => {

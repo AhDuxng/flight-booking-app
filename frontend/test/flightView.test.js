@@ -7,6 +7,11 @@ import {
   isValidFlightNumber,
   normalizeFlightNumber,
 } from "../src/features/flights/flightConstants.js";
+import {
+  calculateAge,
+  isPassengerAgeValid,
+  latestAdultBirthDate,
+} from "../src/lib/passengerAge.js";
 
 test("flight API data is normalized for the UI", () => {
   const result = toFlightView({
@@ -80,4 +85,23 @@ test("booking flow persists drafts, displays discounts and enforces fare-compati
   assert.match(form, /discountAmount/);
   assert.match(seats, /seat\.seat_class === fareCabinClass/);
   assert.match(seats, /Quay lại sửa thông tin/);
+});
+
+test("adult age validation handles the exact eighteenth birthday", () => {
+  const today = new Date("2026-08-06T12:00:00.000Z");
+  assert.equal(calculateAge("2008-08-06", today), 18);
+  assert.equal(calculateAge("2008-08-07", today), 17);
+  assert.equal(isPassengerAgeValid("2008-08-06", "adult", today), true);
+  assert.equal(isPassengerAgeValid("2008-08-07", "adult", today), false);
+  assert.equal(latestAdultBirthDate(today), "2008-08-06");
+});
+
+test("booking discount UI is a single eligible-code selector", async () => {
+  const form = await readFile(
+    new URL("../src/features/bookings/BookingForm.jsx", import.meta.url),
+    "utf8",
+  );
+  assert.match(form, /getEligible/);
+  assert.match(form, /Không áp dụng mã giảm giá/);
+  assert.doesNotMatch(form, /placeholder="Nhập mã giảm giá"/);
 });
