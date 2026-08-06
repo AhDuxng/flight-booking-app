@@ -33,6 +33,7 @@ export const createBooking = async (req, res, next) => {
       req.user.id,
       req.body,
       req.get('idempotency-key'),
+      req.requestId,
     );
     return res.status(201).json({ data });
   } catch (error) {

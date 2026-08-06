@@ -72,7 +72,7 @@ export const getCancellationQuote = async (bookingId, userId) => {
   };
 };
 
-export const createBooking = async (userId, payload, rawIdempotencyKey) => {
+export const createBooking = async (userId, payload, rawIdempotencyKey, requestId) => {
   const idempotencyKey = normalizeIdempotencyKey(rawIdempotencyKey);
   const requestHash = hashRequest(payload);
   return withRedisLocks(payload.seatIds, async () => {
@@ -90,8 +90,20 @@ export const createBooking = async (userId, payload, rawIdempotencyKey) => {
       return booking;
     } catch (error) {
       logger.warn('booking_creation_failed', {
+        request_id: requestId,
         user_id: userId,
+        flight_id: payload.flightId,
+        fare_id: payload.fareId,
+        seat_ids: payload.seatIds,
+        passenger_count: payload.passengers.length,
+        baggage_count: payload.baggage.length,
+        meal_count: payload.meals.length,
+        ancillary_count: payload.ancillaries.length,
+        discount_code: payload.discountCode ?? null,
         error_code: error.code,
+        database_code: error.databaseCode ?? error.cause?.code,
+        database_details: error.databaseDetails ?? error.cause?.details,
+        database_hint: error.databaseHint ?? error.cause?.hint,
         error: error.message,
       });
       throw error;

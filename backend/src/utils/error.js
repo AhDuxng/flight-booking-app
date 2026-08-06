@@ -2,6 +2,20 @@ export const createHttpError = (status, message, details = {}) => {
   return Object.assign(new Error(message, { cause: details.cause }), { status, ...details });
 };
 
+const databaseErrorDetails = (error) => ({
+  cause: error,
+  databaseCode: error.code,
+  databaseDetails: error.details,
+  databaseHint: error.hint,
+});
+
+const mentions = (error, value) =>
+  [error?.message, error?.details, error?.hint].some((part) =>
+    String(part ?? '')
+      .toLowerCase()
+      .includes(value.toLowerCase()),
+  );
+
 export const throwDatabaseError = (error, fallbackMessage = 'Database request failed') => {
   if (!error) {
     return;
@@ -19,10 +33,42 @@ export const throwDatabaseError = (error, fallbackMessage = 'Database request fa
     throw createHttpError(404, 'Record not found');
   }
 
-  if (error.code === '42883' && String(error.message).includes('gen_random_bytes')) {
+  if (
+    (error.code === '42883' && mentions(error, 'gen_random_bytes')) ||
+    (error.code === 'PGRST202' && mentions(error, 'create_booking_v2'))
+  ) {
     throw createHttpError(503, 'Database checkout migration is required', {
-      cause: error,
       code: 'DATABASE_MIGRATION_REQUIRED',
+      ...databaseErrorDetails(error),
+    });
+  }
+
+  if (['40001', '40P01', '55P03'].includes(error.code)) {
+    throw createHttpError(409, 'Database transaction must be retried', {
+      code: 'DATABASE_RETRY_REQUIRED',
+      ...databaseErrorDetails(error),
+    });
+  }
+
+  if (error.code === '23514') {
+    const inventoryConflict = mentions(error, 'seats_hold_state_check');
+    throw createHttpError(inventoryConflict ? 409 : 422, 'Database constraint was violated', {
+      code: inventoryConflict ? 'INVENTORY_STATE_CONFLICT' : 'DATA_CONSTRAINT_VIOLATION',
+      ...databaseErrorDetails(error),
+    });
+  }
+
+  if (error.code === '23502') {
+    throw createHttpError(422, 'Required data is missing', {
+      code: 'REQUIRED_DATA_MISSING',
+      ...databaseErrorDetails(error),
+    });
+  }
+
+  if (['22003', '22007', '22P02'].includes(error.code)) {
+    throw createHttpError(422, 'Database input is invalid', {
+      code: 'INVALID_DATABASE_INPUT',
+      ...databaseErrorDetails(error),
     });
   }
 
@@ -70,9 +116,6 @@ export const throwDatabaseError = (error, fallbackMessage = 'Database request fa
   }
 
   throw createHttpError(500, fallbackMessage, {
-    cause: error,
-    databaseCode: error.code,
-    databaseDetails: error.details,
-    databaseHint: error.hint,
+    ...databaseErrorDetails(error),
   });
 };
